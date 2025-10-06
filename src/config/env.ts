@@ -15,13 +15,17 @@
 
 export const ENV = {
   // Supabase Configuration
-  SUPABASE_URL: 'https://your-project.supabase.co',
-  SUPABASE_ANON_KEY: 'your-supabase-anon-key',
+  SUPABASE_URL: 'https://jmyqhkxdhxawvwbixpay.supabase.co',
+  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpteXFoa3hkaHhhd3Z3Yml4cGF5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk3MTU1MDQsImV4cCI6MjA3NTI5MTUwNH0.630_DHt0ffatA979XopSWLusIYCzySJcPe4cjbUauKg',
   
   // RevenueCat Configuration
+  // TODO: Complete RevenueCat setup once you have:
+  // 1. Apple Developer account ($99/year) for iOS
+  // 2. Google Play Developer account ($25 one-time) for Android
+  // For now, we'll build the IAP flow to be ready when you add these.
   REVENUECAT_API_KEY: {
-    ios: 'your-ios-api-key',
-    android: 'your-android-api-key',
+    ios: 'REVENUECAT_IOS_KEY_PENDING', // Set after App Store Connect setup
+    android: 'REVENUECAT_ANDROID_KEY_PENDING', // Set after Play Console setup
   },
   
   // PostHog Configuration
@@ -29,7 +33,7 @@ export const ENV = {
   POSTHOG_HOST: 'https://app.posthog.com',
   
   // AI Configuration (Grok-4 Fast Reasoning)
-  GROK_API_KEY: 'your-grok-api-key',
+  GROK_API_KEY: 'xai-XV46KDsOZZu8MkPD9rsk9OlYi598qpoQ08LTW0QqTQOEVWY4sQOTpIRDC6kpRtwTGSVEcj0h8370i4Je',
   GROK_API_URL: 'https://api.x.ai/v1/chat/completions',
   
   // Feature Flags (defaults, will be overridden by PostHog)
