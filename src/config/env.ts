@@ -29,8 +29,8 @@ export const ENV = {
   },
   
   // PostHog Configuration
-  POSTHOG_API_KEY: 'your-posthog-api-key',
-  POSTHOG_HOST: 'https://app.posthog.com',
+  POSTHOG_API_KEY: 'phc_nqY4Ey9dCBnuBP4afiYMXXm1NRGdW6fRK2YzN2kgL7M',
+  POSTHOG_HOST: 'https://us.i.posthog.com',
   
   // AI Configuration (Grok-4 Fast Reasoning)
   GROK_API_KEY: 'xai-XV46KDsOZZu8MkPD9rsk9OlYi598qpoQ08LTW0QqTQOEVWY4sQOTpIRDC6kpRtwTGSVEcj0h8370i4Je',
