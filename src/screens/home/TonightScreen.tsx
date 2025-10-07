@@ -15,7 +15,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { GameCard } from '../../components/game/GameCard';
-import { getTodaysGames, type NHLGame } from '../../lib/nhl-api';
+import { getGamesForDate, type NHLGame } from '../../lib/nhl-api';
 import { trackEvent } from '../../lib/analytics';
 import { useAppStore } from '../../store/appStore';
 
@@ -28,6 +28,7 @@ interface Filters {
 }
 
 export const TonightScreen: React.FC = () => {
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames] = useState<NHLGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,6 +45,27 @@ export const TonightScreen: React.FC = () => {
   const { subscriptions } = useAppStore();
   const followedTeamCodes = ['ARI']; // TODO: Get from user's actual follows
   const userServiceCodes = subscriptions.map(s => s.service_code);
+
+  const isToday = useMemo(() => {
+    const today = new Date();
+    return selectedDate.toDateString() === today.toDateString();
+  }, [selectedDate]);
+
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
 
   // Filter games based on selected filters
   const filteredGames = useMemo(() => {
@@ -136,14 +158,14 @@ export const TonightScreen: React.FC = () => {
       }
       setError(null);
 
-      const todaysGames = await getTodaysGames();
-      setGames(todaysGames);
+      const gamesForDate = await getGamesForDate(selectedDate);
+      setGames(gamesForDate);
 
       // Track page view
       trackEvent({
         name: 'tonight_viewed',
         properties: {
-          games_count: todaysGames.length,
+          games_count: gamesForDate.length,
         },
       });
     } catch (err: any) {
@@ -157,7 +179,7 @@ export const TonightScreen: React.FC = () => {
 
   useEffect(() => {
     loadGames();
-  }, []);
+  }, [selectedDate]); // Reload when date changes
 
   const handleRefresh = () => {
     loadGames(true);
@@ -201,20 +223,49 @@ export const TonightScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.emoji}>🏒</Text>
           <View style={styles.titleRow}>
-            <Text style={styles.title}>Tonight</Text>
+            <Text style={styles.title}>Schedule</Text>
             {activeFilterCount > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
               </View>
             )}
           </View>
-          <Text style={styles.date}>
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </Text>
+
+          {/* Date Navigation */}
+          <View style={styles.dateNav}>
+            <TouchableOpacity
+              style={styles.dateArrow}
+              onPress={goToPreviousDay}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dateArrowText}>←</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.dateCenter}
+              onPress={isToday ? undefined : goToToday}
+              activeOpacity={isToday ? 1 : 0.7}
+            >
+              <Text style={styles.date}>
+                {selectedDate.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </Text>
+              {!isToday && (
+                <Text style={styles.todayHint}>Tap for today</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.dateArrow}
+              onPress={goToNextDay}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.dateArrowText}>→</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Filter Button */}
@@ -387,6 +438,38 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 16,
     color: '#666666',
+    textAlign: 'center',
+  },
+  dateNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+    gap: 12,
+  },
+  dateArrow: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateArrowText: {
+    fontSize: 20,
+    color: '#333333',
+    fontWeight: '600',
+  },
+  dateCenter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  todayHint: {
+    fontSize: 12,
+    color: '#0066CC',
+    marginTop: 4,
+    fontWeight: '600',
   },
   filterButton: {
     marginHorizontal: 24,

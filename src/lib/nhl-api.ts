@@ -26,15 +26,24 @@ export interface NHLGame {
 }
 
 /**
- * Fetch today's NHL games
+ * Fetch NHL games for a specific date
+ * @param date - Date object or YYYY-MM-DD string (defaults to today)
  */
-export const getTodaysGames = async (): Promise<NHLGame[]> => {
+export const getGamesForDate = async (date?: Date | string): Promise<NHLGame[]> => {
   try {
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    let dateString: string;
+    
+    if (!date) {
+      dateString = new Date().toISOString().split('T')[0];
+    } else if (typeof date === 'string') {
+      dateString = date;
+    } else {
+      dateString = date.toISOString().split('T')[0];
+    }
     
     // NHL API v1 endpoint
     const response = await fetch(
-      `https://api-web.nhle.com/v1/schedule/${today}`
+      `https://api-web.nhle.com/v1/schedule/${dateString}`
     );
 
     if (!response.ok) {
