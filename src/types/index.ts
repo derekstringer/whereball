@@ -258,7 +258,8 @@ export interface SubscriptionStatus {
 export type AnalyticsEvent =
   | { name: 'onboarding_start' }
   | { name: 'onboarding_complete'; properties: { zip_present: boolean; services_count: number; teams_selected: number } }
-  | { name: 'game_viewed'; properties: { game_id: string; league: string; in_market: boolean } }
+  | { name: 'tonight_viewed'; properties: { games_count: number } }
+  | { name: 'game_viewed'; properties: { game_id: string; home_team: string; away_team: string } }
   | { name: 'watch_now_clicked'; properties: { service_code: string; game_id: string } }
   | { name: 'paywall_viewed'; properties: { placement: string; variant: string } }
   | { name: 'subscribe_success'; properties: { plan: 'monthly' | 'annual' } }

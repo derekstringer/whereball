@@ -63,7 +63,17 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
     setLoading(true);
 
     try {
-      // Save selected teams to database
+      // Track completion
+      trackEvent({
+        name: 'onboarding_complete',
+        properties: {
+          zip_present: !!zip,
+          services_count: services?.length || 0,
+          teams_selected: selectedTeams.length,
+        },
+      });
+
+      // Save selected teams to database if user is authenticated
       if (user?.id) {
         const follows = selectedTeams.map((teamId) => {
           const team = NHL_TEAMS.find((t) => t.id === teamId);
@@ -78,24 +88,17 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
           .from('follows')
           .insert(follows);
 
-        if (error) throw error;
-
-        // Track completion
-        trackEvent({
-          name: 'onboarding_complete',
-          properties: {
-            zip_present: !!zip,
-            services_count: services?.length || 0,
-            teams_selected: selectedTeams.length,
-          },
-        });
-
-        // Navigate to main app (Tonight screen)
-        navigation.navigate('Main');
+        if (error) {
+          console.warn('Failed to save teams (demo mode):', error);
+        }
       }
+
+      // Navigate to main app (Tonight screen) regardless of save status
+      navigation.navigate('Main');
     } catch (error: any) {
-      console.error('Failed to save teams:', error);
-      Alert.alert('Error', 'Failed to save your teams. Please try again.');
+      console.error('Error:', error);
+      // Still navigate even if there's an error (demo mode)
+      navigation.navigate('Main');
     } finally {
       setLoading(false);
     }

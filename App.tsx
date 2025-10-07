@@ -93,19 +93,14 @@ export default function App() {
             headerShown: false,
             animation: 'slide_from_right',
           }}
+          initialRouteName="ZipEntry"
         >
-          {!isAuthenticated ? (
-            // Onboarding Stack
-            <>
-              <Stack.Screen name="SignIn" component={SignInScreen} />
-              <Stack.Screen name="ZipEntry" component={ZipEntryScreen} />
-              <Stack.Screen name="ServicesSelector" component={ServicesSelectorScreen} />
-              <Stack.Screen name="TeamPicker" component={TeamPickerScreen} />
-            </>
-          ) : (
-            // Main App Stack
-            <Stack.Screen name="Main" component={TonightScreen} />
-          )}
+          {/* Onboarding Stack - Auth bypassed for demo */}
+          <Stack.Screen name="SignIn" component={SignInScreen} />
+          <Stack.Screen name="ZipEntry" component={ZipEntryScreen} />
+          <Stack.Screen name="ServicesSelector" component={ServicesSelectorScreen} />
+          <Stack.Screen name="TeamPicker" component={TeamPickerScreen} />
+          <Stack.Screen name="Main" component={TonightScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </>
