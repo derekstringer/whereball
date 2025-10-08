@@ -39,7 +39,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
 }) => {
   const [gamesByDate, setGamesByDate] = useState<Record<string, NHLGame[]>>({});
   const [loading, setLoading] = useState(true);
-  const [startDate] = useState(new Date());
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, -1 = last week, 1 = next week
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipMessage, setTooltipMessage] = useState('');
@@ -52,17 +52,38 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   
   const { preferredServices } = useAppStore();
 
+  // Calculate week range based on offset
+  const getWeekRange = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    
+    // Get start of current week (Sunday)
+    const currentWeekStart = new Date(today);
+    currentWeekStart.setDate(today.getDate() - dayOfWeek);
+    currentWeekStart.setHours(0, 0, 0, 0);
+    
+    // Apply week offset
+    const weekStart = new Date(currentWeekStart);
+    weekStart.setDate(currentWeekStart.getDate() + (weekOffset * 7));
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    
+    return { weekStart, weekEnd };
+  };
+
+  const isCurrentWeek = weekOffset === 0;
+
   useEffect(() => {
     loadWeeklyGames();
-  }, []);
+  }, [weekOffset]);
 
   const loadWeeklyGames = async () => {
     try {
       setLoading(true);
-      const endDate = new Date(startDate);
-      endDate.setDate(endDate.getDate() + 6); // Next 7 days
+      const { weekStart, weekEnd } = getWeekRange();
 
-      const grouped = await getGamesGroupedByDate(startDate, endDate);
+      const grouped = await getGamesGroupedByDate(weekStart, weekEnd);
       setGamesByDate(grouped);
 
       // TODO: Add weekly_view_loaded event to analytics types
@@ -141,7 +162,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       <View key={dateKey} style={styles.daySection}>
         <View style={styles.dayHeader}>
           <View style={styles.dayHeaderLeft}>
-            <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
+            <Text style={styles.dayName}>
               {isToday
                 ? 'Today'
                 : date.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -299,7 +320,42 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-        <Text style={styles.title}>This Week</Text>
+          <Text style={styles.title}>This Week</Text>
+          
+          {/* Week Navigation */}
+          <View style={styles.weekNav}>
+            <TouchableOpacity
+              style={styles.weekArrow}
+              onPress={() => setWeekOffset(prev => prev - 1)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.weekArrowText}>←</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.weekCenter}
+              onPress={!isCurrentWeek ? () => setWeekOffset(0) : undefined}
+              activeOpacity={isCurrentWeek ? 1 : 0.7}
+            >
+              <Text style={[styles.weekRange, isCurrentWeek && styles.weekRangeCurrent]}>
+                {getWeekRange().weekStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {' - '}
+                {getWeekRange().weekEnd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </Text>
+              {!isCurrentWeek && (
+                <Text style={styles.thisWeekHint}>Tap for this week</Text>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.weekArrow}
+              onPress={() => setWeekOffset(prev => prev + 1)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.weekArrowText}>→</Text>
+            </TouchableOpacity>
+          </View>
+
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
             <Text style={styles.summaryNumber}>{totalMyTeamGames}</Text>
@@ -407,8 +463,46 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
-  dayNameToday: {
+  weekNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 16,
+    gap: 12,
+  },
+  weekArrow: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  weekArrowText: {
+    fontSize: 20,
+    color: '#333333',
+    fontWeight: '600',
+  },
+  weekCenter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  weekRange: {
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  weekRangeCurrent: {
     color: '#0066CC',
+  },
+  thisWeekHint: {
+    fontSize: 12,
+    color: '#0066CC',
+    marginTop: 4,
+    fontWeight: '600',
   },
   dayDate: {
     fontSize: 15,
