@@ -146,7 +146,7 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
           const opponent = isHome ? game.awayTeam : game.homeTeam;
 
           return (
-            <View key={game.id} style={styles.gameCard}>
+            <View key={`${game.id}-${index}`} style={styles.gameCard}>
               <View style={styles.gameHeader}>
                 <Text style={styles.gameDate}>
                   {gameDate.toLocaleDateString('en-US', {
