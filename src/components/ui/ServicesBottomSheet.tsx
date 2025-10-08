@@ -1,6 +1,7 @@
 /**
  * Services Bottom Sheet
  * Shows all available services for a game with deep-link actions
+ * Industry-standard Modal + Pressable pattern
  */
 
 import React from 'react';
@@ -9,11 +10,10 @@ import {
   Text,
   StyleSheet,
   Modal,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   SafeAreaView,
 } from 'react-native';
-import { ServiceBadge } from './ServiceBadge';
 import { STREAMING_SERVICES } from '../../constants/services';
 
 interface ServicesBottomSheetProps {
@@ -31,22 +31,16 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
   missingServices,
   onServicePress,
 }) => {
-  const allServices = [...userServices, ...missingServices];
-
   return (
     <Modal
       visible={visible}
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <View style={styles.modalContainer}>
-        <TouchableOpacity
-          style={styles.backdrop}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-        <View style={styles.bottomSheet}>
+      <Pressable style={styles.backdrop} onPress={onClose}>
+        <Pressable style={styles.bottomSheet} onPress={(e) => e.stopPropagation()}>
           <SafeAreaView style={styles.safeArea}>
             {/* Handle */}
             <View style={styles.handle} />
@@ -54,12 +48,12 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.title}>Available Services</Text>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Pressable onPress={onClose} style={styles.closeButton}>
                 <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
+              </Pressable>
             </View>
 
-            <ScrollView style={styles.scrollView}>
+            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
               {/* Your Services */}
               {userServices.length > 0 && (
                 <View style={styles.section}>
@@ -69,20 +63,20 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
                     if (!service) return null;
                     
                     return (
-                      <TouchableOpacity
+                      <Pressable
                         key={serviceCode}
-                        style={styles.serviceRow}
+                        style={({pressed}) => [
+                          styles.serviceRow,
+                          pressed && styles.serviceRowPressed
+                        ]}
                         onPress={() => onServicePress(serviceCode)}
-                        activeOpacity={0.7}
                       >
                         <View style={styles.serviceInfo}>
                           <Text style={styles.serviceName}>{service.name}</Text>
                           <Text style={styles.serviceNote}>Tap to open app</Text>
                         </View>
-                        <View style={styles.arrow}>
-                          <Text style={styles.arrowText}>→</Text>
-                        </View>
-                      </TouchableOpacity>
+                        <Text style={styles.arrowText}>→</Text>
+                      </Pressable>
                     );
                   })}
                 </View>
@@ -105,9 +99,7 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
                       <View key={serviceCode} style={styles.serviceRow}>
                         <View style={styles.serviceInfo}>
                           <Text style={styles.serviceName}>{service.name}</Text>
-                          <Text style={styles.serviceNote}>
-                            Not on your services
-                          </Text>
+                          <Text style={styles.serviceNote}>Not on your services</Text>
                         </View>
                       </View>
                     );
@@ -115,7 +107,7 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
                 </View>
               )}
 
-              {allServices.length === 0 && (
+              {userServices.length === 0 && missingServices.length === 0 && (
                 <View style={styles.emptyState}>
                   <Text style={styles.emptyText}>
                     No streaming services carry this game
@@ -124,34 +116,34 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
               )}
             </ScrollView>
           </SafeAreaView>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
   backdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
   },
   bottomSheet: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '80%',
-    zIndex: 1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
   },
   safeArea: {
-    flex: 1,
+    maxHeight: '100%',
   },
   handle: {
     width: 40,
@@ -187,7 +179,7 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   scrollView: {
-    flex: 1,
+    flexGrow: 0,
   },
   section: {
     padding: 20,
@@ -213,6 +205,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
   },
+  serviceRowPressed: {
+    backgroundColor: '#E8E9EA',
+  },
   serviceInfo: {
     flex: 1,
   },
@@ -226,12 +221,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666666',
   },
-  arrow: {
-    marginLeft: 12,
-  },
   arrowText: {
     fontSize: 20,
     color: '#0066CC',
+    marginLeft: 12,
   },
   emptyState: {
     padding: 40,
