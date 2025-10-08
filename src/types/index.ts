@@ -137,6 +137,7 @@ export interface AppState {
   isPremium: boolean;
   subscriptions: UserSubscription[];
   follows: Follow[];
+  preferredServices: string[]; // Service codes user marks as "favorites"
   theme: ThemeState;
 }
 

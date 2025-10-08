@@ -14,17 +14,19 @@ import {
 import { getGamesGroupedByDate, type NHLGame } from '../../lib/nhl-api';
 import { trackEvent } from '../../lib/analytics';
 import {
-  ServiceBadgesRow,
+  ServiceBadge,
   NotAvailableBadge,
   BlackoutBadge,
   Tooltip,
 } from '../../components/ui/ServiceBadge';
-import { STREAMING_SERVICES } from '../../constants/services';
+import { ServicesBottomSheet } from '../../components/ui/ServicesBottomSheet';
+import { STREAMING_SERVICES, SERVICE_ABBREVIATIONS } from '../../constants/services';
 import {
   getUserServicesForGame,
   getMissingServicesForGame,
   getServiceNames,
 } from '../../lib/broadcast-mapper';
+import { useAppStore } from '../../store/appStore';
 
 interface WeeklyViewProps {
   followedTeamCodes: string[];
@@ -41,6 +43,13 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipMessage, setTooltipMessage] = useState('');
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [bottomSheetServices, setBottomSheetServices] = useState<{
+    userServices: string[];
+    missingServices: string[];
+  }>({ userServices: [], missingServices: [] });
+  
+  const { preferredServices } = useAppStore();
 
   useEffect(() => {
     loadWeeklyGames();
@@ -168,6 +177,18 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                 setTooltipVisible(true);
               };
 
+              // Determine which service to show (preferred or first alphabetically)
+              const primaryService = userServices.length > 0
+                ? (userServices.find(s => preferredServices.includes(s)) || userServices[0])
+                : null;
+              
+              const remainingCount = userServices.length - 1;
+
+              const handleMorePress = () => {
+                setBottomSheetServices({ userServices, missingServices });
+                setBottomSheetVisible(true);
+              };
+
               return (
                 <View key={`${game.id}-${index}`} style={styles.gameRow}>
                   <View style={styles.gameTeams}>
@@ -178,12 +199,23 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                   <View style={styles.gameStatus}>
                     {blackedOut ? (
                       <BlackoutBadge onPress={handleBlackoutPress} />
-                    ) : userServices.length > 0 ? (
-                      <ServiceBadgesRow
-                        serviceCodes={userServices}
-                        maxVisible={3}
-                        onBadgePress={handleBadgePress}
-                      />
+                    ) : primaryService ? (
+                      <>
+                        <ServiceBadge
+                          serviceCode={primaryService}
+                          size="small"
+                          onPress={() => handleBadgePress(primaryService)}
+                        />
+                        {remainingCount > 0 && (
+                          <TouchableOpacity
+                            style={styles.moreBadge}
+                            onPress={handleMorePress}
+                            activeOpacity={0.7}
+                          >
+                            <Text style={styles.moreBadgeText}>+{remainingCount}</Text>
+                          </TouchableOpacity>
+                        )}
+                      </>
                     ) : (
                       <NotAvailableBadge onPress={handleUnavailablePress} />
                     )}
@@ -231,6 +263,18 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         visible={tooltipVisible}
         message={tooltipMessage}
         onDismiss={() => setTooltipVisible(false)}
+      />
+      <ServicesBottomSheet
+        visible={bottomSheetVisible}
+        onClose={() => setBottomSheetVisible(false)}
+        userServices={bottomSheetServices.userServices}
+        missingServices={bottomSheetServices.missingServices}
+        onServicePress={(serviceCode) => {
+          // TODO: Deep link to service
+          setBottomSheetVisible(false);
+          setTooltipMessage(`Opening ${STREAMING_SERVICES.find(s => s.code === serviceCode)?.name}...`);
+          setTooltipVisible(true);
+        }}
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
@@ -414,5 +458,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     paddingLeft: 12,
     marginTop: 4,
+  },
+  moreBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#999999',
+    backgroundColor: '#F5F5F5',
+    minWidth: 40,
+  },
+  moreBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#666666',
+    textAlign: 'center',
   },
 });

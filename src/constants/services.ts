@@ -20,6 +20,21 @@ export const SERVICE_BRAND_COLORS: Record<string, string> = {
   apple_tv_plus: '#000000',
 };
 
+// Service abbreviations for compact display
+export const SERVICE_ABBREVIATIONS: Record<string, string> = {
+  espn_plus: 'ESPN+',
+  youtube_tv: 'YTTV',
+  hulu_live: 'Hulu',
+  fubo: 'Fubo',
+  sling: 'Sling',
+  directv_stream: 'DTVS',
+  paramount_plus: 'P+',
+  max: 'Max',
+  prime_video: 'Prime',
+  peacock: 'Peacock',
+  apple_tv_plus: 'Apple',
+};
+
 export const STREAMING_SERVICES: Service[] = [
   {
     code: 'espn_plus',

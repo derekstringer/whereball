@@ -16,6 +16,8 @@ interface AppStore extends AppState {
   setFollows: (follows: Follow[]) => void;
   addFollow: (follow: Follow) => void;
   removeFollow: (teamId: string) => void;
+  setPreferredServices: (services: string[]) => void;
+  togglePreferredService: (serviceCode: string) => void;
   setTheme: (theme: Partial<ThemeState>) => void;
   setThemeContext: (league?: string, teamId?: string) => void;
   reset: () => void;
@@ -40,6 +42,7 @@ const initialState: AppState = {
   isPremium: false,
   subscriptions: [],
   follows: [],
+  preferredServices: [], // Service codes user marks as "favorites"
   theme: DEFAULT_THEME,
 };
 
@@ -76,6 +79,15 @@ export const useAppStore = create<AppStore>((set) => ({
   removeFollow: (teamId) =>
     set((state) => ({
       follows: state.follows.filter((f) => f.team_id !== teamId),
+    })),
+
+  setPreferredServices: (services) => set({ preferredServices: services }),
+
+  togglePreferredService: (serviceCode) =>
+    set((state) => ({
+      preferredServices: state.preferredServices.includes(serviceCode)
+        ? state.preferredServices.filter((s) => s !== serviceCode)
+        : [...state.preferredServices, serviceCode],
     })),
 
   setTheme: (theme) =>
