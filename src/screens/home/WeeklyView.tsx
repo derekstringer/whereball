@@ -338,21 +338,20 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               <Text style={styles.weekArrowText}>←</Text>
             </TouchableOpacity>
 
-            <View style={styles.weekCenter}>
-              <TouchableOpacity
-                onPress={!isCurrentWeek ? () => setWeekOffset(0) : undefined}
-                activeOpacity={isCurrentWeek ? 1 : 0.7}
-              >
-                <Text style={[styles.weekRange, isCurrentWeek && styles.weekRangeCurrent]}>
-                  {getWeekRange().weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  {' - '}
-                  {getWeekRange().weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                </Text>
-                {!isCurrentWeek && (
-                  <Text style={styles.thisWeekHint}>Tap for this week</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.weekCenter}
+              onPress={!isCurrentWeek ? () => setWeekOffset(0) : undefined}
+              activeOpacity={isCurrentWeek ? 1 : 0.7}
+            >
+              <Text style={[styles.weekRange, isCurrentWeek && styles.weekRangeCurrent]}>
+                {getWeekRange().weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                {' - '}
+                {getWeekRange().weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+              </Text>
+              {!isCurrentWeek && (
+                <Text style={styles.thisWeekHint}>Tap for this week</Text>
+              )}
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.weekArrow}
