@@ -102,26 +102,34 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
             Free tier: 1 team • Premium: Unlimited
           </Text>
           <View style={styles.teamsGrid}>
-            {(showAllTeams ? NHL_TEAMS : NHL_TEAMS.slice(0, 12)).map(team => (
-              <TouchableOpacity
-                key={team.id}
-                style={[
-                  styles.teamChip,
-                  selectedTeam === team.id && styles.teamChipActive,
-                ]}
-                onPress={() => setSelectedTeam(team.id)}
-                activeOpacity={0.7}
-              >
-                <Text
+            {(showAllTeams ? NHL_TEAMS : NHL_TEAMS.slice(0, 12))
+              .sort((a, b) => {
+                // Selected team first
+                if (a.id === selectedTeam) return -1;
+                if (b.id === selectedTeam) return 1;
+                // Then alphabetical by market name
+                return a.market.localeCompare(b.market);
+              })
+              .map(team => (
+                <TouchableOpacity
+                  key={team.id}
                   style={[
-                    styles.teamChipText,
-                    selectedTeam === team.id && styles.teamChipTextActive,
+                    styles.teamChip,
+                    selectedTeam === team.id && styles.teamChipActive,
                   ]}
+                  onPress={() => setSelectedTeam(team.id)}
+                  activeOpacity={0.7}
                 >
-                  {team.short_code}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.teamChipText,
+                      selectedTeam === team.id && styles.teamChipTextActive,
+                    ]}
+                  >
+                    {team.short_code}
+                  </Text>
+                </TouchableOpacity>
+              ))}
           </View>
           {NHL_TEAMS.length > 12 && (
             <TouchableOpacity onPress={() => setShowAllTeams(!showAllTeams)}>
@@ -139,28 +147,38 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
             Select all services you subscribe to
           </Text>
           <View style={styles.servicesGrid}>
-            {STREAMING_SERVICES.map(service => (
-              <TouchableOpacity
-                key={service.code}
-                style={[
-                  styles.serviceChip,
-                  selectedServices.includes(service.code) && styles.serviceChipActive,
-                ]}
-                onPress={() => toggleService(service.code)}
-                activeOpacity={0.7}
-              >
-                <Text
+            {STREAMING_SERVICES
+              .sort((a, b) => {
+                // Selected services first
+                const aSelected = selectedServices.includes(a.code);
+                const bSelected = selectedServices.includes(b.code);
+                if (aSelected && !bSelected) return -1;
+                if (!aSelected && bSelected) return 1;
+                // Then alphabetical by name
+                return a.name.localeCompare(b.name);
+              })
+              .map(service => (
+                <TouchableOpacity
+                  key={service.code}
                   style={[
-                    styles.serviceChipText,
-                    selectedServices.includes(service.code) &&
-                      styles.serviceChipTextActive,
+                    styles.serviceChip,
+                    selectedServices.includes(service.code) && styles.serviceChipActive,
                   ]}
+                  onPress={() => toggleService(service.code)}
+                  activeOpacity={0.7}
                 >
-                  {selectedServices.includes(service.code) ? '✓ ' : ''}
-                  {service.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.serviceChipText,
+                      selectedServices.includes(service.code) &&
+                        styles.serviceChipTextActive,
+                    ]}
+                  >
+                    {selectedServices.includes(service.code) ? '✓ ' : ''}
+                    {service.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
           </View>
         </View>
 
