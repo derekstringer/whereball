@@ -14,7 +14,7 @@ import {
   ScrollView,
   SafeAreaView,
 } from 'react-native';
-import { STREAMING_SERVICES } from '../../constants/services';
+import { STREAMING_SERVICES, SERVICE_BRAND_COLORS } from '../../constants/services';
 
 interface ServicesBottomSheetProps {
   visible: boolean;
@@ -22,6 +22,7 @@ interface ServicesBottomSheetProps {
   userServices: string[];
   missingServices: string[];
   onServicePress: (serviceCode: string) => void;
+  channel?: string; // e.g., "ESPN", "TNT"
 }
 
 export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
@@ -30,6 +31,7 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
   userServices,
   missingServices,
   onServicePress,
+  channel,
 }) => {
   return (
     <Modal
@@ -57,10 +59,14 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
               {/* Your Services */}
               {userServices.length > 0 && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Your Services</Text>
+                  <Text style={styles.sectionTitle}>
+                    {channel ? `Watch on ${channel}` : 'Your Services'}
+                  </Text>
                   {userServices.map((serviceCode) => {
                     const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
                     if (!service) return null;
+                    
+                    const brandColor = SERVICE_BRAND_COLORS[serviceCode] || '#0066CC';
                     
                     return (
                       <Pressable
@@ -71,9 +77,8 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
                         ]}
                         onPress={() => onServicePress(serviceCode)}
                       >
-                        <View style={styles.serviceInfo}>
-                          <Text style={styles.serviceName}>{service.name}</Text>
-                          <Text style={styles.serviceNote}>Tap to open app</Text>
+                        <View style={[styles.serviceBadge, { backgroundColor: brandColor }]}>
+                          <Text style={styles.serviceBadgeText}>{service.name}</Text>
                         </View>
                         <Text style={styles.arrowText}>→</Text>
                       </Pressable>
@@ -96,11 +101,11 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
                     if (!service) return null;
                     
                     return (
-                      <View key={serviceCode} style={styles.serviceRow}>
-                        <View style={styles.serviceInfo}>
-                          <Text style={styles.serviceName}>{service.name}</Text>
-                          <Text style={styles.serviceNote}>Not on your services</Text>
+                      <View key={serviceCode} style={styles.serviceRowDisabled}>
+                        <View style={styles.serviceBadgeDisabled}>
+                          <Text style={styles.serviceBadgeTextDisabled}>{service.name}</Text>
                         </View>
+                        <Text style={styles.disabledNote}>Not on your services</Text>
                       </View>
                     );
                   })}
@@ -114,6 +119,13 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
                   </Text>
                 </View>
               )}
+
+              {/* Legal Disclaimer */}
+              <View style={styles.legalFooter}>
+                <Text style={styles.legalText}>
+                  Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
+                </Text>
+              </View>
             </ScrollView>
           </SafeAreaView>
         </Pressable>
@@ -199,27 +211,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  serviceRowPressed: {
+    backgroundColor: '#F8F9FA',
+  },
+  serviceRowDisabled: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#F8F9FA',
     borderRadius: 12,
     marginBottom: 8,
+    opacity: 0.6,
   },
-  serviceRowPressed: {
-    backgroundColor: '#E8E9EA',
+  serviceBadge: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#0066CC',
+    borderRadius: 20,
   },
-  serviceInfo: {
-    flex: 1,
+  serviceBadgeText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
-  serviceName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 4,
+  serviceBadgeDisabled: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#E0E0E0',
+    borderRadius: 20,
   },
-  serviceNote: {
+  serviceBadgeTextDisabled: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#999999',
+  },
+  disabledNote: {
     fontSize: 13,
-    color: '#666666',
+    color: '#999999',
+    fontStyle: 'italic',
   },
   arrowText: {
     fontSize: 20,
@@ -234,5 +273,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#999999',
     textAlign: 'center',
+  },
+  legalFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  legalText: {
+    fontSize: 11,
+    color: '#999999',
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

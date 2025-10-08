@@ -47,6 +47,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const [bottomSheetServices, setBottomSheetServices] = useState<{
     userServices: string[];
     missingServices: string[];
+    channel?: string;
   }>({ userServices: [], missingServices: [] });
   
   const { preferredServices } = useAppStore();
@@ -185,7 +186,12 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               const remainingCount = userServices.length - 1;
 
               const handleMorePress = () => {
-                setBottomSheetServices({ userServices, missingServices });
+                // Get channel from game broadcasts
+                const channel = game.broadcasts.find(b => 
+                  userServices.some(s => b.network.toLowerCase().includes(s.toLowerCase()))
+                )?.network || game.broadcasts[0]?.network;
+                
+                setBottomSheetServices({ userServices, missingServices, channel });
                 setBottomSheetVisible(true);
               };
 
@@ -269,6 +275,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         onClose={() => setBottomSheetVisible(false)}
         userServices={bottomSheetServices.userServices}
         missingServices={bottomSheetServices.missingServices}
+        channel={bottomSheetServices.channel}
         onServicePress={(serviceCode) => {
           // TODO: Deep link to service
           setBottomSheetVisible(false);
