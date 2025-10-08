@@ -3,7 +3,7 @@
  * Displays a single game with broadcast info
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -12,27 +12,81 @@ import {
 } from 'react-native';
 import type { NHLGame } from '../../lib/nhl-api';
 import { formatGameTime } from '../../lib/nhl-api';
+import {
+  ServiceBadgesRow,
+  NotAvailableBadge,
+  BlackoutBadge,
+  Tooltip,
+} from '../ui/ServiceBadge';
+import { STREAMING_SERVICES } from '../../constants/services';
+import {
+  getUserServicesForGame,
+  getMissingServicesForGame,
+  getServiceNames,
+} from '../../lib/broadcast-mapper';
 
 interface GameCardProps {
   game: NHLGame;
+  userServiceCodes?: string[];
   onPress?: () => void;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ game, onPress }) => {
+export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [], onPress }) => {
   const gameTime = formatGameTime(game.startTime);
   const isLive = game.gameState === 'LIVE';
   const isFinal = game.gameState === 'FINAL';
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipMessage, setTooltipMessage] = useState('');
+
+  // Get services for this game
+  const userServices = getUserServicesForGame(game, userServiceCodes);
+  const missingServices = getMissingServicesForGame(game, userServiceCodes);
+  
+  // Simple blackout heuristic
+  const isBlackedOut = game.broadcasts.some(b => 
+    b.network.toLowerCase().includes('espn+')
+  );
 
   // Get primary broadcast network
   const primaryBroadcast = game.broadcasts.find(b => b.type === 'national') || game.broadcasts[0];
 
+  const handleBadgePress = (serviceCode: string) => {
+    const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
+    setTooltipMessage(`Available on your ${service?.name}`);
+    setTooltipVisible(true);
+  };
+
+  const handleUnavailablePress = () => {
+    if (missingServices.length > 0) {
+      const serviceNames = getServiceNames(missingServices);
+      setTooltipMessage(`Available on ${serviceNames} (not on your services)`);
+    } else {
+      setTooltipMessage('Not available on streaming services');
+    }
+    setTooltipVisible(true);
+  };
+
+  const handleBlackoutPress = () => {
+    const alternatives = missingServices.length > 0 
+      ? ` Try ${getServiceNames(missingServices)}`
+      : '';
+    setTooltipMessage(`Likely blacked out in your area.${alternatives}`);
+    setTooltipVisible(true);
+  };
+
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={onPress}
-      activeOpacity={0.7}
-      disabled={!onPress}
-    >
+    <>
+      <Tooltip
+        visible={tooltipVisible}
+        message={tooltipMessage}
+        onDismiss={() => setTooltipVisible(false)}
+      />
+      <TouchableOpacity
+        style={styles.card}
+        onPress={onPress}
+        activeOpacity={0.7}
+        disabled={!onPress}
+      >
       <View style={styles.header}>
         <Text style={styles.time}>{gameTime}</Text>
         {isLive && <View style={styles.liveBadge}>
@@ -75,7 +129,8 @@ export const GameCard: React.FC<GameCardProps> = ({ game, onPress }) => {
           +{game.broadcasts.length - 1} more network{game.broadcasts.length > 2 ? 's' : ''}
         </Text>
       )}
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </>
   );
 };
 

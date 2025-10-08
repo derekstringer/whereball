@@ -20,6 +20,11 @@ import {
   Tooltip,
 } from '../../components/ui/ServiceBadge';
 import { STREAMING_SERVICES } from '../../constants/services';
+import {
+  getUserServicesForGame,
+  getMissingServicesForGame,
+  getServiceNames,
+} from '../../lib/broadcast-mapper';
 
 interface WeeklyViewProps {
   followedTeamCodes: string[];
@@ -136,8 +141,32 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         {myTeamGames.length > 0 && (
           <View style={styles.gamesContainer}>
             {(isExpanded ? myTeamGames : myTeamGames.slice(0, 3)).map((game, index) => {
-              const available = isGameAvailable(game);
+              const userServices = getUserServicesForGame(game, userServiceCodes);
+              const missingServices = getMissingServicesForGame(game, userServiceCodes);
               const blackedOut = isGameBlackedOut(game);
+
+              const handleBadgePress = (serviceCode: string) => {
+                setTooltipMessage(`Available on your ${STREAMING_SERVICES.find(s => s.code === serviceCode)?.name}`);
+                setTooltipVisible(true);
+              };
+
+              const handleUnavailablePress = () => {
+                if (missingServices.length > 0) {
+                  const serviceNames = getServiceNames(missingServices);
+                  setTooltipMessage(`Available on ${serviceNames} (not on your services)`);
+                } else {
+                  setTooltipMessage('Not available on streaming services');
+                }
+                setTooltipVisible(true);
+              };
+
+              const handleBlackoutPress = () => {
+                const alternatives = missingServices.length > 0 
+                  ? ` Try ${getServiceNames(missingServices)}`
+                  : '';
+                setTooltipMessage(`Likely blacked out in your area.${alternatives}`);
+                setTooltipVisible(true);
+              };
 
               return (
                 <View key={`${game.id}-${index}`} style={styles.gameRow}>
@@ -148,17 +177,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                   </View>
                   <View style={styles.gameStatus}>
                     {blackedOut ? (
-                      <View style={styles.blackoutBadge}>
-                        <Text style={styles.blackoutText}>⚠️</Text>
-                      </View>
-                    ) : available ? (
-                      <View style={styles.availableBadge}>
-                        <Text style={styles.availableText}>✓</Text>
-                      </View>
+                      <BlackoutBadge onPress={handleBlackoutPress} />
+                    ) : userServices.length > 0 ? (
+                      <ServiceBadgesRow
+                        serviceCodes={userServices}
+                        maxVisible={3}
+                        onBadgePress={handleBadgePress}
+                      />
                     ) : (
-                      <View style={styles.unavailableBadge}>
-                        <Text style={styles.unavailableText}>—</Text>
-                      </View>
+                      <NotAvailableBadge onPress={handleUnavailablePress} />
                     )}
                   </View>
                 </View>
@@ -199,8 +226,14 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   }, 0);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-      <View style={styles.header}>
+    <>
+      <Tooltip
+        visible={tooltipVisible}
+        message={tooltipMessage}
+        onDismiss={() => setTooltipVisible(false)}
+      />
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
         <Text style={styles.title}>This Week</Text>
         <View style={styles.summaryRow}>
           <View style={styles.summaryItem}>
@@ -219,7 +252,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       </View>
 
       {sortedDates.map((dateKey) => renderDaySection(dateKey, gamesByDate[dateKey]))}
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 };
 
