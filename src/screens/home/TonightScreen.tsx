@@ -257,7 +257,7 @@ export const TonightScreen: React.FC = () => {
 
         {games.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>📅</Text>
+            <Text style={styles.emptyEmoji}>🏒</Text>
             <Text style={styles.emptyTitle}>No games scheduled today</Text>
             <Text style={styles.emptyText}>
               Check back during the NHL season for tonight's matchups!
