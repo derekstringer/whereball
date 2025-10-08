@@ -40,12 +40,13 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
       transparent={true}
       onRequestClose={onClose}
     >
-      <TouchableOpacity
-        style={styles.overlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <View style={styles.container} onStartShouldSetResponder={() => true}>
+      <View style={styles.modalContainer}>
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={styles.bottomSheet}>
           <SafeAreaView style={styles.safeArea}>
             {/* Handle */}
             <View style={styles.handle} />
@@ -124,18 +125,21 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
             </ScrollView>
           </SafeAreaView>
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
-  container: {
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  bottomSheet: {
     backgroundColor: '#FFFFFF',
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
