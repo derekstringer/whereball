@@ -59,9 +59,11 @@ export const getGamesForDate = async (date?: Date | string): Promise<NHLGame[]> 
       for (const week of data.gameWeek) {
         if (week.games) {
           for (const game of week.games) {
+            // Use the game's actual date, not the queried date
+            const gameDateStr = game.gameDate || week.date || dateString;
             games.push({
               id: game.id.toString(),
-              gameDate: game.gameDate,
+              gameDate: gameDateStr,
               startTime: game.startTimeUTC,
               homeTeam: {
                 id: game.homeTeam.id,
