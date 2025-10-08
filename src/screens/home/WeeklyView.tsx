@@ -195,7 +195,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       <View key={dateKey} style={styles.daySection}>
         <View style={styles.dayHeader}>
           <View style={styles.dayHeaderLeft}>
-            <Text style={styles.dayName}>
+            <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
               {isToday
                 ? 'Today'
                 : date.toLocaleDateString('en-US', { weekday: 'short' })}
@@ -482,6 +482,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: '#000000',
+  },
+  dayNameToday: {
+    color: '#0066CC',
   },
   weekNav: {
     flexDirection: 'row',
