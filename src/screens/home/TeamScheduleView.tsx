@@ -2,7 +2,7 @@
  * Team Schedule View - Shows upcoming games for followed team
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { getGamesForDateRange, type NHLGame } from '../../lib/nhl-api';
+import { useAppStore } from '../../store/appStore';
 
 interface TeamScheduleViewProps {
   followedTeamCodes: string[];
@@ -23,6 +24,7 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
 }) => {
   const [games, setGames] = useState<NHLGame[]>([]);
   const [loading, setLoading] = useState(true);
+  const { filters } = useAppStore();
 
   useEffect(() => {
     loadTeamSchedule();
@@ -44,13 +46,38 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
           followedTeamCodes.includes(game.awayTeam.abbreviation)
       );
 
-      setGames(teamGames.slice(0, 15)); // Show next 15 games
+      setGames(teamGames); // Store all, filter on render
     } catch (error) {
       console.error('Error loading team schedule:', error);
     } finally {
       setLoading(false);
     }
   };
+
+  // Apply global filters
+  const filteredGames = useMemo(() => {
+    let filtered = [...games];
+
+    if (filters.showAll) {
+      return filtered.slice(0, 15);
+    }
+
+    // My Teams Only is implicit (already filtered in loadTeamSchedule)
+
+    if (filters.nationalOnly) {
+      filtered = filtered.filter(game =>
+        game.broadcasts.some(b => b.type === 'national')
+      );
+    }
+
+    if (filters.availableOnly) {
+      filtered = filtered.filter(game => isGameAvailable(game));
+    }
+
+    // Note: liveOnly not applicable to Team view
+
+    return filtered.slice(0, 15); // Show next 15 games
+  }, [games, filters]);
 
   const isGameAvailable = (game: NHLGame): boolean => {
     return game.broadcasts.some((b) => {
@@ -87,11 +114,8 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
     );
   }
 
-  const availableGames = games.filter(isGameAvailable).length;
-  const blackedOutGames = games.filter(isGameBlackedOut).length;
-  const watchablePercentage = games.length > 0 
-    ? Math.round((availableGames / games.length) * 100)
-    : 0;
+  const availableGames = filteredGames.filter(isGameAvailable).length;
+  const blackedOutGames = filteredGames.filter(isGameBlackedOut).length;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
@@ -99,45 +123,31 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
         <Text style={styles.title}>
           {followedTeamCodes[0] || 'Team'} Schedule
         </Text>
-        <Text style={styles.subtitle}>Next {games.length} games</Text>
+        <Text style={styles.subtitle}>Next {filteredGames.length} games</Text>
 
-        {/* Watchability Summary */}
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryRow}>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryNumber}>{watchablePercentage}%</Text>
-              <Text style={styles.summaryLabel}>Watchable</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={[styles.summaryNumber, styles.availableColor]}>
-                {availableGames}
-              </Text>
-              <Text style={styles.summaryLabel}>Available</Text>
+        {/* Stats Bar */}
+        {filteredGames.length > 0 && (
+          <View style={styles.statsBar}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{availableGames}</Text>
+              <Text style={styles.statLabel}>Available</Text>
             </View>
             {blackedOutGames > 0 && (
-              <View style={styles.summaryItem}>
-                <Text style={[styles.summaryNumber, styles.blackoutColor]}>
-                  {blackedOutGames}
-                </Text>
-                <Text style={styles.summaryLabel}>Blackouts</Text>
-              </View>
+              <>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={[styles.statNumber, styles.statNumberWarning]}>{blackedOutGames}</Text>
+                  <Text style={styles.statLabel}>Blackouts</Text>
+                </View>
+              </>
             )}
           </View>
-
-          {watchablePercentage < 70 && (
-            <View style={styles.tipContainer}>
-              <Text style={styles.tipIcon}>💡</Text>
-              <Text style={styles.tipText}>
-                Upgrade to Premium for alternatives to blackouts
-              </Text>
-            </View>
-          )}
-        </View>
+        )}
       </View>
 
       {/* Game List */}
       <View style={styles.gamesContainer}>
-        {games.map((game, index) => {
+        {filteredGames.map((game, index) => {
           const available = isGameAvailable(game);
           const blackedOut = isGameBlackedOut(game);
           const network = getGameNetwork(game);
@@ -198,7 +208,7 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
         })}
       </View>
 
-      {games.length === 0 && (
+      {filteredGames.length === 0 && (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyEmoji}>📅</Text>
           <Text style={styles.emptyText}>No upcoming games found</Text>
@@ -249,6 +259,40 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#666666',
     marginBottom: 16,
+  },
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    gap: 16,
+    marginBottom: 16,
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#0066CC',
+    lineHeight: 28,
+  },
+  statNumberWarning: {
+    color: '#FF6B35',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666666',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#E0E0E0',
   },
   summaryCard: {
     backgroundColor: '#FFFFFF',
