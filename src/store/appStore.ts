@@ -5,7 +5,21 @@
 import { create } from 'zustand';
 import { AppState, User, UserSubscription, Follow, ThemeState } from '../types';
 
+export interface GameFilters {
+  myTeamsOnly: boolean;
+  nationalOnly: boolean;
+  availableOnly: boolean;
+  liveOnly: boolean;
+  showAll: boolean;
+}
+
 interface AppStore extends AppState {
+  // Filters
+  filters: GameFilters;
+  setFilters: (filters: GameFilters) => void;
+  toggleFilter: (filterKey: keyof GameFilters) => void;
+  resetFilters: () => void;
+  
   // Actions
   setUser: (user: User | null) => void;
   setAuthenticated: (isAuthenticated: boolean) => void;
@@ -35,6 +49,15 @@ const DEFAULT_THEME: ThemeState = {
   currentContext: null,
 };
 
+// Default filters
+const DEFAULT_FILTERS: GameFilters = {
+  myTeamsOnly: true,
+  nationalOnly: false,
+  availableOnly: false,
+  liveOnly: false,
+  showAll: false,
+};
+
 // Initial state
 const initialState: AppState = {
   user: null,
@@ -48,6 +71,37 @@ const initialState: AppState = {
 
 export const useAppStore = create<AppStore>((set) => ({
   ...initialState,
+  filters: DEFAULT_FILTERS,
+
+  setFilters: (filters) => set({ filters }),
+
+  toggleFilter: (filterKey) =>
+    set((state) => {
+      const newFilters = { ...state.filters };
+      
+      // If toggling "Show All", turn off others
+      if (filterKey === 'showAll' && !state.filters.showAll) {
+        return {
+          filters: {
+            myTeamsOnly: false,
+            nationalOnly: false,
+            availableOnly: false,
+            liveOnly: false,
+            showAll: true,
+          },
+        };
+      }
+      
+      // If toggling any other filter while "Show All" is on, turn off "Show All"
+      if (state.filters.showAll && filterKey !== 'showAll') {
+        newFilters.showAll = false;
+      }
+      
+      newFilters[filterKey] = !state.filters[filterKey];
+      return { filters: newFilters };
+    }),
+
+  resetFilters: () => set({ filters: DEFAULT_FILTERS }),
 
   setUser: (user) => set({ user }),
 

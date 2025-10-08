@@ -21,16 +21,9 @@ import { useAppStore } from '../../store/appStore';
 import { WeeklyView } from './WeeklyView';
 import { TeamScheduleView } from './TeamScheduleView';
 import { SettingsScreen } from '../settings/SettingsScreen';
+import { FilterBottomSheet } from '../../components/ui/FilterBottomSheet';
 import { Modal } from 'react-native';
 import { NHL_TEAMS } from '../../constants/teams';
-
-interface Filters {
-  myTeamsOnly: boolean;
-  nationalOnly: boolean;
-  availableOnly: boolean;
-  liveOnly: boolean;
-  showAll: boolean;
-}
 
 type TabView = 'daily' | 'weekly' | 'team';
 
@@ -41,17 +34,10 @@ export const TonightScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [filters, setFilters] = useState<Filters>({
-    myTeamsOnly: true, // Default ON
-    nationalOnly: false,
-    availableOnly: false,
-    liveOnly: false,
-    showAll: false,
-  });
+  const [showFilters, setShowFilters] = useState(false);
 
-  const { subscriptions, follows } = useAppStore();
+  const { subscriptions, follows, filters } = useAppStore();
   
   // Map team IDs to short codes (e.g., 'nhl_bos' -> 'BOS')
   const followedTeamCodes = follows.map(f => {
@@ -130,39 +116,8 @@ export const TonightScreen: React.FC = () => {
   }, [games, filters, followedTeamCodes, userServiceCodes]);
 
   const activeFilterCount = useMemo(() => {
-    let count = 0;
-    if (filters.myTeamsOnly) count++;
-    if (filters.nationalOnly) count++;
-    if (filters.availableOnly) count++;
-    if (filters.liveOnly) count++;
-    if (filters.showAll) count++;
-    return count;
+    return Object.values(filters).filter(Boolean).length;
   }, [filters]);
-
-  const toggleFilter = (filterKey: keyof Filters) => {
-    setFilters(prev => {
-      const newFilters = { ...prev };
-      
-      // If toggling "Show All", turn off others
-      if (filterKey === 'showAll' && !prev.showAll) {
-        return {
-          myTeamsOnly: false,
-          nationalOnly: false,
-          availableOnly: false,
-          liveOnly: false,
-          showAll: true,
-        };
-      }
-      
-      // If toggling any other filter while "Show All" is on, turn off "Show All"
-      if (prev.showAll && filterKey !== 'showAll') {
-        newFilters.showAll = false;
-      }
-      
-      newFilters[filterKey] = !prev[filterKey];
-      return newFilters;
-    });
-  };
 
   const loadGames = async (isRefresh = false) => {
     try {
