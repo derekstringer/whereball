@@ -42,6 +42,15 @@ export const ServicesSelectorScreen: React.FC<ServicesSelectorScreenProps> = ({
     setLoading(true);
 
     try {
+      // Update store immediately
+      const { setSubscriptions } = useAppStore.getState();
+      const subscriptions = selectedServices.map((serviceCode) => ({
+        user_id: user?.id || '',
+        service_code: serviceCode,
+        created_at: new Date().toISOString(),
+      }));
+      setSubscriptions(subscriptions);
+
       // Save selected services to database
       if (user?.id && selectedServices.length > 0) {
         // Delete existing subscriptions
@@ -51,16 +60,13 @@ export const ServicesSelectorScreen: React.FC<ServicesSelectorScreenProps> = ({
           .eq('user_id', user.id);
 
         // Insert new subscriptions
-        const subscriptions = selectedServices.map((serviceCode) => ({
-          user_id: user.id,
-          service_code: serviceCode,
-        }));
-
         const { error } = await supabase
           .from('user_subscriptions')
           .insert(subscriptions);
 
-        if (error) throw error;
+        if (error) {
+          console.warn('Failed to save to Supabase (demo mode continues):', error);
+        }
       }
 
       // Navigate to team picker

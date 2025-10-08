@@ -73,23 +73,27 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
         },
       });
 
+      // Update store immediately
+      const { setFollows } = useAppStore.getState();
+      const follows = selectedTeams.map((teamId) => {
+        const team = NHL_TEAMS.find((t) => t.id === teamId);
+        return {
+          user_id: user?.id || '',
+          team_id: teamId,
+          league: team?.league || 'NHL',
+          created_at: new Date().toISOString(),
+        };
+      });
+      setFollows(follows);
+
       // Save selected teams to database if user is authenticated
       if (user?.id) {
-        const follows = selectedTeams.map((teamId) => {
-          const team = NHL_TEAMS.find((t) => t.id === teamId);
-          return {
-            user_id: user.id,
-            team_id: teamId,
-            league: team?.league || 'NHL',
-          };
-        });
-
         const { error } = await supabase
           .from('follows')
           .insert(follows);
 
         if (error) {
-          console.warn('Failed to save teams (demo mode):', error);
+          console.warn('Failed to save teams to Supabase (demo mode continues):', error);
         }
       }
 
