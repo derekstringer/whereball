@@ -116,9 +116,23 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   };
 
   const renderDaySection = (dateKey: string, games: NHLGame[]) => {
-    // Parse date more carefully - dateKey is YYYY-MM-DD
-    const [year, month, day] = dateKey.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // month is 0-indexed
+    // Parse date - handle both YYYY-MM-DD and ISO formats
+    let date: Date;
+    if (dateKey.includes('T')) {
+      // ISO format with time
+      date = new Date(dateKey);
+    } else {
+      // YYYY-MM-DD format
+      const [year, month, day] = dateKey.split('-').map(Number);
+      date = new Date(year, month - 1, day); // month is 0-indexed
+    }
+    
+    // Fallback if date is invalid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date key:', dateKey);
+      date = new Date(); // Use today as fallback
+    }
+    
     const isToday = date.toDateString() === new Date().toDateString();
     const myTeamGames = filterMyTeamGames(games);
     const isExpanded = expandedDays.has(dateKey);
