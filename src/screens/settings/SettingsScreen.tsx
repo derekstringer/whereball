@@ -33,36 +33,49 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
     subscriptions.map(s => s.service_code)
   );
   const [showAllTeams, setShowAllTeams] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
-  const handleSave = () => {
-    // Update subscriptions
-    const newSubscriptions = selectedServices.map(code => ({
+  const showToastNotification = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
+
+  const handleTeamChange = (teamId: string) => {
+    setSelectedTeam(teamId);
+    
+    // Auto-save team selection
+    const newFollow: Follow = {
+      user_id: 'user-1', // TODO: Get from auth
+      team_id: teamId,
+      league: 'NHL',
+      created_at: new Date().toISOString(),
+    };
+    setFollows([newFollow]);
+    
+    const team = NHL_TEAMS.find(t => t.id === teamId);
+    showToastNotification(`Team updated to ${team?.market || 'selected team'}`);
+  };
+
+  const toggleService = (serviceCode: string) => {
+    const newServices = selectedServices.includes(serviceCode)
+      ? selectedServices.filter(s => s !== serviceCode)
+      : [...selectedServices, serviceCode];
+    
+    setSelectedServices(newServices);
+    
+    // Auto-save services
+    const newSubscriptions = newServices.map(code => ({
       user_id: 'user-1', // TODO: Get from auth
       service_code: code,
       created_at: new Date().toISOString(),
     }));
     setSubscriptions(newSubscriptions);
-
-    // Update followed team
-    const newFollow: Follow = {
-      user_id: 'user-1', // TODO: Get from auth
-      team_id: selectedTeam,
-      league: 'NHL',
-      created_at: new Date().toISOString(),
-    };
-    setFollows([newFollow]); // Free tier: 1 team only
-
-    Alert.alert('Settings Saved', 'Your preferences have been updated.', [
-      { text: 'OK', onPress: onClose },
-    ]);
-  };
-
-  const toggleService = (serviceCode: string) => {
-    setSelectedServices(prev =>
-      prev.includes(serviceCode)
-        ? prev.filter(s => s !== serviceCode)
-        : [...prev, serviceCode]
-    );
+    
+    const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
+    const action = selectedServices.includes(serviceCode) ? 'removed' : 'added';
+    showToastNotification(`${service?.name || 'Service'} ${action}`);
   };
 
   return (
@@ -73,10 +86,17 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
           <Text style={styles.closeButtonText}>✕</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
-        <TouchableOpacity onPress={handleSave} style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Save</Text>
-        </TouchableOpacity>
+        <View style={styles.headerSpacer} />
       </View>
+
+      {/* Toast Notification */}
+      {showToast && (
+        <View style={styles.toastContainer}>
+          <View style={styles.toast}>
+            <Text style={styles.toastText}>{toastMessage}</Text>
+          </View>
+        </View>
+      )}
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* ZIP Code */}
@@ -117,7 +137,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
                     styles.teamChip,
                     selectedTeam === team.id && styles.teamChipActive,
                   ]}
-                  onPress={() => setSelectedTeam(team.id)}
+                  onPress={() => handleTeamChange(team.id)}
                   activeOpacity={0.7}
                 >
                   <Text
@@ -263,17 +283,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
-  saveButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#0066CC',
-    borderRadius: 8,
-  },
-  saveButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
   scrollView: {
     flex: 1,
   },
@@ -418,5 +427,32 @@ const styles = StyleSheet.create({
     color: '#0066CC',
     fontWeight: '600',
     marginBottom: 8,
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 80,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  toast: {
+    backgroundColor: '#333333',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
