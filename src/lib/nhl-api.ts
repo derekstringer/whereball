@@ -150,6 +150,58 @@ const getMockGames = (): NHLGame[] => {
 };
 
 /**
+ * Fetch NHL games for a date range
+ * @param startDate - Start date
+ * @param endDate - End date
+ */
+export const getGamesForDateRange = async (
+  startDate: Date,
+  endDate: Date
+): Promise<NHLGame[]> => {
+  try {
+    const start = startDate.toISOString().split('T')[0];
+    const end = endDate.toISOString().split('T')[0];
+    
+    // Fetch games for each day in the range
+    const promises: Promise<NHLGame[]>[] = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      promises.push(getGamesForDate(new Date(currentDate)));
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    const results = await Promise.all(promises);
+    return results.flat();
+  } catch (error) {
+    console.error('Error fetching games for date range:', error);
+    return [];
+  }
+};
+
+/**
+ * Get games grouped by date
+ */
+export const getGamesGroupedByDate = async (
+  startDate: Date,
+  endDate: Date
+): Promise<Record<string, NHLGame[]>> => {
+  const games = await getGamesForDateRange(startDate, endDate);
+  
+  const grouped: Record<string, NHLGame[]> = {};
+  
+  games.forEach(game => {
+    const dateKey = game.gameDate;
+    if (!grouped[dateKey]) {
+      grouped[dateKey] = [];
+    }
+    grouped[dateKey].push(game);
+  });
+  
+  return grouped;
+};
+
+/**
  * Format game time to local time
  */
 export const formatGameTime = (isoString: string): string => {

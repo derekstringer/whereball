@@ -18,6 +18,8 @@ import { GameCard } from '../../components/game/GameCard';
 import { getGamesForDate, type NHLGame } from '../../lib/nhl-api';
 import { trackEvent } from '../../lib/analytics';
 import { useAppStore } from '../../store/appStore';
+import { WeeklyView } from './WeeklyView';
+import { TeamScheduleView } from './TeamScheduleView';
 
 interface Filters {
   myTeamsOnly: boolean;
@@ -27,7 +29,10 @@ interface Filters {
   showAll: boolean;
 }
 
+type TabView = 'daily' | 'weekly' | 'team';
+
 export const TonightScreen: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabView>('daily');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames] = useState<NHLGame[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,28 +213,49 @@ export const TonightScreen: React.FC = () => {
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor="#0066CC"
+  // Render tab content
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'weekly':
+        return (
+          <WeeklyView
+            followedTeamCodes={followedTeamCodes}
+            userServiceCodes={userServiceCodes}
           />
-        }
-      >
-        <View style={styles.header}>
-          <Text style={styles.emoji}>🏒</Text>
-          <View style={styles.titleRow}>
-            <Text style={styles.title}>Schedule</Text>
-            {activeFilterCount > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-              </View>
-            )}
-          </View>
+        );
+      case 'team':
+        return (
+          <TeamScheduleView
+            followedTeamCodes={followedTeamCodes}
+            userServiceCodes={userServiceCodes}
+          />
+        );
+      default:
+        return renderDailyView();
+    }
+  };
+
+  const renderDailyView = () => (
+    <ScrollView
+      contentContainerStyle={styles.scrollContent}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor="#0066CC"
+        />
+      }
+    >
+      <View style={styles.header}>
+        <Text style={styles.emoji}>🏒</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Schedule</Text>
+          {activeFilterCount > 0 && (
+            <View style={styles.filterBadge}>
+              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+            </View>
+          )}
+        </View>
 
           {/* Date Navigation */}
           <View style={styles.dateNav}>
@@ -372,12 +398,51 @@ export const TonightScreen: React.FC = () => {
           </View>
         )}
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Pull down to refresh • Data from NHL.com
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>
+          Pull down to refresh • Data from NHL.com
+        </Text>
+      </View>
+    </ScrollView>
+  );
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Tab Bar */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'daily' && styles.tabActive]}
+          onPress={() => setActiveTab('daily')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'daily' && styles.tabTextActive]}>
+            Daily
           </Text>
-        </View>
-      </ScrollView>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'weekly' && styles.tabActive]}
+          onPress={() => setActiveTab('weekly')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'weekly' && styles.tabTextActive]}>
+            Weekly
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'team' && styles.tabActive]}
+          onPress={() => setActiveTab('team')}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.tabText, activeTab === 'team' && styles.tabTextActive]}>
+            Team
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Content */}
+      {renderTabContent()}
     </SafeAreaView>
   );
 };
@@ -566,5 +631,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#999999',
     textAlign: 'center',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent',
+  },
+  tabActive: {
+    borderBottomColor: '#0066CC',
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#999999',
+  },
+  tabTextActive: {
+    color: '#0066CC',
   },
 });
