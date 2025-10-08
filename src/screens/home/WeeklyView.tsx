@@ -321,21 +321,24 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
     );
   }
 
-  // Filter to only show games within the current week (7 days max)
+  // Generate all 7 days of the week
   const { weekStart, weekEnd } = getWeekRange();
-  const sortedDates = Object.keys(gamesByDate)
-    .filter(dateKey => {
-      const gameDate = new Date(dateKey);
-      return gameDate >= weekStart && gameDate <= weekEnd;
-    })
-    .sort();
+  const allDaysOfWeek: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(weekStart);
+    day.setDate(weekStart.getDate() + i);
+    const dateKey = day.toISOString().split('T')[0]; // YYYY-MM-DD format
+    allDaysOfWeek.push(dateKey);
+  }
   
-  const totalMyTeamGames = sortedDates.reduce((acc, dateKey) => {
-    return acc + filterMyTeamGames(gamesByDate[dateKey]).length;
+  const totalMyTeamGames = allDaysOfWeek.reduce((acc, dateKey) => {
+    const games = gamesByDate[dateKey] || [];
+    return acc + filterMyTeamGames(games).length;
   }, 0);
 
-  const totalBlackouts = sortedDates.reduce((acc, dateKey) => {
-    const myGames = filterMyTeamGames(gamesByDate[dateKey]);
+  const totalBlackouts = allDaysOfWeek.reduce((acc, dateKey) => {
+    const games = gamesByDate[dateKey] || [];
+    const myGames = filterMyTeamGames(games);
     return acc + myGames.filter(isGameBlackedOut).length;
   }, 0);
 
@@ -415,7 +418,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
           )}
         </View>
 
-      {sortedDates.map((dateKey) => renderDaySection(dateKey, gamesByDate[dateKey]))}
+      {allDaysOfWeek.map((dateKey) => renderDaySection(dateKey, gamesByDate[dateKey] || []))}
       
       {/* Legal Disclaimer */}
       <View style={styles.legalFooter}>
