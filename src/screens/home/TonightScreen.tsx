@@ -212,7 +212,6 @@ export const TonightScreen: React.FC = () => {
       }
     >
       <View style={styles.header}>
-        <Text style={styles.emoji}>🏒</Text>
         <View style={styles.titleRow}>
           <Text style={styles.title}>Schedule</Text>
           {activeFilterCount > 0 && (
@@ -258,72 +257,6 @@ export const TonightScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* Filter Button */}
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setFiltersExpanded(!filtersExpanded)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.filterButtonText}>
-            {filtersExpanded ? '▼' : '▶'} Filters
-          </Text>
-        </TouchableOpacity>
-
-        {/* Filter Options */}
-        {filtersExpanded && (
-          <View style={styles.filtersContainer}>
-            <TouchableOpacity
-              style={[styles.filterChip, filters.myTeamsOnly && styles.filterChipActive]}
-              onPress={() => toggleFilter('myTeamsOnly')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, filters.myTeamsOnly && styles.filterChipTextActive]}>
-                {filters.myTeamsOnly ? '✓ ' : ''}My Teams Only
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.filterChip, filters.nationalOnly && styles.filterChipActive]}
-              onPress={() => toggleFilter('nationalOnly')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, filters.nationalOnly && styles.filterChipTextActive]}>
-                {filters.nationalOnly ? '✓ ' : ''}National Games
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.filterChip, filters.availableOnly && styles.filterChipActive]}
-              onPress={() => toggleFilter('availableOnly')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, filters.availableOnly && styles.filterChipTextActive]}>
-                {filters.availableOnly ? '✓ ' : ''}On My Services
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.filterChip, filters.liveOnly && styles.filterChipActive]}
-              onPress={() => toggleFilter('liveOnly')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, filters.liveOnly && styles.filterChipTextActive]}>
-                {filters.liveOnly ? '✓ ' : ''}Live Only
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.filterChip, filters.showAll && styles.filterChipActive]}
-              onPress={() => toggleFilter('showAll')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterChipText, filters.showAll && styles.filterChipTextActive]}>
-                {filters.showAll ? '✓ ' : ''}Show All Games
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
 
         {error && (
           <View style={styles.errorContainer}>
@@ -384,15 +317,29 @@ export const TonightScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with Settings */}
+      {/* Header with Hamburger + Filter */}
       <View style={styles.topBar}>
-        <Text style={styles.topBarTitle}>🏒 WhereBall</Text>
         <TouchableOpacity
-          style={styles.settingsButton}
+          style={styles.iconButton}
           onPress={handleSettingsPress}
           activeOpacity={0.7}
         >
-          <Text style={styles.settingsIcon}>⚙️</Text>
+          <Text style={styles.hamburger}>☰</Text>
+        </TouchableOpacity>
+        <Text style={styles.topBarTitle}>🏒 WhereBall</Text>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={() => setShowFilters(true)}
+          activeOpacity={0.7}
+        >
+          <View style={styles.filterIconWrapper}>
+            <Text style={styles.filterIcon}>🎚️</Text>
+            {activeFilterCount > 0 && (
+              <View style={styles.filterCountBadge}>
+                <Text style={styles.filterCountText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -441,6 +388,13 @@ export const TonightScreen: React.FC = () => {
       >
         <SettingsScreen onClose={handleCloseSettings} />
       </Modal>
+
+      {/* Filter Bottom Sheet */}
+      <FilterBottomSheet
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+        hideLiveFilter={false}
+      />
     </SafeAreaView>
   );
 };
@@ -466,12 +420,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 24,
+    paddingTop: 20,
     paddingBottom: 16,
-  },
-  emoji: {
-    fontSize: 48,
-    marginBottom: 8,
   },
   titleRow: {
     flexDirection: 'row',
@@ -511,16 +461,15 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   dateArrow: {
-    width: 44,
-    height: 44,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dateArrowText: {
-    fontSize: 20,
-    color: '#333333',
+    fontSize: 24,
+    color: '#0066CC',
     fontWeight: '600',
   },
   dateCenter: {
@@ -652,14 +601,39 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000000',
   },
-  settingsButton: {
+  iconButton: {
     width: 40,
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  settingsIcon: {
+  hamburger: {
     fontSize: 24,
+    color: '#666666',
+  },
+  filterIconWrapper: {
+    position: 'relative',
+  },
+  filterIcon: {
+    fontSize: 24,
+    color: '#666666',
+  },
+  filterCountBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#0066CC',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterCountText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   tabBar: {
     flexDirection: 'row',
