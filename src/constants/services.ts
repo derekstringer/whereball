@@ -105,6 +105,28 @@ export const STREAMING_SERVICES: Service[] = [
     },
     provider_lookup_url: 'https://www.amazon.com/Prime-Video/',
   },
+  {
+    code: 'peacock',
+    name: 'Peacock',
+    type: 'streaming',
+    deep_link_scheme: 'peacock://',
+    channel_matrix: {
+      channels: ['NBC', 'NBCSN'],
+      notes: 'Select NHL games',
+    },
+    provider_lookup_url: 'https://www.peacocktv.com/',
+  },
+  {
+    code: 'apple_tv_plus',
+    name: 'Apple TV+',
+    type: 'streaming',
+    deep_link_scheme: 'https://tv.apple.com',
+    channel_matrix: {
+      channels: ['Apple TV+ Exclusive Games'],
+      notes: 'Select exclusive games (future)',
+    },
+    provider_lookup_url: 'https://tv.apple.com/',
+  },
 ];
 
 // National broadcasters that typically override RSNs
