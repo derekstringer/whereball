@@ -13,6 +13,13 @@ import {
 } from 'react-native';
 import { getGamesGroupedByDate, type NHLGame } from '../../lib/nhl-api';
 import { trackEvent } from '../../lib/analytics';
+import {
+  ServiceBadgesRow,
+  NotAvailableBadge,
+  BlackoutBadge,
+  Tooltip,
+} from '../../components/ui/ServiceBadge';
+import { STREAMING_SERVICES } from '../../constants/services';
 
 interface WeeklyViewProps {
   followedTeamCodes: string[];
@@ -27,6 +34,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [startDate] = useState(new Date());
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipMessage, setTooltipMessage] = useState('');
 
   useEffect(() => {
     loadWeeklyGames();

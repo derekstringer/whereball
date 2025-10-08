@@ -5,6 +5,21 @@
 
 import { Service } from '../types';
 
+// Service brand colors for badges (legally safe - text not trademarked)
+export const SERVICE_BRAND_COLORS: Record<string, string> = {
+  espn_plus: '#D32F2F',
+  youtube_tv: '#FF0000',
+  hulu_live: '#1CE783',
+  fubo: '#2196F3',
+  sling: '#0066CC',
+  directv_stream: '#0066CC',
+  paramount_plus: '#0064FF',
+  max: '#6200EA',
+  prime_video: '#00A8E1',
+  peacock: '#000000',
+  apple_tv_plus: '#000000',
+};
+
 export const STREAMING_SERVICES: Service[] = [
   {
     code: 'espn_plus',
