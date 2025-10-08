@@ -122,7 +122,7 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
           </Text>
 
           <View style={styles.teamsGrid}>
-            {NHL_TEAMS.map((team) => {
+            {NHL_TEAMS.sort((a, b) => a.market.localeCompare(b.market)).map((team) => {
               const isSelected = selectedTeams.includes(team.id);
               const primaryColor = team.primary_colors?.light || '#0066CC';
 
