@@ -102,12 +102,11 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       return filtered;
     }
 
-    // Filter: My Teams Only (default behavior unless Show All)
+    // Filter: My Teams Only
     if (filters.myTeamsOnly) {
-      filtered = filtered.filter(
-        (game) =>
-          followedTeamCodes.includes(game.homeTeam.abbreviation) ||
-          followedTeamCodes.includes(game.awayTeam.abbreviation)
+      filtered = filtered.filter(game =>
+        followedTeamCodes.includes(game.homeTeam.abbreviation) ||
+        followedTeamCodes.includes(game.awayTeam.abbreviation)
       );
     }
 
@@ -120,7 +119,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
 
     // Filter: Available on My Services
     if (filters.availableOnly) {
-      filtered = filtered.filter(game => isGameAvailable(game));
+      filtered = filtered.filter(game =>
+        game.broadcasts.some(b => {
+          const network = b.network.toLowerCase();
+          return userServiceCodes.some(service => 
+            network.includes(service.toLowerCase()) || 
+            service.toLowerCase().includes(network)
+          );
+        })
+      );
     }
 
     // Note: liveOnly filter not applicable to Weekly view
