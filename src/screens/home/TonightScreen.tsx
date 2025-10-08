@@ -20,6 +20,9 @@ import { trackEvent } from '../../lib/analytics';
 import { useAppStore } from '../../store/appStore';
 import { WeeklyView } from './WeeklyView';
 import { TeamScheduleView } from './TeamScheduleView';
+import { SettingsScreen } from '../settings/SettingsScreen';
+import { Modal } from 'react-native';
+import { NHL_TEAMS } from '../../constants/teams';
 
 interface Filters {
   myTeamsOnly: boolean;
@@ -39,6 +42,7 @@ export const TonightScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [filters, setFilters] = useState<Filters>({
     myTeamsOnly: true, // Default ON
     nationalOnly: false,
@@ -47,8 +51,14 @@ export const TonightScreen: React.FC = () => {
     showAll: false,
   });
 
-  const { subscriptions } = useAppStore();
-  const followedTeamCodes = ['ARI']; // TODO: Get from user's actual follows
+  const { subscriptions, follows } = useAppStore();
+  
+  // Map team IDs to short codes (e.g., 'nhl_bos' -> 'BOS')
+  const followedTeamCodes = follows.map(f => {
+    const team = NHL_TEAMS.find(t => t.id === f.team_id);
+    return team?.short_code || '';
+  }).filter(Boolean);
+  
   const userServiceCodes = subscriptions.map(s => s.service_code);
 
   const isToday = useMemo(() => {
@@ -407,8 +417,11 @@ export const TonightScreen: React.FC = () => {
   );
 
   const handleSettingsPress = () => {
-    // TODO: Navigate to settings screen
-    alert('Settings: Change team (ARI → CHI), edit ZIP, manage services. Coming in next commit!');
+    setShowSettings(true);
+  };
+
+  const handleCloseSettings = () => {
+    setShowSettings(false);
   };
 
   return (
@@ -460,6 +473,16 @@ export const TonightScreen: React.FC = () => {
 
       {/* Tab Content */}
       {renderTabContent()}
+
+      {/* Settings Modal */}
+      <Modal
+        visible={showSettings}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={handleCloseSettings}
+      >
+        <SettingsScreen onClose={handleCloseSettings} />
+      </Modal>
     </SafeAreaView>
   );
 };
