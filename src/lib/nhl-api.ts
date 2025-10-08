@@ -61,6 +61,13 @@ export const getGamesForDate = async (date?: Date | string): Promise<NHLGame[]> 
           for (const game of week.games) {
             // Use the game's actual date, not the queried date
             const gameDateStr = game.gameDate || week.date || dateString;
+            
+            // IMPORTANT: Only include games that match the queried date
+            // NHL API returns a gameWeek which may include multiple days
+            if (gameDateStr !== dateString) {
+              continue; // Skip games from other days
+            }
+            
             games.push({
               id: game.id.toString(),
               gameDate: gameDateStr,
