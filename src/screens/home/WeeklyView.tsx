@@ -192,7 +192,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
     const isExpanded = expandedDays.has(dateKey);
 
     return (
-      <View key={dateKey} style={styles.daySection}>
+      <View key={dateKey} style={[styles.daySection, isToday && styles.daySectionToday]}>
         <View style={styles.dayHeader}>
           <View style={styles.dayHeaderLeft}>
             <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
@@ -466,6 +466,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+  },
+  daySectionToday: {
+    borderWidth: 2,
+    borderColor: '#0066CC',
+    shadowColor: '#0066CC',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   dayHeader: {
     flexDirection: 'row',
