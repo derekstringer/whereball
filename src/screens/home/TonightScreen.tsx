@@ -212,51 +212,42 @@ export const TonightScreen: React.FC = () => {
       }
     >
       <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Schedule</Text>
-          {activeFilterCount > 0 && (
-            <View style={styles.filterBadge}>
-              <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-            </View>
-          )}
+        {/* Date Navigation */}
+        <View style={styles.dateNav}>
+          <TouchableOpacity
+            style={styles.dateArrow}
+            onPress={goToPreviousDay}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.dateArrowText}>←</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.dateCenter}
+            onPress={isToday ? undefined : goToToday}
+            activeOpacity={isToday ? 1 : 0.7}
+          >
+            <Text style={[styles.dateRange, isToday && styles.dateRangeCurrent]}>
+              {selectedDate.toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </Text>
+            {!isToday && (
+              <Text style={styles.todayHint}>Tap for today</Text>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.dateArrow}
+            onPress={goToNextDay}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.dateArrowText}>→</Text>
+          </TouchableOpacity>
         </View>
-
-          {/* Date Navigation */}
-          <View style={styles.dateNav}>
-            <TouchableOpacity
-              style={styles.dateArrow}
-              onPress={goToPreviousDay}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.dateArrowText}>←</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.dateCenter}
-              onPress={isToday ? undefined : goToToday}
-              activeOpacity={isToday ? 1 : 0.7}
-            >
-              <Text style={styles.date}>
-                {selectedDate.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                })}
-              </Text>
-              {!isToday && (
-                <Text style={styles.todayHint}>Tap for today</Text>
-              )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.dateArrow}
-              onPress={goToNextDay}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.dateArrowText}>→</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+      </View>
 
         {error && (
           <View style={styles.errorContainer}>
@@ -456,14 +447,12 @@ const styles = StyleSheet.create({
   dateNav: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    gap: 12,
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   dateArrow: {
     width: 40,
     height: 40,
-    backgroundColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -473,9 +462,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   dateCenter: {
-    flex: 1,
+    minWidth: 200,
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  dateRange: {
+    fontSize: 18,
+    color: '#000000',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  dateRangeCurrent: {
+    color: '#0066CC',
   },
   todayHint: {
     fontSize: 12,
