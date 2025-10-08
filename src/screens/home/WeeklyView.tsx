@@ -2,7 +2,7 @@
  * Weekly View - Shows 7-day schedule snapshot
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { getGamesGroupedByDate, type NHLGame } from '../../lib/nhl-api';
 import { trackEvent } from '../../lib/analytics';
+import { useAppStore } from '../../store/appStore';
 import {
   ServiceBadge,
   NotAvailableBadge,
@@ -26,7 +27,6 @@ import {
   getMissingServicesForGame,
   getServiceNames,
 } from '../../lib/broadcast-mapper';
-import { useAppStore } from '../../store/appStore';
 
 interface WeeklyViewProps {
   followedTeamCodes: string[];
@@ -50,7 +50,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
     channel?: string;
   }>({ userServices: [], missingServices: [] });
   
-  const { preferredServices } = useAppStore();
+  const { preferredServices, filters } = useAppStore();
 
   // Calculate week range based on offset
   const getWeekRange = () => {
@@ -95,11 +95,37 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   };
 
   const filterMyTeamGames = (games: NHLGame[]): NHLGame[] => {
-    return games.filter(
-      (game) =>
-        followedTeamCodes.includes(game.homeTeam.abbreviation) ||
-        followedTeamCodes.includes(game.awayTeam.abbreviation)
-    );
+    let filtered = [...games];
+
+    // If "Show All" is enabled, return all games
+    if (filters.showAll) {
+      return filtered;
+    }
+
+    // Filter: My Teams Only (default behavior unless Show All)
+    if (filters.myTeamsOnly) {
+      filtered = filtered.filter(
+        (game) =>
+          followedTeamCodes.includes(game.homeTeam.abbreviation) ||
+          followedTeamCodes.includes(game.awayTeam.abbreviation)
+      );
+    }
+
+    // Filter: National Games Only
+    if (filters.nationalOnly) {
+      filtered = filtered.filter(game =>
+        game.broadcasts.some(b => b.type === 'national')
+      );
+    }
+
+    // Filter: Available on My Services
+    if (filters.availableOnly) {
+      filtered = filtered.filter(game => isGameAvailable(game));
+    }
+
+    // Note: liveOnly filter not applicable to Weekly view
+
+    return filtered;
   };
 
   const isGameAvailable = (game: NHLGame): boolean => {
