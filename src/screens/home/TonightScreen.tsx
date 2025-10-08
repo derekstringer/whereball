@@ -406,8 +406,25 @@ export const TonightScreen: React.FC = () => {
     </ScrollView>
   );
 
+  const handleSettingsPress = () => {
+    // TODO: Navigate to settings screen
+    alert('Settings: Change team (ARI → CHI), edit ZIP, manage services. Coming in next commit!');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header with Settings */}
+      <View style={styles.topBar}>
+        <Text style={styles.topBarTitle}>🏒 WhereBall</Text>
+        <TouchableOpacity
+          style={styles.settingsButton}
+          onPress={handleSettingsPress}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.settingsIcon}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
       {/* Tab Bar */}
       <View style={styles.tabBar}>
         <TouchableOpacity
@@ -631,6 +648,30 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#999999',
     textAlign: 'center',
+  },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  topBarTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsIcon: {
+    fontSize: 24,
   },
   tabBar: {
     flexDirection: 'row',
