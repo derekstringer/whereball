@@ -26,6 +26,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const [gamesByDate, setGamesByDate] = useState<Record<string, NHLGame[]>>({});
   const [loading, setLoading] = useState(true);
   const [startDate] = useState(new Date());
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadWeeklyGames();
@@ -78,12 +79,25 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
     return hasESPNPlus && isMyTeam;
   };
 
+  const toggleDayExpanded = (dateKey: string) => {
+    setExpandedDays(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(dateKey)) {
+        newSet.delete(dateKey);
+      } else {
+        newSet.add(dateKey);
+      }
+      return newSet;
+    });
+  };
+
   const renderDaySection = (dateKey: string, games: NHLGame[]) => {
-    const date = new Date(dateKey + 'T00:00:00');
+    // Parse date more carefully - dateKey is YYYY-MM-DD
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
     const isToday = date.toDateString() === new Date().toDateString();
     const myTeamGames = filterMyTeamGames(games);
-    const blackoutCount = myTeamGames.filter(isGameBlackedOut).length;
-    const availableCount = myTeamGames.filter(isGameAvailable).length;
+    const isExpanded = expandedDays.has(dateKey);
 
     return (
       <View key={dateKey} style={styles.daySection}>
@@ -112,12 +126,12 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
 
         {myTeamGames.length > 0 && (
           <View style={styles.gamesContainer}>
-            {myTeamGames.slice(0, 3).map((game) => {
+            {(isExpanded ? myTeamGames : myTeamGames.slice(0, 3)).map((game, index) => {
               const available = isGameAvailable(game);
               const blackedOut = isGameBlackedOut(game);
 
               return (
-                <View key={game.id} style={styles.gameRow}>
+                <View key={`${game.id}-${index}`} style={styles.gameRow}>
                   <View style={styles.gameTeams}>
                     <Text style={styles.gameText} numberOfLines={1}>
                       {game.awayTeam.abbreviation} @ {game.homeTeam.abbreviation}
@@ -142,9 +156,13 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               );
             })}
             {myTeamGames.length > 3 && (
-              <Text style={styles.moreGamesText}>
-                +{myTeamGames.length - 3} more
-              </Text>
+              <TouchableOpacity onPress={() => toggleDayExpanded(dateKey)}>
+                <Text style={styles.moreGamesText}>
+                  {isExpanded 
+                    ? '− Show less' 
+                    : `+${myTeamGames.length - 3} more`}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         )}
