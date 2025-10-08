@@ -288,7 +288,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
     );
   }
 
-  const sortedDates = Object.keys(gamesByDate).sort();
+  // Filter to only show games within the current week (7 days max)
+  const { weekStart, weekEnd } = getWeekRange();
+  const sortedDates = Object.keys(gamesByDate)
+    .filter(dateKey => {
+      const gameDate = new Date(dateKey);
+      return gameDate >= weekStart && gameDate <= weekEnd;
+    })
+    .sort();
+  
   const totalMyTeamGames = sortedDates.reduce((acc, dateKey) => {
     return acc + filterMyTeamGames(gamesByDate[dateKey]).length;
   }, 0);
@@ -320,9 +328,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.title}>This Week</Text>
-          
-          {/* Week Navigation */}
+          {/* Week Navigation with Stats */}
           <View style={styles.weekNav}>
             <TouchableOpacity
               style={styles.weekArrow}
@@ -332,20 +338,29 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               <Text style={styles.weekArrowText}>←</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.weekCenter}
-              onPress={!isCurrentWeek ? () => setWeekOffset(0) : undefined}
-              activeOpacity={isCurrentWeek ? 1 : 0.7}
-            >
-              <Text style={[styles.weekRange, isCurrentWeek && styles.weekRangeCurrent]}>
-                {getWeekRange().weekStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                {' - '}
-                {getWeekRange().weekEnd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-              </Text>
-              {!isCurrentWeek && (
-                <Text style={styles.thisWeekHint}>Tap for this week</Text>
-              )}
-            </TouchableOpacity>
+            <View style={styles.weekInfo}>
+              <TouchableOpacity
+                onPress={!isCurrentWeek ? () => setWeekOffset(0) : undefined}
+                activeOpacity={isCurrentWeek ? 1 : 0.7}
+              >
+                <Text style={[styles.weekRange, isCurrentWeek && styles.weekRangeCurrent]}>
+                  {getWeekRange().weekStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {' - '}
+                  {getWeekRange().weekEnd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </Text>
+                {!isCurrentWeek && (
+                  <Text style={styles.thisWeekHint}>Tap for this week</Text>
+                )}
+              </TouchableOpacity>
+              
+              {/* Stats Row */}
+              <View style={styles.weekStats}>
+                <Text style={styles.weekStatsText}>
+                  {totalMyTeamGames} game{totalMyTeamGames !== 1 ? 's' : ''}
+                  {totalBlackouts > 0 && ` • ${totalBlackouts} blackout${totalBlackouts !== 1 ? 's' : ''}`}
+                </Text>
+              </View>
+            </View>
 
             <TouchableOpacity
               style={styles.weekArrow}
@@ -355,22 +370,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               <Text style={styles.weekArrowText}>→</Text>
             </TouchableOpacity>
           </View>
-
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryNumber}>{totalMyTeamGames}</Text>
-            <Text style={styles.summaryLabel}>Games</Text>
-          </View>
-          {totalBlackouts > 0 && (
-            <View style={styles.summaryItem}>
-              <Text style={[styles.summaryNumber, styles.summaryNumberWarning]}>
-                {totalBlackouts}
-              </Text>
-              <Text style={styles.summaryLabel}>Blackouts</Text>
-            </View>
-          )}
         </View>
-      </View>
 
       {sortedDates.map((dateKey) => renderDaySection(dateKey, gamesByDate[dateKey]))}
       
@@ -407,33 +407,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: 24,
-    paddingBottom: 16,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    gap: 24,
-  },
-  summaryItem: {
-    alignItems: 'center',
-  },
-  summaryNumber: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#0066CC',
-  },
-  summaryNumberWarning: {
-    color: '#FF6B35',
-  },
-  summaryLabel: {
-    fontSize: 13,
-    color: '#666666',
-    marginTop: 4,
+    paddingBottom: 8,
   },
   daySection: {
     marginHorizontal: 24,
@@ -467,9 +441,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 16,
     gap: 12,
+    marginBottom: 16,
   },
   weekArrow: {
     width: 44,
@@ -484,16 +457,16 @@ const styles = StyleSheet.create({
     color: '#333333',
     fontWeight: '600',
   },
-  weekCenter: {
+  weekInfo: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 8,
   },
   weekRange: {
-    fontSize: 15,
+    fontSize: 17,
     color: '#000000',
-    fontWeight: '600',
+    fontWeight: '700',
     textAlign: 'center',
+    marginBottom: 4,
   },
   weekRangeCurrent: {
     color: '#0066CC',
@@ -501,8 +474,16 @@ const styles = StyleSheet.create({
   thisWeekHint: {
     fontSize: 12,
     color: '#0066CC',
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: '600',
+  },
+  weekStats: {
+    marginTop: 4,
+  },
+  weekStatsText: {
+    fontSize: 13,
+    color: '#666666',
+    textAlign: 'center',
   },
   dayDate: {
     fontSize: 15,
