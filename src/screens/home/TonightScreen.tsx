@@ -412,6 +412,9 @@ export const TonightScreen: React.FC = () => {
         <Text style={styles.footerText}>
           Pull down to refresh • Data from NHL.com
         </Text>
+        <Text style={styles.legalText}>
+          Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
+        </Text>
       </View>
     </ScrollView>
   );
@@ -671,6 +674,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#999999',
     textAlign: 'center',
+    marginBottom: 12,
+  },
+  legalText: {
+    fontSize: 11,
+    color: '#999999',
+    textAlign: 'center',
+    lineHeight: 16,
   },
   topBar: {
     flexDirection: 'row',

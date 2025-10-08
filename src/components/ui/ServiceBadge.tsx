@@ -28,7 +28,7 @@ export const ServiceBadge: React.FC<ServiceBadgeProps> = ({
       style={[
         styles.badge,
         size === 'small' ? styles.badgeSmall : styles.badgeMedium,
-        { borderColor: brandColor },
+        { backgroundColor: brandColor },
       ]}
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
@@ -37,7 +37,7 @@ export const ServiceBadge: React.FC<ServiceBadgeProps> = ({
         style={[
           styles.badgeText,
           size === 'small' ? styles.badgeTextSmall : styles.badgeTextMedium,
-          { color: brandColor },
+          styles.badgeTextWhite,
         ]}
         numberOfLines={1}
       >
@@ -145,11 +145,9 @@ export const Tooltip: React.FC<TooltipProps> = ({ visible, message, onDismiss })
 
 const styles = StyleSheet.create({
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    borderWidth: 1,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
     marginRight: 6,
   },
   badgeSmall: {
@@ -164,6 +162,9 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     textAlign: 'center',
+  },
+  badgeTextWhite: {
+    color: '#FFFFFF',
   },
   badgeTextSmall: {
     fontSize: 11,

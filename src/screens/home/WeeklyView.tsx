@@ -116,9 +116,26 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   };
 
   const renderDaySection = (dateKey: string, games: NHLGame[]) => {
-    // Parse date more carefully - dateKey is YYYY-MM-DD
-    const [year, month, day] = dateKey.split('-').map(Number);
-    const date = new Date(year, month - 1, day); // month is 0-indexed
+    // Parse date - dateKey format varies, handle both YYYY-MM-DD and other formats
+    let date: Date;
+    try {
+      if (dateKey.includes('-')) {
+        const [year, month, day] = dateKey.split('-').map(Number);
+        date = new Date(year, month - 1, day); // month is 0-indexed
+      } else {
+        date = new Date(dateKey);
+      }
+      
+      // Validate date
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date:', dateKey);
+        return null;
+      }
+    } catch (e) {
+      console.error('Error parsing date:', dateKey, e);
+      return null;
+    }
+    
     const isToday = date.toDateString() === new Date().toDateString();
     const myTeamGames = filterMyTeamGames(games);
     const isExpanded = expandedDays.has(dateKey);
@@ -303,6 +320,13 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       </View>
 
       {sortedDates.map((dateKey) => renderDaySection(dateKey, gamesByDate[dateKey]))}
+      
+      {/* Legal Disclaimer */}
+      <View style={styles.legalFooter}>
+        <Text style={styles.legalText}>
+          Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
+        </Text>
+      </View>
       </ScrollView>
     </>
   );
@@ -480,5 +504,16 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#666666',
     textAlign: 'center',
+  },
+  legalFooter: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    marginTop: 8,
+  },
+  legalText: {
+    fontSize: 11,
+    color: '#999999',
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

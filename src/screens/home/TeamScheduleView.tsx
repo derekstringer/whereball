@@ -204,6 +204,13 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
           <Text style={styles.emptyText}>No upcoming games found</Text>
         </View>
       )}
+
+      {/* Legal Disclaimer */}
+      <View style={styles.legalFooter}>
+        <Text style={styles.legalText}>
+          Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
+        </Text>
+      </View>
     </ScrollView>
   );
 };
@@ -393,5 +400,16 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     color: '#666666',
+  },
+  legalFooter: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    marginTop: 16,
+  },
+  legalText: {
+    fontSize: 11,
+    color: '#999999',
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });
