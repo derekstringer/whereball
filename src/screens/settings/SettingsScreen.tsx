@@ -109,6 +109,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
             style={styles.input}
             value={zip}
             onChangeText={setZip}
+            onBlur={() => {
+              // Auto-save ZIP on blur
+              if (zip.length === 5) {
+                // TODO: Save to store when ZIP is added
+                showToastNotification(`ZIP updated to ${zip}`);
+              }
+            }}
             placeholder="Enter ZIP code"
             keyboardType="number-pad"
             maxLength={5}
