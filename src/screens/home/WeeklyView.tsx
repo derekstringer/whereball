@@ -328,7 +328,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       />
       <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          {/* Week Navigation with Stats */}
+          {/* Week Navigation */}
           <View style={styles.weekNav}>
             <TouchableOpacity
               style={styles.weekArrow}
@@ -338,28 +338,20 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               <Text style={styles.weekArrowText}>←</Text>
             </TouchableOpacity>
 
-            <View style={styles.weekInfo}>
+            <View style={styles.weekCenter}>
               <TouchableOpacity
                 onPress={!isCurrentWeek ? () => setWeekOffset(0) : undefined}
                 activeOpacity={isCurrentWeek ? 1 : 0.7}
               >
                 <Text style={[styles.weekRange, isCurrentWeek && styles.weekRangeCurrent]}>
-                  {getWeekRange().weekStart.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {getWeekRange().weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   {' - '}
-                  {getWeekRange().weekEnd.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                  {getWeekRange().weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 </Text>
                 {!isCurrentWeek && (
                   <Text style={styles.thisWeekHint}>Tap for this week</Text>
                 )}
               </TouchableOpacity>
-              
-              {/* Stats Row */}
-              <View style={styles.weekStats}>
-                <Text style={styles.weekStatsText}>
-                  {totalMyTeamGames} game{totalMyTeamGames !== 1 ? 's' : ''}
-                  {totalBlackouts > 0 && ` • ${totalBlackouts} blackout${totalBlackouts !== 1 ? 's' : ''}`}
-                </Text>
-              </View>
             </View>
 
             <TouchableOpacity
@@ -370,6 +362,25 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               <Text style={styles.weekArrowText}>→</Text>
             </TouchableOpacity>
           </View>
+
+          {/* Stats Bar */}
+          {totalMyTeamGames > 0 && (
+            <View style={styles.statsBar}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{totalMyTeamGames}</Text>
+                <Text style={styles.statLabel}>Games</Text>
+              </View>
+              {totalBlackouts > 0 && (
+                <>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statItem}>
+                    <Text style={[styles.statNumber, styles.statNumberWarning]}>{totalBlackouts}</Text>
+                    <Text style={styles.statLabel}>Blackouts</Text>
+                  </View>
+                </>
+              )}
+            </View>
+          )}
         </View>
 
       {sortedDates.map((dateKey) => renderDaySection(dateKey, gamesByDate[dateKey]))}
@@ -406,8 +417,8 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 24,
-    paddingBottom: 8,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   daySection: {
     marginHorizontal: 24,
@@ -440,33 +451,30 @@ const styles = StyleSheet.create({
   weekNav: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    marginBottom: 16,
+    justifyContent: 'center',
+    marginBottom: 12,
   },
   weekArrow: {
-    width: 44,
-    height: 44,
-    backgroundColor: '#F0F0F0',
-    borderRadius: 22,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   weekArrowText: {
-    fontSize: 20,
-    color: '#333333',
+    fontSize: 24,
+    color: '#0066CC',
     fontWeight: '600',
   },
-  weekInfo: {
-    flex: 1,
+  weekCenter: {
+    minWidth: 200,
     alignItems: 'center',
+    paddingHorizontal: 16,
   },
   weekRange: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#000000',
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 4,
   },
   weekRangeCurrent: {
     color: '#0066CC',
@@ -474,16 +482,41 @@ const styles = StyleSheet.create({
   thisWeekHint: {
     fontSize: 12,
     color: '#0066CC',
-    marginTop: 2,
+    marginTop: 4,
     fontWeight: '600',
   },
-  weekStats: {
-    marginTop: 4,
+  statsBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    gap: 16,
   },
-  weekStatsText: {
-    fontSize: 13,
+  statItem: {
+    alignItems: 'center',
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#0066CC',
+    lineHeight: 28,
+  },
+  statNumberWarning: {
+    color: '#FF6B35',
+  },
+  statLabel: {
+    fontSize: 12,
     color: '#666666',
-    textAlign: 'center',
+    marginTop: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: '#E0E0E0',
   },
   dayDate: {
     fontSize: 15,
