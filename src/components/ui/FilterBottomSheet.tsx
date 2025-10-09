@@ -3,7 +3,7 @@
  * Global filter UI for all game views
  */
 
-import React from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  PanResponder,
+  Animated,
 } from 'react-native';
 import { useAppStore, type GameFilters } from '../../store/appStore';
 
@@ -26,8 +28,29 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   hideLiveFilter = false,
 }) => {
   const { filters, toggleFilter, resetFilters } = useAppStore();
-
   const activeCount = Object.values(filters).filter(Boolean).length;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to downward drags
+        return gestureState.dy > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Only allow dragging down
+        if (gestureState.dy > 0) {
+          // Could add animation here if desired
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // If dragged down more than 50px, dismiss
+        if (gestureState.dy > 50) {
+          onClose();
+        }
+      },
+    })
+  ).current;
 
   const handleToggle = (filterKey: keyof GameFilters) => {
     toggleFilter(filterKey);
@@ -50,16 +73,9 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
           activeOpacity={1}
           onPress={(e) => e.stopPropagation()}
         >
-          <TouchableOpacity
-            style={styles.handleContainer}
-            onPress={(e) => {
-              e.stopPropagation();
-              onClose();
-            }}
-            activeOpacity={0.7}
-          >
+          <View style={styles.handleContainer} {...panResponder.panHandlers}>
             <View style={styles.handle} />
-          </TouchableOpacity>
+          </View>
           
           <View style={styles.header}>
             <Text style={styles.title}>Filters</Text>
