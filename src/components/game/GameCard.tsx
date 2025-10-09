@@ -35,7 +35,6 @@ interface GameCardProps {
 export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [], onPress }) => {
   const gameTime = formatGameTime(game.startTime);
   const isLive = game.gameState === 'LIVE';
-  const isFinal = game.gameState === 'FINAL';
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipMessage, setTooltipMessage] = useState('');
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
@@ -119,9 +118,8 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
         <View style={styles.header}>
           <Text style={styles.time}>{gameTime}</Text>
           {isLive && <View style={styles.liveBadge}>
-            <Text style={styles.liveText}>LIVE</Text>
+            <Text style={styles.liveText}>LIVE NOW</Text>
           </View>}
-          {isFinal && <Text style={styles.finalText}>Final</Text>}
           {isNational && (
             <View style={styles.nationalBadge}>
               <Text style={styles.nationalText}>National</Text>
@@ -211,12 +209,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
-  },
-  finalText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#999999',
-    marginLeft: 12,
   },
   matchup: {
     flexDirection: 'row',
