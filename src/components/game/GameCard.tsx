@@ -86,9 +86,9 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
     setBottomSheetVisible(true);
   };
 
-  // Show up to 3 services if they fit, then +X for remainder
-  // Tighter 4px gaps help fit more badges on one row
-  const maxVisibleServices = 3;
+  // TODO: Implement dynamic width measurement to show as many as fit
+  // For now, safe default of 2 prevents overflow
+  const maxVisibleServices = 2;
   const visibleServices = userServices.slice(0, maxVisibleServices);
   const remainingCount = Math.max(0, userServices.length - maxVisibleServices);
 
