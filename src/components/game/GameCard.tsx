@@ -288,8 +288,7 @@ const styles = StyleSheet.create({
   servicesRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
+    gap: 4,
   },
   moreBadge: {
     paddingHorizontal: 12,
