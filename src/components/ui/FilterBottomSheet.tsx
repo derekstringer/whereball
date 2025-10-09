@@ -33,14 +33,6 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
     toggleFilter(filterKey);
   };
 
-  const handleClear = () => {
-    resetFilters();
-  };
-
-  const handleApply = () => {
-    onClose();
-  };
-
   return (
     <Modal
       visible={visible}
@@ -58,7 +50,13 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
           activeOpacity={1}
           onPress={(e) => e.stopPropagation()}
         >
-          <View style={styles.handle} />
+          <TouchableOpacity
+            style={styles.handleContainer}
+            onPress={onClose}
+            activeOpacity={0.7}
+          >
+            <View style={styles.handle} />
+          </TouchableOpacity>
           
           <View style={styles.header}>
             <Text style={styles.title}>Filters</Text>
@@ -212,23 +210,6 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
               </View>
             </TouchableOpacity>
           </ScrollView>
-
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={styles.secondaryButton}
-              onPress={handleClear}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.secondaryButtonText}>Clear All</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.primaryButton}
-              onPress={handleApply}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.primaryButtonText}>Apply</Text>
-            </TouchableOpacity>
-          </View>
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -248,14 +229,15 @@ const styles = StyleSheet.create({
     maxHeight: '80%',
     paddingBottom: 40,
   },
+  handleContainer: {
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
   handle: {
     width: 40,
     height: 4,
     backgroundColor: '#E0E0E0',
     borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
   },
   header: {
     flexDirection: 'row',
