@@ -32,7 +32,7 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
   const { user, isPremium } = useAppStore();
   const { zip, services } = route.params || {};
 
-  const maxTeams = isPremium ? 999 : 1; // Free: 1 team, Premium: unlimited
+  const maxTeams = 999; // Temporarily unlimited for testing (TODO: Restore free tier limit)
 
   const toggleTeam = (teamId: string) => {
     if (selectedTeams.includes(teamId)) {
@@ -120,9 +120,7 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
           <Text style={styles.emoji}>🏒</Text>
           <Text style={styles.title}>Follow your team</Text>
           <Text style={styles.subtitle}>
-            {isPremium
-              ? 'Select all the teams you want to follow.'
-              : 'Pick your favorite NHL team (Free: 1 team)'}
+            Select all the teams you want to follow.
           </Text>
 
           <View style={styles.teamsGrid}>
@@ -171,11 +169,9 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
             disabled={loading || selectedTeams.length === 0}
           />
 
-          {!isPremium && (
-            <Text style={styles.upgradeNote}>
-              💡 Want more teams? Upgrade to Premium for unlimited teams!
-            </Text>
-          )}
+          <Text style={styles.upgradeNote}>
+            🧪 Testing mode: Multi-team enabled
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>

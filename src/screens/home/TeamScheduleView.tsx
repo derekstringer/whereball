@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { getGamesForDateRange, type NHLGame } from '../../lib/nhl-api';
 import { useAppStore } from '../../store/appStore';
+import { GameCard } from '../../components/game/GameCard';
 
 interface TeamScheduleViewProps {
   followedTeamCodes: string[];
@@ -122,9 +123,17 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
         <Text style={styles.title}>
-          {followedTeamCodes[0] || 'Teams'} Schedule
+          {followedTeamCodes.length === 1 
+            ? `${followedTeamCodes[0]} Schedule`
+            : followedTeamCodes.length > 1
+            ? `${followedTeamCodes.length} Teams Schedule`
+            : 'Teams Schedule'}
         </Text>
-        <Text style={styles.subtitle}>Next {filteredGames.length} games</Text>
+        <Text style={styles.subtitle}>
+          {followedTeamCodes.length > 1 
+            ? `Next ${filteredGames.length} games from your teams`
+            : `Next ${filteredGames.length} games`}
+        </Text>
 
         {/* Stats Bar */}
         {filteredGames.length > 0 && (
@@ -146,67 +155,15 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
         )}
       </View>
 
-      {/* Game List */}
+      {/* Game List - Now using unified GameCard */}
       <View style={styles.gamesContainer}>
-        {filteredGames.map((game, index) => {
-          const available = isGameAvailable(game);
-          const blackedOut = isGameBlackedOut(game);
-          const network = getGameNetwork(game);
-          const gameDate = new Date(game.startTime);
-          const isHome = followedTeamCodes.includes(game.homeTeam.abbreviation);
-          const opponent = isHome ? game.awayTeam : game.homeTeam;
-
-          return (
-            <View key={`${game.id}-${index}`} style={styles.gameCard}>
-              <View style={styles.gameHeader}>
-                <Text style={styles.gameDate}>
-                  {gameDate.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </Text>
-                <Text style={styles.gameTime}>
-                  {gameDate.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                  })}
-                </Text>
-              </View>
-
-              <View style={styles.gameBody}>
-                <View style={styles.matchup}>
-                  <Text style={styles.homeAway}>{isHome ? 'vs' : '@'}</Text>
-                  <Text style={styles.opponent}>{opponent.abbreviation}</Text>
-                  <Text style={styles.opponentName} numberOfLines={1}>
-                    {opponent.name}
-                  </Text>
-                </View>
-
-                <View style={styles.watchInfo}>
-                  <Text style={styles.network}>{network}</Text>
-                  {blackedOut ? (
-                    <View style={styles.statusBadge}>
-                      <Text style={styles.statusIcon}>⚠️</Text>
-                      <Text style={styles.statusText}>Likely blacked out</Text>
-                    </View>
-                  ) : available ? (
-                    <View style={[styles.statusBadge, styles.statusAvailable]}>
-                      <Text style={styles.statusIcon}>✓</Text>
-                      <Text style={[styles.statusText, styles.statusTextAvailable]}>
-                        Available
-                      </Text>
-                    </View>
-                  ) : (
-                    <View style={styles.statusBadge}>
-                      <Text style={styles.statusText}>Not on your services</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            </View>
-          );
-        })}
+        {filteredGames.map((game) => (
+          <GameCard
+            key={game.id}
+            game={game}
+            userServiceCodes={userServiceCodes}
+          />
+        ))}
       </View>
 
       {filteredGames.length === 0 && (
