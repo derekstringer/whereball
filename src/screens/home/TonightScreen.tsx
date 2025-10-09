@@ -17,6 +17,7 @@ import {
 import { GameCard } from '../../components/game/GameCard';
 import { getGamesForDate, type NHLGame } from '../../lib/nhl-api';
 import { trackEvent } from '../../lib/analytics';
+import { Tooltip } from '../../components/ui/ServiceBadge';
 import { useAppStore } from '../../store/appStore';
 import { WeeklyView } from './WeeklyView';
 import { TeamScheduleView } from './TeamScheduleView';
@@ -36,6 +37,8 @@ export const TonightScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipMessage, setTooltipMessage] = useState('');
 
   const { subscriptions, follows, filters } = useAppStore();
   
@@ -279,6 +282,10 @@ export const TonightScreen: React.FC = () => {
                 game={game}
                 userServiceCodes={userServiceCodes}
                 onPress={() => handleGamePress(game)}
+                onShowTooltip={(message) => {
+                  setTooltipMessage(message);
+                  setTooltipVisible(true);
+                }}
               />
             ))}
           </View>
@@ -305,6 +312,11 @@ export const TonightScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <Tooltip
+        visible={tooltipVisible}
+        message={tooltipMessage}
+        onDismiss={() => setTooltipVisible(false)}
+      />
       {/* Header with Hamburger + Filter */}
       <View style={styles.topBar}>
         <TouchableOpacity

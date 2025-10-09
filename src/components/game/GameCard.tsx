@@ -30,13 +30,12 @@ interface GameCardProps {
   game: NHLGame;
   userServiceCodes?: string[];
   onPress?: () => void;
+  onShowTooltip?: (message: string) => void;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [], onPress }) => {
+export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [], onPress, onShowTooltip }) => {
   const gameTime = formatGameTime(game.startTime);
   const isLive = game.gameState === 'LIVE';
-  const [tooltipVisible, setTooltipVisible] = useState(false);
-  const [tooltipMessage, setTooltipMessage] = useState('');
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
   const [bottomSheetServices, setBottomSheetServices] = useState<{
     userServices: string[];
@@ -58,26 +57,29 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
 
   const handleBadgePress = (serviceCode: string) => {
     const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
-    setTooltipMessage(`Available on your ${service?.name}`);
-    setTooltipVisible(true);
+    if (onShowTooltip) {
+      onShowTooltip(`Available on your ${service?.name}`);
+    }
   };
 
   const handleUnavailablePress = () => {
-    if (missingServices.length > 0) {
-      const serviceNames = getServiceNames(missingServices);
-      setTooltipMessage(`Available on ${serviceNames} (not on your services)`);
-    } else {
-      setTooltipMessage('Not available on streaming services');
+    if (onShowTooltip) {
+      if (missingServices.length > 0) {
+        const serviceNames = getServiceNames(missingServices);
+        onShowTooltip(`Available on ${serviceNames} (not on your services)`);
+      } else {
+        onShowTooltip('Not available on streaming services');
+      }
     }
-    setTooltipVisible(true);
   };
 
   const handleBlackoutPress = () => {
-    const alternatives = missingServices.length > 0 
-      ? ` Try ${getServiceNames(missingServices)}`
-      : '';
-    setTooltipMessage(`Likely blacked out in your area.${alternatives}`);
-    setTooltipVisible(true);
+    if (onShowTooltip) {
+      const alternatives = missingServices.length > 0 
+        ? ` Try ${getServiceNames(missingServices)}`
+        : '';
+      onShowTooltip(`Likely blacked out in your area.${alternatives}`);
+    }
   };
 
   const handleMorePress = () => {
@@ -94,11 +96,6 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
 
   return (
     <>
-      <Tooltip
-        visible={tooltipVisible}
-        message={tooltipMessage}
-        onDismiss={() => setTooltipVisible(false)}
-      />
       <ServicesBottomSheet
         visible={bottomSheetVisible}
         onClose={() => setBottomSheetVisible(false)}
@@ -107,8 +104,9 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
         channel={bottomSheetServices.channel}
         onServicePress={(serviceCode) => {
           setBottomSheetVisible(false);
-          setTooltipMessage(`Opening ${STREAMING_SERVICES.find(s => s.code === serviceCode)?.name}...`);
-          setTooltipVisible(true);
+          if (onShowTooltip) {
+            onShowTooltip(`Opening ${STREAMING_SERVICES.find(s => s.code === serviceCode)?.name}...`);
+          }
         }}
       />
       <TouchableOpacity

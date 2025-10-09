@@ -13,6 +13,7 @@ import {
 import { getGamesForDateRange, type NHLGame } from '../../lib/nhl-api';
 import { useAppStore } from '../../store/appStore';
 import { GameCard } from '../../components/game/GameCard';
+import { Tooltip } from '../../components/ui/ServiceBadge';
 
 interface TeamScheduleViewProps {
   followedTeamCodes: string[];
@@ -25,6 +26,8 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
 }) => {
   const [games, setGames] = useState<NHLGame[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
+  const [tooltipMessage, setTooltipMessage] = useState('');
   const { filters } = useAppStore();
 
   // Helper functions - must be defined BEFORE useMemo that uses them
@@ -120,7 +123,13 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
   const blackedOutGames = filteredGames.filter(isGameBlackedOut).length;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+    <>
+      <Tooltip
+        visible={tooltipVisible}
+        message={tooltipMessage}
+        onDismiss={() => setTooltipVisible(false)}
+      />
+      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
         <Text style={styles.title}>
           {followedTeamCodes.length === 1 
@@ -162,6 +171,10 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
             key={game.id}
             game={game}
             userServiceCodes={userServiceCodes}
+            onShowTooltip={(message) => {
+              setTooltipMessage(message);
+              setTooltipVisible(true);
+            }}
           />
         ))}
       </View>
@@ -179,7 +192,8 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
           Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
         </Text>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </>
   );
 };
 
