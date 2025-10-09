@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { AppState, User, UserSubscription, Follow, ThemeState } from '../types';
+import { ColorMode } from '../styles/tokens';
 
 export interface GameFilters {
   myTeamsOnly: boolean;
@@ -15,6 +16,10 @@ export interface GameFilters {
 }
 
 interface AppStore extends AppState {
+  // Color Mode
+  colorMode: ColorMode;
+  setColorMode: (mode: ColorMode) => void;
+  
   // Filters
   filters: GameFilters;
   setFilters: (filters: GameFilters) => void;
@@ -38,15 +43,15 @@ interface AppStore extends AppState {
   reset: () => void;
 }
 
-// Default theme (light mode, neutral colors)
+// Default theme (dark mode, electric cyan)
 const DEFAULT_THEME: ThemeState = {
-  mode: 'light',
-  primary: '#0066CC',
-  accent: '#FF6B35',
-  background: '#FFFFFF',
-  surface: '#F5F5F5',
-  text: '#000000',
-  safeAccent: '#0052A3',
+  mode: 'dark',
+  primary: '#00E5FF',
+  accent: '#22D1EE',
+  background: '#0B0D12',
+  surface: '#11151C',
+  text: '#E6EAF2',
+  safeAccent: '#00B8CC',
   currentContext: null,
 };
 
@@ -74,6 +79,9 @@ const initialState: AppState = {
 export const useAppStore = create<AppStore>((set) => ({
   ...initialState,
   filters: DEFAULT_FILTERS,
+  colorMode: 'dark', // Default to dark mode
+
+  setColorMode: (mode) => set({ colorMode: mode }),
 
   setFilters: (filters) => set({ filters }),
 

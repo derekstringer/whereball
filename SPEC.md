@@ -1,5 +1,5 @@
-# WhereBall Product Specification v1.1
-**Last Updated:** January 10, 2025  
+# WhereBall Product Specification v1.2
+**Last Updated:** October 9, 2025  
 **Status:** Active Development  
 **Platform:** React Native + Expo (iOS/Android)  
 **Backend:** Supabase  
@@ -8,9 +8,14 @@
 ---
 
 ## Document Control
-- **Version:** 1.1
-- **Previous Version:** 1.0 (Initial ChatGPT/User collaboration)
-- **Changes in v1.1:** Incorporated Cline architectural review recommendations (see Changelog)
+- **Version:** 1.2
+- **Previous Versions:** 
+  - 1.1 (Cline architectural review)
+  - 1.0 (Initial ChatGPT/User collaboration)
+- **Changes in v1.2:** 
+  - **AI Model Switch:** Grok 4 Fast → Groq Llama 3.1 8B (default) with smart router
+  - **Voice/TTS System:** Added comprehensive voice system with Google TTS Neural2, 8 personas, caching
+  - **UI Redesign:** Dark-mode-first design system with electric cyan accents, design tokens, NativeWind
 - **Next Review:** After MVP launch (Week 6)
 
 ---
@@ -603,12 +608,57 @@ Stickiness via pride. Premium users set team-specific color themes that auto-app
 
 ## X. AI CONCIERGE — INTEGRATED CONTEXT, MEMORY & SCOPE
 
-### A) Model & Cost
+### A) LLM Router & Model Strategy
 
-**Model:** Grok-4 Fast Reasoning via API proxy
-- **Cost:** ~$0.10 per 1M tokens
+**Primary Model:** Groq Llama 3.1 8B Instant
+- **Cost:** ~$0.05 per 1M input tokens, ~$0.08 per 1M output tokens (significantly cheaper)
 - **Context Window:** 128K tokens
-- **Latency:** <2 seconds for typical queries
+- **Latency:** <1 second for typical queries
+- **Use Case:** 99% of all concierge interactions
+
+**Fallback Model:** xAI Grok 4 Fast (rare escalations only)
+- **Cost:** ~$5 per 1M input tokens, ~$15 per 1M output tokens
+- **Context Window:** 128K tokens
+- **Use Case:** Complex explanations, rare edge cases (when ROUTER_ESCALATE=true)
+
+**Router Logic:**
+
+```typescript
+// Environment Variables
+GROQ_API_KEY=...
+XAI_API_KEY=...
+MODEL_DEFAULT=llama-3.1-8b-instant
+MODEL_FALLBACK=grok-4-fast
+ROUTER_MAX_TOKENS_IN=1500
+ROUTER_MAX_TOKENS_OUT=160
+ROUTER_ESCALATE=false   // Feature flag for fallback
+
+// Routing Decision
+function selectModel(request) {
+  // 99% of requests → Llama 3.1 8B
+  if (!ROUTER_ESCALATE) return MODEL_DEFAULT;
+  
+  // Rare escalations (when flag enabled)
+  if (request.isComplex || request.requiresDeepReasoning) {
+    return MODEL_FALLBACK;
+  }
+  
+  return MODEL_DEFAULT;
+}
+```
+
+**Telemetry Per Call:**
+- Provider (groq/xai)
+- Tokens in/out
+- Latency (ms)
+- Cost estimate ($)
+- Model used
+
+**Cost Caps:**
+- Per-user daily token cap (soft)
+- Per-user monthly token cap (soft)
+- Global kill-switch on monthly spend threshold
+- Alert dev team on cost anomalies
 
 **Context Strategy (Memory Pack):**
 
@@ -804,6 +854,195 @@ You are WhereBall Concierge, a fast, trustworthy guide that tells fans exactly h
 - **Scheduling:** Supabase Edge Function cron job
 - **Timezone Handling:** User traveling → adjust alert times to local TZ
 - **Permissions:** Request on onboarding; respect "Not Now" selection
+
+---
+
+## XI-A. VOICE/TTS SYSTEM
+
+### Goal
+Provide an optional voice layer for concierge responses and alerts, using cloud TTS with regional "sporty personas" while maintaining legal compliance.
+
+### A) TTS Provider & Environment
+
+**Default Provider:** Google Cloud Text-to-Speech (Neural2 voices)
+
+```typescript
+// Environment Variables
+VOICE_PROVIDER=google          // Options: google|polly|azure
+GOOGLE_TTS_KEY=...            // Required for Google
+AWS_ACCESS_KEY_ID=...         // Required for Polly
+AWS_SECRET_ACCESS_KEY=...
+AWS_REGION=...
+AZURE_TTS_KEY=...             // Required for Azure
+AZURE_TTS_REGION=...
+VOICE_CACHE_BUCKET=...        // Supabase Storage bucket
+VOICE_DEFAULT_PERSONA=national_desk
+VOICE_FREE_USES_CLOUD=false   // When true, allow cloud TTS on Free tier
+VOICE_MAX_LEN_CHARS=600       // Hard cap per utterance
+```
+
+### B) Voice Personas (8 Regional Styles)
+
+All personas map to **stock Google Neural2 voices** with SSML prosody adjustments. No celebrity impersonations or copyrighted character voices.
+
+**Persona Mapping:**
+
+```typescript
+personas = {
+  national_desk: {
+    voice: 'en-US-Neural2-G',           // Neutral anchor (f)
+    ssml: '<prosody rate="1.0" pitch="+0st"/>',
+    bio: 'Professional desk anchor',
+  },
+  midwest_playbyplay: {
+    voice: 'en-US-Neural2-D',           // Warm (m)
+    ssml: '<prosody rate="1.08" pitch="+0st"/>',
+    bio: 'Warm, upbeat play-by-play',
+  },
+  new_england_chalk: {
+    voice: 'en-US-Neural2-B',           // Crisp (m)
+    ssml: '<prosody rate="0.96" pitch="-1st"/>',
+    bio: 'Brisk, matter-of-fact analyst',
+  },
+  tri_state_color: {
+    voice: 'en-US-Neural2-F',           // Lively (f)
+    ssml: '<prosody rate="1.06" pitch="+1st"/>',
+    bio: 'Lively color commentary',
+  },
+  gulf_coast_sideline: {
+    voice: 'en-US-Neural2-H',           // Relaxed (m)
+    ssml: '<prosody rate="0.94" pitch="-0st"/>',
+    bio: 'Relaxed sideline reporter',
+  },
+  pnw_analyst: {
+    voice: 'en-US-Neural2-C',           // Calm (f)
+    ssml: '<prosody rate="0.98" pitch="-0st"/>',
+    bio: 'Calm, precise analyst',
+  },
+  studio_host_f: {
+    voice: 'en-US-Neural2-F',
+    ssml: '<prosody rate="1.0" pitch="+0st"/>',
+    bio: 'Confident studio host',
+  },
+  sideline_reporter_f: {
+    voice: 'en-US-Neural2-E',
+    ssml: '<prosody rate="1.10" pitch="+1st"/>',
+    bio: 'Energetic sideline reporter',
+  },
+}
+```
+
+### C) Context-Aware Styling
+
+Adjust prosody rate based on context:
+
+**Alerts (Game Start Reminders):**
+- Use `rate="1.06"` for slight excitement
+- Example: "Stars vs Predators starts in 3 hours!"
+
+**Nightly Rundown:**
+- Use `rate="1.0"` (desk anchor style)
+- Example: "Here are tonight's games for your teams."
+
+**Concierge Replies:**
+- Use `rate="0.98-1.02"` (conversational)
+- Example: "This game's on ESPN, available on your YouTube TV."
+
+### D) Audio Caching Strategy
+
+**Cache Key:** `Hash(text + persona + ssml + locale)`
+
+**Process:**
+1. Generate cache key
+2. Check Supabase Storage bucket
+3. If hit → serve cached MP3/OGG
+4. If miss → synthesize, store, serve
+
+**Benefits:**
+- Drastically reduce TTS costs for repeated phrases
+- Faster response times
+- Example: "Game starts in 3 hours" with same voice → cache hit
+
+### E) Free Tier Fallback (On-Device TTS)
+
+When `VOICE_FREE_USES_CLOUD=false`:
+
+**iOS:** AVSpeechSynthesizer
+- Use system voices (Samantha, Fred, etc.)
+- No cloud cost
+
+**Android:** android.speech.tts.TextToSpeech
+- Use system voices
+- No cloud cost
+
+**UX:**
+- Settings toggle: "Use device voices (Free)" vs "Use cloud voices (Premium)"
+- Seamless switch; same persona labels
+
+### F) Compliance & Safety
+
+**Legal Notice (in-app):**
+> "Voices are generated using licensed stock neural voices. No affiliation or endorsement by leagues, teams, or broadcasters."
+
+**Block-List:**
+- Disallow prompts requesting celebrity impersonation
+- Block illegal stream mentions
+- Safe deflection: "I can't do that, but I can help you find the legal way to watch."
+
+### G) Settings UI
+
+**Voice Picker Screen:**
+
+```
+┌─────────────────────────────────┐
+│ 🎙️ Voice Settings              │
+├─────────────────────────────────┤
+│                                 │
+│ Voice Provider                  │
+│ ⚪ Device Voices (Free)         │
+│ ⚫ Cloud Voices (Premium)       │
+│                                 │
+│ Choose Your Voice:              │
+│                                 │
+│ 🎤 National Desk                │
+│    Professional anchor          │
+│    [▶️ Preview]                 │
+│                                 │
+│ 🎤 Midwest Play-by-Play         │
+│    Warm, upbeat                 │
+│    [▶️ Preview]                 │
+│                                 │
+│ ... (6 more personas)           │
+│                                 │
+│ Volume: [●--------] 40%         │
+│ Voice Off: [Toggle]             │
+│                                 │
+└─────────────────────────────────┘
+```
+
+**Preview Sample:**
+> "Stars vs Predators, 7 PM Central. Watch on ESPN via your YouTube TV."
+
+### H) Cost Estimation
+
+**Google Neural2 Pricing:**
+- $16 per 1M characters
+
+**Utterance Examples:**
+- Alert: "Game starts in 3 hours" → 30 chars → $0.00048
+- Concierge: "Available on ESPN via YouTube TV" → 40 chars → $0.00064
+
+**With Caching:**
+- Common phrases cached → 90% cost reduction
+- Estimated: $0.02-$0.05 per active Premium user/month
+
+### I) Telemetry Events
+
+**Emit PostHog:**
+- `tts_synthesize` (provider, chars, cached, cost_est)
+- `tts_playback` (persona, context)
+- `persona_selected` (persona_id)
+- `voice_toggled` (enabled, provider)
 
 ---
 

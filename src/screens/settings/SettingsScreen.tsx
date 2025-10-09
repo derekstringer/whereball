@@ -15,16 +15,19 @@ import {
   Alert,
 } from 'react-native';
 import { useAppStore } from '../../store/appStore';
+import { useTheme } from '../../hooks/useTheme';
 import { NHL_TEAMS } from '../../constants/teams';
 import { STREAMING_SERVICES } from '../../constants/services';
 import { Follow } from '../../types';
+import type { ColorMode } from '../../styles/tokens';
 
 interface SettingsScreenProps {
   onClose: () => void;
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
-  const { subscriptions, setSubscriptions, follows, setFollows } = useAppStore();
+  const { subscriptions, setSubscriptions, follows, setFollows, colorMode, setColorMode } = useAppStore();
+  const { colors } = useTheme();
   const [zip, setZip] = useState('75201'); // TODO: Get from store
   const [selectedTeam, setSelectedTeam] = useState(
     follows.length > 0 ? follows[0].team_id : 'nhl_ari'
@@ -79,13 +82,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={styles.closeButtonText}>✕</Text>
+          <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -98,15 +101,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         </View>
       )}
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={[styles.scrollView, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scrollContent}>
         {/* ZIP Code */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📍 Your Location</Text>
-          <Text style={styles.sectionDescription}>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📍 Your Location</Text>
+          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
             We use your ZIP to determine blackout rules
           </Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              color: colors.text
+            }]}
+            placeholderTextColor={colors.textSecondary}
             value={zip}
             onChangeText={setZip}
             onBlur={() => {
@@ -123,9 +131,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         </View>
 
         {/* Followed Team */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>⭐ Followed Team</Text>
-          <Text style={styles.sectionDescription}>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>⭐ Followed Team</Text>
+          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
             Free tier: 1 team • Premium: Unlimited
           </Text>
           <View style={styles.teamsGrid}>
@@ -168,9 +176,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         </View>
 
         {/* Services */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📺 Your Streaming Services</Text>
-          <Text style={styles.sectionDescription}>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📺 Your Streaming Services</Text>
+          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
             Select all services you subscribe to
           </Text>
           <View style={styles.servicesGrid}>
@@ -209,17 +217,90 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
           </View>
         </View>
 
+        {/* Appearance */}
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🎨 Appearance</Text>
+          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>Choose your theme</Text>
+          <View style={styles.themeOptions}>
+            <TouchableOpacity
+              style={[
+                styles.themeOption,
+                colorMode === 'dark' && styles.themeOptionActive,
+              ]}
+              onPress={() => {
+                setColorMode('dark');
+                showToastNotification('Dark mode enabled');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.themeOptionIcon}>🌙</Text>
+              <Text
+                style={[
+                  styles.themeOptionText,
+                  colorMode === 'dark' && styles.themeOptionTextActive,
+                ]}
+              >
+                Dark
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.themeOption,
+                colorMode === 'light' && styles.themeOptionActive,
+              ]}
+              onPress={() => {
+                setColorMode('light');
+                showToastNotification('Light mode enabled');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.themeOptionIcon}>☀️</Text>
+              <Text
+                style={[
+                  styles.themeOptionText,
+                  colorMode === 'light' && styles.themeOptionTextActive,
+                ]}
+              >
+                Light
+              </Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[
+                styles.themeOption,
+                colorMode === 'system' && styles.themeOptionActive,
+              ]}
+              onPress={() => {
+                setColorMode('system');
+                showToastNotification('System theme enabled');
+              }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.themeOptionIcon}>⚙️</Text>
+              <Text
+                style={[
+                  styles.themeOptionText,
+                  colorMode === 'system' && styles.themeOptionTextActive,
+                ]}
+              >
+                System
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
         {/* Notifications */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔔 Notifications</Text>
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>Game start reminders</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>🔔 Notifications</Text>
+          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>Game start reminders</Text>
             <View style={styles.toggle}>
               <Text style={styles.toggleText}>ON</Text>
             </View>
           </View>
-          <View style={styles.settingRow}>
-            <Text style={styles.settingLabel}>
+          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
+            <Text style={[styles.settingLabel, { color: colors.text }]}>
               National flip alerts (Premium)
             </Text>
             <View style={[styles.toggle, styles.toggleDisabled]}>
@@ -229,8 +310,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         </View>
 
         {/* Account */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>👤 Account</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>👤 Account</Text>
           <TouchableOpacity style={styles.accountButton}>
             <Text style={styles.accountButtonText}>Manage Subscription</Text>
           </TouchableOpacity>
@@ -245,9 +326,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         </View>
 
         {/* About */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>ℹ️ About</Text>
-          <Text style={styles.aboutText}>WhereBall v1.0.0</Text>
+        <View style={[styles.section, { backgroundColor: colors.card }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>ℹ️ About</Text>
+          <Text style={[styles.aboutText, { color: colors.textSecondary }]}>WhereBall v1.0.0</Text>
           <TouchableOpacity>
             <Text style={styles.linkText}>Privacy Policy</Text>
           </TouchableOpacity>
@@ -461,5 +542,35 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  themeOptions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  themeOption: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    backgroundColor: '#F0F0F0',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+  },
+  themeOptionActive: {
+    backgroundColor: '#E6F2FF',
+    borderColor: '#00E5FF',
+  },
+  themeOptionIcon: {
+    fontSize: 28,
+    marginBottom: 8,
+  },
+  themeOptionText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666666',
+  },
+  themeOptionTextActive: {
+    color: '#00E5FF',
   },
 });
