@@ -52,7 +52,10 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
         >
           <TouchableOpacity
             style={styles.handleContainer}
-            onPress={onClose}
+            onPress={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
             activeOpacity={0.7}
           >
             <View style={styles.handle} />
