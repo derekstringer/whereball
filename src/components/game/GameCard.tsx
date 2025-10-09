@@ -86,9 +86,11 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
     setBottomSheetVisible(true);
   };
 
-  // Determine which service to show (preferred or first)
-  const primaryService = userServices.length > 0 ? userServices[0] : null;
-  const remainingCount = userServices.length - 1;
+  // Show as many services as possible, then +X for remainder
+  // Assume each badge is ~80px wide, card is ~320px, leave space for padding
+  const maxVisibleServices = 3; // Show up to 3 services before +X
+  const visibleServices = userServices.slice(0, maxVisibleServices);
+  const remainingCount = Math.max(0, userServices.length - maxVisibleServices);
 
   return (
     <>
@@ -117,14 +119,16 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
       >
         <View style={styles.header}>
           <Text style={styles.time}>{gameTime}</Text>
-          {isLive && <View style={styles.liveBadge}>
-            <Text style={styles.liveText}>LIVE NOW</Text>
-          </View>}
-          {isNational && (
-            <View style={styles.nationalBadge}>
-              <Text style={styles.nationalText}>National</Text>
-            </View>
-          )}
+          <View style={styles.headerBadges}>
+            {isLive && <View style={styles.liveBadge}>
+              <Text style={styles.liveText}>LIVE NOW</Text>
+            </View>}
+            {isNational && (
+              <View style={styles.nationalBadge}>
+                <Text style={styles.nationalText}>National</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <View style={styles.matchup}>
@@ -147,13 +151,16 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
           <View style={styles.servicesRow}>
             {isBlackedOut ? (
               <BlackoutBadge onPress={handleBlackoutPress} />
-            ) : primaryService ? (
+            ) : visibleServices.length > 0 ? (
               <>
-                <ServiceBadge
-                  serviceCode={primaryService}
-                  size="medium"
-                  onPress={() => handleBadgePress(primaryService)}
-                />
+                {visibleServices.map((serviceCode) => (
+                  <ServiceBadge
+                    key={serviceCode}
+                    serviceCode={serviceCode}
+                    size="medium"
+                    onPress={() => handleBadgePress(serviceCode)}
+                  />
+                ))}
                 {remainingCount > 0 && (
                   <TouchableOpacity
                     style={styles.moreBadge}
@@ -191,12 +198,18 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   time: {
     fontSize: 15,
     fontWeight: '600',
     color: '#666666',
+  },
+  headerBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   liveBadge: {
     backgroundColor: '#FF3B30',
@@ -257,7 +270,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 6,
-    marginLeft: 12,
   },
   nationalText: {
     fontSize: 12,
