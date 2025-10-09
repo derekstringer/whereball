@@ -273,14 +273,11 @@ export const TonightScreen: React.FC = () => {
           </View>
         ) : (
           <View style={styles.gamesContainer}>
-            <Text style={styles.gamesCount}>
-              {filteredGames.length} game{filteredGames.length !== 1 ? 's' : ''} 
-              {filteredGames.length !== games.length && ` (${games.length} total)`}
-            </Text>
             {filteredGames.map((game) => (
               <GameCard
                 key={game.id}
                 game={game}
+                userServiceCodes={userServiceCodes}
                 onPress={() => handleGamePress(game)}
               />
             ))}
@@ -362,7 +359,7 @@ export const TonightScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Text style={[styles.tabText, activeTab === 'team' && styles.tabTextActive]}>
-            Team
+            Teams
           </Text>
         </TouchableOpacity>
       </View>

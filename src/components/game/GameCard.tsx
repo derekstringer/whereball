@@ -1,6 +1,6 @@
 /**
  * Game Card Component
- * Displays a single game with broadcast info
+ * Displays a single game with broadcast info and service badges
  */
 
 import React, { useState } from 'react';
@@ -13,11 +13,12 @@ import {
 import type { NHLGame } from '../../lib/nhl-api';
 import { formatGameTime } from '../../lib/nhl-api';
 import {
-  ServiceBadgesRow,
+  ServiceBadge,
   NotAvailableBadge,
   BlackoutBadge,
   Tooltip,
 } from '../ui/ServiceBadge';
+import { ServicesBottomSheet } from '../ui/ServicesBottomSheet';
 import { STREAMING_SERVICES } from '../../constants/services';
 import {
   getUserServicesForGame,
@@ -37,6 +38,12 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
   const isFinal = game.gameState === 'FINAL';
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipMessage, setTooltipMessage] = useState('');
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [bottomSheetServices, setBottomSheetServices] = useState<{
+    userServices: string[];
+    missingServices: string[];
+    channel?: string;
+  }>({ userServices: [], missingServices: [] });
 
   // Get services for this game
   const userServices = getUserServicesForGame(game, userServiceCodes);
@@ -47,8 +54,8 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
     b.network.toLowerCase().includes('espn+')
   );
 
-  // Get primary broadcast network
-  const primaryBroadcast = game.broadcasts.find(b => b.type === 'national') || game.broadcasts[0];
+  // Check if game is national broadcast
+  const isNational = game.broadcasts.some(b => b.type === 'national');
 
   const handleBadgePress = (serviceCode: string) => {
     const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
@@ -74,6 +81,16 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
     setTooltipVisible(true);
   };
 
+  const handleMorePress = () => {
+    const channel = game.broadcasts[0]?.network;
+    setBottomSheetServices({ userServices, missingServices, channel });
+    setBottomSheetVisible(true);
+  };
+
+  // Determine which service to show (preferred or first)
+  const primaryService = userServices.length > 0 ? userServices[0] : null;
+  const remainingCount = userServices.length - 1;
+
   return (
     <>
       <Tooltip
@@ -81,54 +98,79 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
         message={tooltipMessage}
         onDismiss={() => setTooltipVisible(false)}
       />
+      <ServicesBottomSheet
+        visible={bottomSheetVisible}
+        onClose={() => setBottomSheetVisible(false)}
+        userServices={bottomSheetServices.userServices}
+        missingServices={bottomSheetServices.missingServices}
+        channel={bottomSheetServices.channel}
+        onServicePress={(serviceCode) => {
+          setBottomSheetVisible(false);
+          setTooltipMessage(`Opening ${STREAMING_SERVICES.find(s => s.code === serviceCode)?.name}...`);
+          setTooltipVisible(true);
+        }}
+      />
       <TouchableOpacity
         style={styles.card}
         onPress={onPress}
         activeOpacity={0.7}
         disabled={!onPress}
       >
-      <View style={styles.header}>
-        <Text style={styles.time}>{gameTime}</Text>
-        {isLive && <View style={styles.liveBadge}>
-          <Text style={styles.liveText}>LIVE</Text>
-        </View>}
-        {isFinal && <Text style={styles.finalText}>Final</Text>}
-      </View>
-
-      <View style={styles.matchup}>
-        <View style={styles.team}>
-          <Text style={styles.teamAbbr}>{game.awayTeam.abbreviation}</Text>
-          <Text style={styles.teamName}>{game.awayTeam.name}</Text>
-        </View>
-        
-        <Text style={styles.at}>@</Text>
-        
-        <View style={styles.team}>
-          <Text style={styles.teamAbbr}>{game.homeTeam.abbreviation}</Text>
-          <Text style={styles.teamName}>{game.homeTeam.name}</Text>
-        </View>
-      </View>
-
-      {primaryBroadcast && (
-        <View style={styles.broadcastInfo}>
-          <View style={styles.broadcastBadge}>
-            <Text style={styles.broadcastText}>
-              📺 {primaryBroadcast.network}
-            </Text>
-          </View>
-          {primaryBroadcast.type === 'national' && (
+        <View style={styles.header}>
+          <Text style={styles.time}>{gameTime}</Text>
+          {isLive && <View style={styles.liveBadge}>
+            <Text style={styles.liveText}>LIVE</Text>
+          </View>}
+          {isFinal && <Text style={styles.finalText}>Final</Text>}
+          {isNational && (
             <View style={styles.nationalBadge}>
               <Text style={styles.nationalText}>National</Text>
             </View>
           )}
         </View>
-      )}
 
-      {game.broadcasts.length > 1 && (
-        <Text style={styles.moreNetworks}>
-          +{game.broadcasts.length - 1} more network{game.broadcasts.length > 2 ? 's' : ''}
-        </Text>
-      )}
+        <View style={styles.matchup}>
+          <View style={styles.team}>
+            <Text style={styles.teamAbbr}>{game.awayTeam.abbreviation}</Text>
+            <Text style={styles.teamName}>{game.awayTeam.name}</Text>
+          </View>
+          
+          <Text style={styles.at}>@</Text>
+          
+          <View style={styles.team}>
+            <Text style={styles.teamAbbr}>{game.homeTeam.abbreviation}</Text>
+            <Text style={styles.teamName}>{game.homeTeam.name}</Text>
+          </View>
+        </View>
+
+        {/* Service Badges Row */}
+        <View style={styles.watchSection}>
+          <Text style={styles.watchLabel}>Watch on:</Text>
+          <View style={styles.servicesRow}>
+            {isBlackedOut ? (
+              <BlackoutBadge onPress={handleBlackoutPress} />
+            ) : primaryService ? (
+              <>
+                <ServiceBadge
+                  serviceCode={primaryService}
+                  size="medium"
+                  onPress={() => handleBadgePress(primaryService)}
+                />
+                {remainingCount > 0 && (
+                  <TouchableOpacity
+                    style={styles.moreBadge}
+                    onPress={handleMorePress}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.moreBadgeText}>+{remainingCount}</Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <NotAvailableBadge onPress={handleUnavailablePress} />
+            )}
+          </View>
+        </View>
       </TouchableOpacity>
     </>
   );
@@ -223,11 +265,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 6,
+    marginLeft: 12,
   },
   nationalText: {
     fontSize: 12,
     fontWeight: '600',
     color: '#FF6B35',
+  },
+  watchSection: {
+    marginTop: 4,
+  },
+  watchLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666666',
+    marginBottom: 8,
+  },
+  servicesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  moreBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#999999',
+    backgroundColor: '#F5F5F5',
+    minWidth: 44,
+  },
+  moreBadgeText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#666666',
+    textAlign: 'center',
   },
   moreNetworks: {
     fontSize: 13,

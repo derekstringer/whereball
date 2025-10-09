@@ -26,6 +26,28 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
   const [loading, setLoading] = useState(true);
   const { filters } = useAppStore();
 
+  // Helper functions - must be defined BEFORE useMemo that uses them
+  const isGameAvailable = (game: NHLGame): boolean => {
+    return game.broadcasts.some((b) => {
+      const network = b.network.toLowerCase();
+      return userServiceCodes.some(
+        (service) =>
+          network.includes(service.toLowerCase()) ||
+          service.toLowerCase().includes(network)
+      );
+    });
+  };
+
+  const isGameBlackedOut = (game: NHLGame): boolean => {
+    const hasESPNPlus = game.broadcasts.some((b) =>
+      b.network.toLowerCase().includes('espn+')
+    );
+    const isMyTeam =
+      followedTeamCodes.includes(game.homeTeam.abbreviation) ||
+      followedTeamCodes.includes(game.awayTeam.abbreviation);
+    return hasESPNPlus && isMyTeam;
+  };
+
   useEffect(() => {
     loadTeamSchedule();
   }, []);
@@ -77,28 +99,7 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
     // Note: liveOnly not applicable to Team view
 
     return filtered.slice(0, 15); // Show next 15 games
-  }, [games, filters]);
-
-  const isGameAvailable = (game: NHLGame): boolean => {
-    return game.broadcasts.some((b) => {
-      const network = b.network.toLowerCase();
-      return userServiceCodes.some(
-        (service) =>
-          network.includes(service.toLowerCase()) ||
-          service.toLowerCase().includes(network)
-      );
-    });
-  };
-
-  const isGameBlackedOut = (game: NHLGame): boolean => {
-    const hasESPNPlus = game.broadcasts.some((b) =>
-      b.network.toLowerCase().includes('espn+')
-    );
-    const isMyTeam =
-      followedTeamCodes.includes(game.homeTeam.abbreviation) ||
-      followedTeamCodes.includes(game.awayTeam.abbreviation);
-    return hasESPNPlus && isMyTeam;
-  };
+  }, [games, filters, isGameAvailable]);
 
   const getGameNetwork = (game: NHLGame): string => {
     if (game.broadcasts.length === 0) return 'TBD';
@@ -121,7 +122,7 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
         <Text style={styles.title}>
-          {followedTeamCodes[0] || 'Team'} Schedule
+          {followedTeamCodes[0] || 'Teams'} Schedule
         </Text>
         <Text style={styles.subtitle}>Next {filteredGames.length} games</Text>
 
@@ -210,7 +211,7 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
 
       {filteredGames.length === 0 && (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>📅</Text>
+          <Text style={styles.emptyEmoji}>🏒</Text>
           <Text style={styles.emptyText}>No upcoming games found</Text>
         </View>
       )}
