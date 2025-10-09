@@ -27,6 +27,7 @@ import {
   getMissingServicesForGame,
   getServiceNames,
 } from '../../lib/broadcast-mapper';
+import { GameCard } from '../../components/game/GameCard';
 
 interface WeeklyViewProps {
   followedTeamCodes: string[];
@@ -41,6 +42,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, -1 = last week, 1 = next week
   const [expandedDays, setExpandedDays] = useState<Set<string>>(new Set());
+  const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipMessage, setTooltipMessage] = useState('');
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
@@ -169,6 +171,18 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
     });
   };
 
+  const toggleGameExpanded = (gameId: string) => {
+    setExpandedGames(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(gameId)) {
+        newSet.delete(gameId);
+      } else {
+        newSet.add(gameId);
+      }
+      return newSet;
+    });
+  };
+
   const renderDaySection = (dateKey: string, games: NHLGame[]) => {
     // Parse date - handle both YYYY-MM-DD and ISO formats
     let date: Date;
@@ -263,37 +277,60 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                 setBottomSheetVisible(true);
               };
 
+              const isGameExpanded = expandedGames.has(game.id);
+
               return (
-                <View key={`${game.id}-${index}`} style={styles.gameRow}>
-                  <View style={styles.gameTeams}>
-                    <Text style={styles.gameText} numberOfLines={1}>
-                      {game.awayTeam.abbreviation} @ {game.homeTeam.abbreviation}
-                    </Text>
-                  </View>
-                  <View style={styles.gameStatus}>
-                    {blackedOut ? (
-                      <BlackoutBadge onPress={handleBlackoutPress} />
-                    ) : primaryService ? (
-                      <>
-                        <ServiceBadge
-                          serviceCode={primaryService}
-                          size="small"
-                          onPress={() => handleBadgePress(primaryService)}
-                        />
-                        {remainingCount > 0 && (
-                          <TouchableOpacity
-                            style={styles.moreBadge}
-                            onPress={handleMorePress}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.moreBadgeText}>+{remainingCount}</Text>
-                          </TouchableOpacity>
+                <View key={`${game.id}-${index}`}>
+                  {isGameExpanded ? (
+                    <GameCard
+                      game={game}
+                      userServiceCodes={userServiceCodes}
+                      onPress={() => toggleGameExpanded(game.id)}
+                      onShowTooltip={(message) => {
+                        setTooltipMessage(message);
+                        setTooltipVisible(true);
+                      }}
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.gameRow}
+                      onPress={() => toggleGameExpanded(game.id)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.gameTeams}>
+                        <Text style={styles.gameText} numberOfLines={1}>
+                          {game.awayTeam.abbreviation} @ {game.homeTeam.abbreviation}
+                        </Text>
+                      </View>
+                      <View style={styles.gameStatus}>
+                        {blackedOut ? (
+                          <BlackoutBadge onPress={handleBlackoutPress} />
+                        ) : primaryService ? (
+                          <>
+                            <ServiceBadge
+                              serviceCode={primaryService}
+                              size="small"
+                              onPress={() => handleBadgePress(primaryService)}
+                            />
+                            {remainingCount > 0 && (
+                              <TouchableOpacity
+                                style={styles.moreBadge}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  handleMorePress();
+                                }}
+                                activeOpacity={0.7}
+                              >
+                                <Text style={styles.moreBadgeText}>+{remainingCount}</Text>
+                              </TouchableOpacity>
+                            )}
+                          </>
+                        ) : (
+                          <NotAvailableBadge onPress={handleUnavailablePress} />
                         )}
-                      </>
-                    ) : (
-                      <NotAvailableBadge onPress={handleUnavailablePress} />
-                    )}
-                  </View>
+                      </View>
+                    </TouchableOpacity>
+                  )}
                 </View>
               );
             })}
