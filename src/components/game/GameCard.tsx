@@ -86,9 +86,8 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
     setBottomSheetVisible(true);
   };
 
-  // Show as many services as possible, then +X for remainder
-  // Assume each badge is ~80px wide, card is ~320px, leave space for padding
-  const maxVisibleServices = 3; // Show up to 3 services before +X
+  // Show only 2 services max to fit within card width, then +X for remainder
+  const maxVisibleServices = 2;
   const visibleServices = userServices.slice(0, maxVisibleServices);
   const remainingCount = Math.max(0, userServices.length - maxVisibleServices);
 
