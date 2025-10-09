@@ -130,10 +130,33 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 </View>
                 <View style={styles.filterText}>
                   <Text style={[styles.filterLabel, filters.availableOnly && styles.filterLabelActive]}>
-                    On My Services
+                    On MY Services
                   </Text>
                   <Text style={styles.filterDescription}>
                     Available on your subscriptions
+                  </Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.filterOption,
+                filters.streamingOnly && styles.filterOptionActive,
+              ]}
+              onPress={() => handleToggle('streamingOnly')}
+              activeOpacity={0.7}
+            >
+              <View style={styles.filterLeft}>
+                <View style={[styles.checkbox, filters.streamingOnly && styles.checkboxActive]}>
+                  {filters.streamingOnly && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <View style={styles.filterText}>
+                  <Text style={[styles.filterLabel, filters.streamingOnly && styles.filterLabelActive]}>
+                    On ANY Services
+                  </Text>
+                  <Text style={styles.filterDescription}>
+                    Streaming anywhere, not just your subscriptions
                   </Text>
                 </View>
               </View>

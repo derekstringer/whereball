@@ -8,7 +8,8 @@ import { AppState, User, UserSubscription, Follow, ThemeState } from '../types';
 export interface GameFilters {
   myTeamsOnly: boolean;
   nationalOnly: boolean;
-  availableOnly: boolean;
+  availableOnly: boolean; // On MY Services
+  streamingOnly: boolean; // On ANY Services - NEW!
   liveOnly: boolean;
   showAll: boolean;
 }
@@ -54,6 +55,7 @@ const DEFAULT_FILTERS: GameFilters = {
   myTeamsOnly: true,
   nationalOnly: false,
   availableOnly: false,
+  streamingOnly: false,
   liveOnly: false,
   showAll: false,
 };
@@ -82,13 +84,14 @@ export const useAppStore = create<AppStore>((set) => ({
       // If toggling "Show All", turn off others
       if (filterKey === 'showAll' && !state.filters.showAll) {
         return {
-          filters: {
-            myTeamsOnly: false,
-            nationalOnly: false,
-            availableOnly: false,
-            liveOnly: false,
-            showAll: true,
-          },
+  filters: {
+    myTeamsOnly: false,
+    nationalOnly: false,
+    availableOnly: false,
+    streamingOnly: false,
+    liveOnly: false,
+    showAll: false,
+  },
         };
       }
       

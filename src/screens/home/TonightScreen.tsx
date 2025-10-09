@@ -109,6 +109,19 @@ export const TonightScreen: React.FC = () => {
       );
     }
 
+    // Filter: Available on ANY Streaming Services
+    if (filters.streamingOnly) {
+      filtered = filtered.filter(game =>
+        game.broadcasts.some(b => {
+          const network = b.network.toLowerCase();
+          // Check if available on any known streaming service
+          return ['espn+', 'hulu', 'youtube', 'fubo', 'paramount', 'sling', 'directv', 'max', 'peacock'].some(service =>
+            network.includes(service)
+          );
+        })
+      );
+    }
+
     // Filter: Live Games Only
     if (filters.liveOnly) {
       filtered = filtered.filter(game => game.gameState === 'LIVE');

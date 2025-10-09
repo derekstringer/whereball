@@ -196,13 +196,13 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#BDBDBD',
     alignItems: 'center',
     justifyContent: 'center',
   },
   notAvailableText: {
     fontSize: 16,
-    color: '#999999',
+    color: '#757575',
   },
   blackoutBadge: {
     paddingHorizontal: 10,

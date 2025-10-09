@@ -100,6 +100,19 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
       filtered = filtered.filter(game => isGameAvailable(game));
     }
 
+    // Filter: Available on ANY Streaming Services
+    if (filters.streamingOnly) {
+      filtered = filtered.filter(game =>
+        game.broadcasts.some(b => {
+          const network = b.network.toLowerCase();
+          // Check if available on any known streaming service
+          return ['espn+', 'hulu', 'youtube', 'fubo', 'paramount', 'sling', 'directv', 'max', 'peacock'].some(service =>
+            network.includes(service)
+          );
+        })
+      );
+    }
+
     // Note: liveOnly not applicable to Team view
 
     return filtered.slice(0, 15); // Show next 15 games
