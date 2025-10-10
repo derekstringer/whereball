@@ -97,11 +97,10 @@ export const TonightScreen: React.FC = () => {
       );
     }
 
-    // Filter: Available on My Services
-    if (filters.availableOnly) {
+    // Filter: Available on My Services Only
+    if (filters.myServicesOnly) {
       filtered = filtered.filter(game =>
         game.broadcasts.some(b => {
-          // Check if any broadcast network matches user's services
           const network = b.network.toLowerCase();
           return userServiceCodes.some(service => 
             network.includes(service.toLowerCase()) || 
@@ -111,17 +110,47 @@ export const TonightScreen: React.FC = () => {
       );
     }
 
-    // Filter: Available on ANY Streaming Services
-    if (filters.streamingOnly) {
+    // Filter: Show All Available Services (Discovery Mode)
+    // When enabled, shows games available on ANY service, not just user's
+    if (filters.showAllServices) {
       filtered = filtered.filter(game =>
         game.broadcasts.some(b => {
           const network = b.network.toLowerCase();
-          // Check if available on any known streaming service
           return ['espn+', 'hulu', 'youtube', 'fubo', 'paramount', 'sling', 'directv', 'max', 'peacock'].some(service =>
             network.includes(service)
           );
         })
       );
+    }
+
+    // Filter: Selected Services
+    if (filters.selectedServices.length > 0) {
+      filtered = filtered.filter(game =>
+        game.broadcasts.some(b => {
+          const network = b.network.toLowerCase();
+          return filters.selectedServices.some(service =>
+            network.includes(service.toLowerCase())
+          );
+        })
+      );
+    }
+
+    // Filter: Sport Type
+    if (filters.sports.length > 0) {
+      // Currently only NHL, but prepared for multi-sport
+      // filtered = filtered.filter(game => filters.sports.includes(game.league.toLowerCase()));
+    }
+
+    // Filter: Selected Teams
+    if (filters.selectedTeams.length > 0) {
+      // Team IDs from follows are stored as full team IDs (e.g., 'nhl_bos')
+      // Need to map game team abbreviations to full team IDs
+      filtered = filtered.filter(game => {
+        const homeTeamId = NHL_TEAMS.find(t => t.short_code === game.homeTeam.abbreviation)?.id;
+        const awayTeamId = NHL_TEAMS.find(t => t.short_code === game.awayTeam.abbreviation)?.id;
+        return (homeTeamId && filters.selectedTeams.includes(homeTeamId)) ||
+               (awayTeamId && filters.selectedTeams.includes(awayTeamId));
+      });
     }
 
     // Filter: Live Games Only

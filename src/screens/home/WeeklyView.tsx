@@ -114,8 +114,8 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       );
     }
 
-    // Filter: Available on My Services
-    if (filters.availableOnly) {
+    // Filter: Available on My Services Only
+    if (filters.myServicesOnly) {
       filtered = filtered.filter(game =>
         game.broadcasts.some(b => {
           const network = b.network.toLowerCase();
@@ -127,12 +127,11 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       );
     }
 
-    // Filter: Available on ANY Streaming Services
-    if (filters.streamingOnly) {
+    // Filter: Show All Available Services (Discovery Mode)
+    if (filters.showAllServices) {
       filtered = filtered.filter(game =>
         game.broadcasts.some(b => {
           const network = b.network.toLowerCase();
-          // Check if available on any known streaming service
           return ['espn+', 'hulu', 'youtube', 'fubo', 'paramount', 'sling', 'directv', 'max', 'peacock'].some(service =>
             network.includes(service)
           );
