@@ -235,7 +235,7 @@ export const TonightScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.dateArrow}
             onPress={goToPreviousDay}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
             <Text style={[styles.dateArrowText, { color: colors.primary }]}>←</Text>
           </TouchableOpacity>
@@ -243,7 +243,7 @@ export const TonightScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.dateCenter}
             onPress={isToday ? undefined : goToToday}
-            activeOpacity={isToday ? 1 : 0.7}
+            activeOpacity={isToday ? 1 : 0.8}
           >
             <Text style={[styles.dateRange, { color: colors.text }, isToday && { color: colors.primary }]}>
               {selectedDate.toLocaleDateString('en-US', {
@@ -260,7 +260,7 @@ export const TonightScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.dateArrow}
             onPress={goToNextDay}
-            activeOpacity={0.7}
+            activeOpacity={0.8}
           >
             <Text style={[styles.dateArrowText, { color: colors.primary }]}>→</Text>
           </TouchableOpacity>
@@ -337,7 +337,7 @@ export const TonightScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.iconButton}
           onPress={handleSettingsPress}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           <Text style={[styles.hamburger, { color: colors.textSecondary }]}>☰</Text>
         </TouchableOpacity>
@@ -345,7 +345,7 @@ export const TonightScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.iconButton}
           onPress={() => setShowFilters(true)}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
           <View style={styles.filterIconWrapper}>
             <Text style={[styles.filterIcon, { color: colors.textSecondary }]}>🎚️</Text>
@@ -361,31 +361,31 @@ export const TonightScreen: React.FC = () => {
       {/* Tab Bar */}
       <View style={[styles.tabBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'daily' && { borderBottomColor: colors.primary }]}
+          style={[styles.tab, activeTab === 'daily' && { borderBottomColor: colors.accent }]}
           onPress={() => setActiveTab('daily')}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'daily' && { color: colors.primary }]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'daily' && { color: colors.accent }]}>
             Daily
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'weekly' && { borderBottomColor: colors.primary }]}
+          style={[styles.tab, activeTab === 'weekly' && { borderBottomColor: colors.accent }]}
           onPress={() => setActiveTab('weekly')}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'weekly' && { color: colors.primary }]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'weekly' && { color: colors.accent }]}>
             Weekly
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'team' && { borderBottomColor: colors.primary }]}
+          style={[styles.tab, activeTab === 'team' && { borderBottomColor: colors.accent }]}
           onPress={() => setActiveTab('team')}
-          activeOpacity={0.7}
+          activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'team' && { color: colors.primary }]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'team' && { color: colors.accent }]}>
             Teams
           </Text>
         </TouchableOpacity>
@@ -644,7 +644,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 16,
     alignItems: 'center',
-    borderBottomWidth: 3,
+    borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
   tabActive: {
