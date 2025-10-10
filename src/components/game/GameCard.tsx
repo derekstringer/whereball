@@ -48,7 +48,6 @@ export const GameCard: React.FC<GameCardProps> = ({
   const discoveryMode = filters.showAllServices;
   const gameTime = formatGameTime(game.startTime);
   const isLive = game.gameState === 'LIVE';
-  const [isExpanded, setIsExpanded] = useState(false);
 
   // Get services for this game
   const userServices = getUserServicesForGame(game, userServiceCodes);
@@ -106,9 +105,6 @@ export const GameCard: React.FC<GameCardProps> = ({
     // TODO: Navigate to affiliate link or service info page
   };
 
-  // Collapsed: show first 2 services + +X indicator
-  const visibleServices = isExpanded ? sortedServices : sortedServices.slice(0, 2);
-  const remainingCount = Math.max(0, sortedServices.length - 2);
 
   return (
     <TouchableOpacity
@@ -157,12 +153,12 @@ export const GameCard: React.FC<GameCardProps> = ({
                 <BlackoutBadge onPress={handleBlackoutPress} />
               </View>
             </>
-          ) : visibleServices.length > 0 ? (
+          ) : sortedServices.length > 0 ? (
             <>
-              {/* WATCH ON: Subscribed Services */}
+              {/* WATCH ON: Subscribed Services - Show all with wrapping */}
               <Text style={[styles.watchLabel, { color: colors.textMuted }]}>WATCH ON:</Text>
               <View style={styles.servicesRow}>
-                {visibleServices.map((serviceCode) => (
+                {sortedServices.map((serviceCode) => (
                   <ServiceBadge
                     key={serviceCode}
                     serviceCode={serviceCode}
@@ -170,24 +166,10 @@ export const GameCard: React.FC<GameCardProps> = ({
                     onPress={() => handleBadgePress(serviceCode)}
                   />
                 ))}
-                {!isExpanded && remainingCount > 0 && (
-                  <TouchableOpacity
-                    style={[styles.moreBadge, { 
-                      backgroundColor: colors.surface,
-                      borderColor: colors.stroke,
-                    }]}
-                    onPress={() => setIsExpanded(true)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[styles.moreBadgeText, { color: colors.textMuted }]}>
-                      +{remainingCount}
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </View>
               
-              {/* ALSO AVAILABLE ON: Non-subscribed Services (when expanded or discovery mode) */}
-              {(isExpanded || discoveryMode) && missingServices.length > 0 && (
+              {/* ALSO AVAILABLE ON: Non-subscribed Services (when discovery mode active) */}
+              {discoveryMode && missingServices.length > 0 && (
                 <View style={styles.alsoAvailableSection}>
                   <Text style={[styles.alsoAvailableLabel, { color: colors.textMuted }]}>
                     ALSO AVAILABLE ON:
