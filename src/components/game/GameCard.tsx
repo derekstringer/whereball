@@ -97,6 +97,12 @@ export const GameCard: React.FC<GameCardProps> = ({
     }
   };
 
+  const handleNationalBadgePress = () => {
+    if (onShowTooltip) {
+      onShowTooltip('National Broadcast\nWatchable anywhere — no blackouts, no limits.');
+    }
+  };
+
   const handleDiscoveryServicePress = (serviceCode: string) => {
     const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
     if (onShowTooltip) {
@@ -123,9 +129,13 @@ export const GameCard: React.FC<GameCardProps> = ({
               <Text style={styles.liveText}>LIVE NOW</Text>
             </View>}
             {isNational && (
-              <View style={[styles.nationalBadge, { backgroundColor: colors.nationalBadge }]}>
-                <Text style={[styles.nationalText, { color: colors.card }]}>National</Text>
-              </View>
+              <TouchableOpacity
+                style={[styles.nationalBadge, { backgroundColor: colors.nationalBadge }]}
+                onPress={handleNationalBadgePress}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.nationalText}>National</Text>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -300,6 +310,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    color: '#FFFFFF',
   },
   watchSection: {
     marginTop: 4,

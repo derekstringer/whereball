@@ -475,7 +475,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                     National Games Only
                   </Text>
                   <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
-                    ESPN, TNT, ABC, NHL Network
+                    Show only games broadcast nationwide — always available, no blackouts, no hassles.
                   </Text>
                 </View>
               </TouchableOpacity>
