@@ -1,6 +1,6 @@
 /**
- * Filter Bottom Sheet
- * Global filter UI for all game views
+ * Filter Bottom Sheet - Redesigned Filter System
+ * Unified filter experience with sports, teams, services, and game state
  */
 
 import React, { useRef } from 'react';
@@ -12,15 +12,16 @@ import {
   Modal,
   ScrollView,
   PanResponder,
-  Animated,
 } from 'react-native';
-import { useAppStore, type GameFilters } from '../../store/appStore';
+import { useAppStore } from '../../store/appStore';
 import { useTheme } from '../../hooks/useTheme';
+import { NHL_TEAMS } from '../../constants/teams';
+import { STREAMING_SERVICES } from '../../constants/services';
 
 interface FilterBottomSheetProps {
   visible: boolean;
   onClose: () => void;
-  hideLiveFilter?: boolean; // Hide "Live Only" for Weekly/Team views
+  hideLiveFilter?: boolean;
 }
 
 export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
@@ -29,34 +30,37 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   hideLiveFilter = false,
 }) => {
   const { colors } = useTheme();
-  const { filters, toggleFilter, resetFilters } = useAppStore();
-  const activeCount = Object.values(filters).filter(Boolean).length;
+  const { 
+    filters, 
+    toggleFilter, 
+    toggleSportFilter, 
+    toggleTeamFilter, 
+    toggleServiceFilter,
+    resetFilters,
+    follows,
+    subscriptions,
+  } = useAppStore();
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only respond to downward drags
-        return gestureState.dy > 5;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        // Only allow dragging down
-        if (gestureState.dy > 0) {
-          // Could add animation here if desired
-        }
-      },
+      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
       onPanResponderRelease: (_, gestureState) => {
-        // If dragged down more than 50px, dismiss
-        if (gestureState.dy > 50) {
-          onClose();
-        }
+        if (gestureState.dy > 50) onClose();
       },
     })
   ).current;
 
-  const handleToggle = (filterKey: keyof GameFilters) => {
-    toggleFilter(filterKey);
-  };
+  const activeCount = Object.entries(filters).reduce((count, [key, value]) => {
+    if (key === 'sports' || key === 'selectedTeams' || key === 'selectedServices') {
+      return count + (Array.isArray(value) ? value.length : 0);
+    }
+    return count + (value ? 1 : 0);
+  }, 0);
+
+  // Get user's followed team IDs
+  const followedTeamIds = follows.map(f => f.team_id);
+  const subscribedServiceCodes = subscriptions.map(s => s.service_code);
 
   return (
     <Modal
@@ -80,30 +84,166 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
           </View>
           
           <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.text }]}>Filters</Text>
+            <View style={styles.headerLeft}>
+              <Text style={[styles.title, { color: colors.text }]}>Filters</Text>
+              {activeCount > 0 && (
+                <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.badgeText}>{activeCount}</Text>
+                </View>
+              )}
+            </View>
             {activeCount > 0 && (
-              <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                <Text style={styles.badgeText}>{activeCount}</Text>
-              </View>
+              <TouchableOpacity onPress={resetFilters}>
+                <Text style={[styles.clearAll, { color: colors.primary }]}>Clear All</Text>
+              </TouchableOpacity>
             )}
           </View>
 
-          <ScrollView style={styles.content}>
-            <TouchableOpacity
-              style={[
-                styles.filterOption,
-                { backgroundColor: colors.card, borderColor: colors.stroke },
-                filters.myTeamsOnly && { 
-                  borderColor: colors.accent,
-                  shadowColor: colors.accent,
-                  shadowOpacity: 0.25,
-                  shadowRadius: 16,
-                },
-              ]}
-              onPress={() => handleToggle('myTeamsOnly')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.filterLeft}>
+          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {/* Sports Section */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Sports</Text>
+              <View style={styles.chipsRow}>
+                {['nhl', 'nba', 'nfl', 'mlb'].map(sport => {
+                  const isSelected = filters.sports.includes(sport);
+                  return (
+                    <TouchableOpacity
+                      key={sport}
+                      style={[
+                        styles.chip,
+                        { backgroundColor: colors.card, borderColor: colors.stroke },
+                        isSelected && {
+                          borderColor: colors.accent,
+                          shadowColor: colors.accent,
+                          shadowOpacity: 0.25,
+                          shadowRadius: 8,
+                        },
+                      ]}
+                      onPress={() => toggleSportFilter(sport)}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          { color: colors.textSecondary },
+                          isSelected && { color: colors.accent },
+                        ]}
+                      >
+                        {sport.toUpperCase()}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Teams Section */}
+            {followedTeamIds.length > 0 && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Teams</Text>
+                <View style={styles.chipsGrid}>
+                  {followedTeamIds.map(teamId => {
+                    const team = NHL_TEAMS.find(t => t.id === teamId);
+                    if (!team) return null;
+                    const isSelected = filters.selectedTeams.includes(teamId);
+                    return (
+                      <TouchableOpacity
+                        key={teamId}
+                        style={[
+                          styles.chip,
+                          { backgroundColor: colors.card, borderColor: colors.stroke },
+                          isSelected && {
+                            borderColor: colors.accent,
+                            shadowColor: colors.accent,
+                            shadowOpacity: 0.25,
+                            shadowRadius: 8,
+                          },
+                        ]}
+                        onPress={() => toggleTeamFilter(teamId)}
+                        activeOpacity={0.8}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            { color: colors.textSecondary },
+                            isSelected && { color: colors.accent },
+                          ]}
+                        >
+                          {team.short_code}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Services Section */}
+            {subscribedServiceCodes.length > 0 && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Services</Text>
+                <View style={styles.togglesList}>
+                  {subscribedServiceCodes.map(serviceCode => {
+                    const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
+                    if (!service) return null;
+                    const isSelected = filters.selectedServices.includes(serviceCode);
+                    return (
+                      <TouchableOpacity
+                        key={serviceCode}
+                        style={[
+                          styles.toggleRow,
+                          { backgroundColor: colors.card, borderColor: colors.stroke },
+                          isSelected && {
+                            borderColor: colors.accent,
+                            shadowColor: colors.accent,
+                            shadowOpacity: 0.25,
+                            shadowRadius: 8,
+                          },
+                        ]}
+                        onPress={() => toggleServiceFilter(serviceCode)}
+                        activeOpacity={0.8}
+                      >
+                        <View style={[
+                          styles.checkbox,
+                          { borderColor: colors.border, backgroundColor: colors.bg },
+                          isSelected && { backgroundColor: colors.primary, borderColor: colors.primary }
+                        ]}>
+                          {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                        </View>
+                        <Text
+                          style={[
+                            styles.toggleText,
+                            { color: colors.text },
+                            isSelected && { color: colors.accent },
+                          ]}
+                        >
+                          {service.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
+
+            {/* Quick Filters Section */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Filters</Text>
+              
+              <TouchableOpacity
+                style={[
+                  styles.toggleRow,
+                  { backgroundColor: colors.card, borderColor: colors.stroke },
+                  filters.myTeamsOnly && {
+                    borderColor: colors.accent,
+                    shadowColor: colors.accent,
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                  },
+                ]}
+                onPress={() => toggleFilter('myTeamsOnly')}
+                activeOpacity={0.8}
+              >
                 <View style={[
                   styles.checkbox,
                   { borderColor: colors.border, backgroundColor: colors.bg },
@@ -111,32 +251,110 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 ]}>
                   {filters.myTeamsOnly && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <View style={styles.filterText}>
-                  <Text style={[styles.filterLabel, { color: colors.text }, filters.myTeamsOnly && { color: colors.accent }]}>
+                <View style={styles.toggleTextContainer}>
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      { color: colors.text },
+                      filters.myTeamsOnly && { color: colors.accent },
+                    ]}
+                  >
                     My Teams Only
                   </Text>
-                  <Text style={[styles.filterDescription, { color: colors.textSecondary }]}>
-                    Show games for teams you follow
+                  <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                    Show games for followed teams
                   </Text>
                 </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.filterOption,
-                { backgroundColor: colors.card, borderColor: colors.stroke },
-                filters.nationalOnly && { 
-                  borderColor: colors.accent,
-                  shadowColor: colors.accent,
-                  shadowOpacity: 0.25,
-                  shadowRadius: 16,
-                },
-              ]}
-              onPress={() => handleToggle('nationalOnly')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.filterLeft}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleRow,
+                  { backgroundColor: colors.card, borderColor: colors.stroke },
+                  filters.myServicesOnly && {
+                    borderColor: colors.accent,
+                    shadowColor: colors.accent,
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                  },
+                ]}
+                onPress={() => toggleFilter('myServicesOnly')}
+                activeOpacity={0.8}
+              >
+                <View style={[
+                  styles.checkbox,
+                  { borderColor: colors.border, backgroundColor: colors.bg },
+                  filters.myServicesOnly && { backgroundColor: colors.primary, borderColor: colors.primary }
+                ]}>
+                  {filters.myServicesOnly && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <View style={styles.toggleTextContainer}>
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      { color: colors.text },
+                      filters.myServicesOnly && { color: colors.accent },
+                    ]}
+                  >
+                    On My Services
+                  </Text>
+                  <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                    Available on your subscriptions
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.toggleRow,
+                  { backgroundColor: colors.card, borderColor: colors.stroke },
+                  filters.showAllServices && {
+                    borderColor: colors.accent,
+                    shadowColor: colors.accent,
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                  },
+                ]}
+                onPress={() => toggleFilter('showAllServices')}
+                activeOpacity={0.8}
+              >
+                <View style={[
+                  styles.checkbox,
+                  { borderColor: colors.border, backgroundColor: colors.bg },
+                  filters.showAllServices && { backgroundColor: colors.primary, borderColor: colors.primary }
+                ]}>
+                  {filters.showAllServices && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <View style={styles.toggleTextContainer}>
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      { color: colors.text },
+                      filters.showAllServices && { color: colors.accent },
+                    ]}
+                  >
+                    Discovery Mode
+                  </Text>
+                  <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                    Show games on ANY service
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.toggleRow,
+                  { backgroundColor: colors.card, borderColor: colors.stroke },
+                  filters.nationalOnly && {
+                    borderColor: colors.accent,
+                    shadowColor: colors.accent,
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                  },
+                ]}
+                onPress={() => toggleFilter('nationalOnly')}
+                activeOpacity={0.8}
+              >
                 <View style={[
                   styles.checkbox,
                   { borderColor: colors.border, backgroundColor: colors.bg },
@@ -144,99 +362,37 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 ]}>
                   {filters.nationalOnly && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <View style={styles.filterText}>
-                  <Text style={[styles.filterLabel, { color: colors.text }, filters.nationalOnly && { color: colors.accent }]}>
+                <View style={styles.toggleTextContainer}>
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      { color: colors.text },
+                      filters.nationalOnly && { color: colors.accent },
+                    ]}
+                  >
                     National Games Only
                   </Text>
-                  <Text style={[styles.filterDescription, { color: colors.textSecondary }]}>
+                  <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
                     ESPN, TNT, ABC, NHL Network
                   </Text>
                 </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={[
-                styles.filterOption,
-                { backgroundColor: colors.card, borderColor: colors.stroke },
-                filters.availableOnly && { 
-                  borderColor: colors.accent,
-                  shadowColor: colors.accent,
-                  shadowOpacity: 0.25,
-                  shadowRadius: 16,
-                },
-              ]}
-              onPress={() => handleToggle('availableOnly')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.filterLeft}>
-                <View style={[
-                  styles.checkbox,
-                  { borderColor: colors.border, backgroundColor: colors.bg },
-                  filters.availableOnly && { backgroundColor: colors.primary, borderColor: colors.primary }
-                ]}>
-                  {filters.availableOnly && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <View style={styles.filterText}>
-                  <Text style={[styles.filterLabel, { color: colors.text }, filters.availableOnly && { color: colors.accent }]}>
-                    On MY Services
-                  </Text>
-                  <Text style={[styles.filterDescription, { color: colors.textSecondary }]}>
-                    Available on your subscriptions
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.filterOption,
-                { backgroundColor: colors.card, borderColor: colors.stroke },
-                filters.streamingOnly && { 
-                  borderColor: colors.accent,
-                  shadowColor: colors.accent,
-                  shadowOpacity: 0.25,
-                  shadowRadius: 16,
-                },
-              ]}
-              onPress={() => handleToggle('streamingOnly')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.filterLeft}>
-                <View style={[
-                  styles.checkbox,
-                  { borderColor: colors.border, backgroundColor: colors.bg },
-                  filters.streamingOnly && { backgroundColor: colors.primary, borderColor: colors.primary }
-                ]}>
-                  {filters.streamingOnly && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-                <View style={styles.filterText}>
-                  <Text style={[styles.filterLabel, { color: colors.text }, filters.streamingOnly && { color: colors.accent }]}>
-                    On ANY Services
-                  </Text>
-                  <Text style={[styles.filterDescription, { color: colors.textSecondary }]}>
-                    Streaming anywhere, not just your subscriptions
-                  </Text>
-                </View>
-              </View>
-            </TouchableOpacity>
-
-            {!hideLiveFilter && (
-              <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  { backgroundColor: colors.card, borderColor: colors.stroke },
-                  filters.liveOnly && { 
-                    borderColor: colors.accent,
-                    shadowColor: colors.accent,
-                    shadowOpacity: 0.25,
-                    shadowRadius: 16,
-                  },
-                ]}
-                onPress={() => handleToggle('liveOnly')}
-                activeOpacity={0.8}
-              >
-                <View style={styles.filterLeft}>
+              {!hideLiveFilter && (
+                <TouchableOpacity
+                  style={[
+                    styles.toggleRow,
+                    { backgroundColor: colors.card, borderColor: colors.stroke },
+                    filters.liveOnly && {
+                      borderColor: colors.accent,
+                      shadowColor: colors.accent,
+                      shadowOpacity: 0.25,
+                      shadowRadius: 8,
+                    },
+                  ]}
+                  onPress={() => toggleFilter('liveOnly')}
+                  activeOpacity={0.8}
+                >
                   <View style={[
                     styles.checkbox,
                     { borderColor: colors.border, backgroundColor: colors.bg },
@@ -244,35 +400,39 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                   ]}>
                     {filters.liveOnly && <Text style={styles.checkmark}>✓</Text>}
                   </View>
-                  <View style={styles.filterText}>
-                    <Text style={[styles.filterLabel, { color: colors.text }, filters.liveOnly && { color: colors.accent }]}>
+                  <View style={styles.toggleTextContainer}>
+                    <Text
+                      style={[
+                        styles.toggleText,
+                        { color: colors.text },
+                        filters.liveOnly && { color: colors.accent },
+                      ]}
+                    >
                       Live Only
                     </Text>
-                    <Text style={[styles.filterDescription, { color: colors.textSecondary }]}>
-                      Games currently in progress
+                    <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
+                      Games in progress
                     </Text>
                   </View>
-                </View>
-              </TouchableOpacity>
-            )}
+                </TouchableOpacity>
+              )}
 
-            <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+              <View style={[styles.divider, { backgroundColor: colors.divider }]} />
 
-            <TouchableOpacity
-              style={[
-                styles.filterOption,
-                { backgroundColor: colors.card, borderColor: colors.stroke },
-                filters.showAll && { 
-                  borderColor: colors.accent,
-                  shadowColor: colors.accent,
-                  shadowOpacity: 0.25,
-                  shadowRadius: 16,
-                },
-              ]}
-              onPress={() => handleToggle('showAll')}
-              activeOpacity={0.8}
-            >
-              <View style={styles.filterLeft}>
+              <TouchableOpacity
+                style={[
+                  styles.toggleRow,
+                  { backgroundColor: colors.card, borderColor: colors.stroke },
+                  filters.showAll && {
+                    borderColor: colors.accent,
+                    shadowColor: colors.accent,
+                    shadowOpacity: 0.25,
+                    shadowRadius: 8,
+                  },
+                ]}
+                onPress={() => toggleFilter('showAll')}
+                activeOpacity={0.8}
+              >
                 <View style={[
                   styles.checkbox,
                   { borderColor: colors.border, backgroundColor: colors.bg },
@@ -280,17 +440,33 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 ]}>
                   {filters.showAll && <Text style={styles.checkmark}>✓</Text>}
                 </View>
-                <View style={styles.filterText}>
-                  <Text style={[styles.filterLabel, { color: colors.text }, filters.showAll && { color: colors.accent }]}>
+                <View style={styles.toggleTextContainer}>
+                  <Text
+                    style={[
+                      styles.toggleText,
+                      { color: colors.text },
+                      filters.showAll && { color: colors.accent },
+                    ]}
+                  >
                     Show All Games
                   </Text>
-                  <Text style={[styles.filterDescription, { color: colors.textSecondary }]}>
+                  <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
                     Override all filters
                   </Text>
                 </View>
-              </View>
-            </TouchableOpacity>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
+
+          <View style={[styles.footer, { borderTopColor: colors.divider }]}>
+            <TouchableOpacity
+              style={[styles.applyButton, { backgroundColor: colors.primary }]}
+              onPress={onClose}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.applyButtonText}>Apply Filters</Text>
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
       </TouchableOpacity>
     </Modal>
@@ -306,11 +482,11 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: '80%',
-    paddingBottom: 40,
+    maxHeight: '85%',
+    paddingBottom: 20,
   },
   handleContainer: {
-    paddingVertical: 8,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   handle: {
@@ -321,8 +497,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingBottom: 16,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
   },
   title: {
@@ -342,27 +523,54 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  clearAll: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
   content: {
     paddingHorizontal: 24,
     marginBottom: 16,
   },
-  filterOption: {
-    paddingVertical: 20,
-    paddingHorizontal: 20,
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
     marginBottom: 12,
-    borderRadius: 24,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     borderWidth: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 24,
-    elevation: 12,
   },
-  filterOptionActive: {
+  chipText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
-  filterLeft: {
+  togglesList: {
+    gap: 8,
+  },
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 2,
     gap: 12,
   },
   checkbox: {
@@ -373,60 +581,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxActive: {
-  },
   checkmark: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
   },
-  filterText: {
+  toggleTextContainer: {
     flex: 1,
   },
-  filterLabel: {
-    fontSize: 16,
+  toggleText: {
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 2,
   },
-  filterLabelActive: {
-  },
-  filterDescription: {
+  toggleDescription: {
     fontSize: 13,
+    marginTop: 2,
   },
   divider: {
     height: 1,
-    marginVertical: 20,
+    marginVertical: 16,
   },
-  actions: {
-    flexDirection: 'row',
+  footer: {
     paddingHorizontal: 24,
     paddingTop: 16,
-    gap: 12,
+    borderTopWidth: 1,
   },
-  secondaryButton: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+  applyButton: {
+    paddingVertical: 16,
     borderRadius: 12,
-    backgroundColor: '#F0F0F0',
     alignItems: 'center',
   },
-  secondaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#666666',
-  },
-  primaryButton: {
-    flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    backgroundColor: '#0066CC',
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+  applyButtonText: {
     color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
 });
