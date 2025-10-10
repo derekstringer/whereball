@@ -48,7 +48,7 @@ export const GameCard: React.FC<GameCardProps> = ({
   const discoveryMode = filters.showAllServices;
   const gameTime = formatGameTime(game.startTime);
   const isLive = game.gameState === 'LIVE';
-  const [showAllServices, setShowAllServices] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   // Get services for this game
   const userServices = getUserServicesForGame(game, userServiceCodes);
@@ -106,10 +106,9 @@ export const GameCard: React.FC<GameCardProps> = ({
     // TODO: Navigate to affiliate link or service info page
   };
 
-  // Show first service or first 2 if not expanded
-  const maxVisibleServices = showAllServices ? sortedServices.length : 2;
-  const visibleServices = sortedServices.slice(0, maxVisibleServices);
-  const remainingCount = Math.max(0, sortedServices.length - maxVisibleServices);
+  // Collapsed: show first 2 services + +X indicator
+  const visibleServices = isExpanded ? sortedServices : sortedServices.slice(0, 2);
+  const remainingCount = Math.max(0, sortedServices.length - 2);
 
   return (
     <TouchableOpacity
@@ -149,14 +148,20 @@ export const GameCard: React.FC<GameCardProps> = ({
           </View>
         </View>
 
-        {/* Service Badges Row */}
+        {/* Service Badges Section */}
         <View style={styles.watchSection}>
-          <Text style={[styles.watchLabel, { color: colors.textMuted }]}>Watch on:</Text>
-          <View style={styles.servicesRow}>
-            {isBlackedOut ? (
-              <BlackoutBadge onPress={handleBlackoutPress} />
-            ) : visibleServices.length > 0 ? (
-              <>
+          {isBlackedOut ? (
+            <>
+              <Text style={[styles.watchLabel, { color: colors.textMuted }]}>WATCH ON:</Text>
+              <View style={styles.servicesRow}>
+                <BlackoutBadge onPress={handleBlackoutPress} />
+              </View>
+            </>
+          ) : visibleServices.length > 0 ? (
+            <>
+              {/* WATCH ON: Subscribed Services */}
+              <Text style={[styles.watchLabel, { color: colors.textMuted }]}>WATCH ON:</Text>
+              <View style={styles.servicesRow}>
                 {visibleServices.map((serviceCode) => (
                   <ServiceBadge
                     key={serviceCode}
@@ -165,54 +170,60 @@ export const GameCard: React.FC<GameCardProps> = ({
                     onPress={() => handleBadgePress(serviceCode)}
                   />
                 ))}
-                {remainingCount > 0 && (
+                {!isExpanded && remainingCount > 0 && (
                   <TouchableOpacity
                     style={[styles.moreBadge, { 
                       backgroundColor: colors.surface,
                       borderColor: colors.stroke,
                     }]}
-                    onPress={() => setShowAllServices(!showAllServices)}
+                    onPress={() => setIsExpanded(true)}
                     activeOpacity={0.8}
                   >
                     <Text style={[styles.moreBadgeText, { color: colors.textMuted }]}>
-                      {showAllServices ? '−' : `+${remainingCount}`}
+                      +{remainingCount}
                     </Text>
                   </TouchableOpacity>
                 )}
-              </>
-            ) : (
-              <NotAvailableBadge onPress={handleUnavailablePress} />
-            )}
-          </View>
-          
-          {/* Also available on (when services expanded or discovery mode) */}
-          {(showAllServices || discoveryMode) && missingServices.length > 0 && (
-            <View style={styles.discoverySection}>
-              <Text style={[styles.alsoAvailableLabel, { color: colors.textMuted }]}>
-                Also available on:
-              </Text>
-              <View style={styles.discoveryServicesRow}>
-                {missingServices.map((serviceCode) => (
-                  <View key={serviceCode} style={{ opacity: discoveryMode ? 0.6 : 0.4 }}>
-                    <TouchableOpacity
-                      onPress={() => handleDiscoveryServicePress(serviceCode)}
-                      activeOpacity={0.7}
-                      disabled={!discoveryMode}
-                    >
-                      <ServiceBadge
-                        serviceCode={serviceCode}
-                        size="medium"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ))}
               </View>
-              {discoveryMode && (
-                <Text style={[styles.discoveryHint, { color: colors.textMuted }]}>
-                  Tap to learn more or start free trial
-                </Text>
+              
+              {/* ALSO AVAILABLE ON: Non-subscribed Services (when expanded or discovery mode) */}
+              {(isExpanded || discoveryMode) && missingServices.length > 0 && (
+                <View style={styles.alsoAvailableSection}>
+                  <Text style={[styles.alsoAvailableLabel, { color: colors.textMuted }]}>
+                    ALSO AVAILABLE ON:
+                  </Text>
+                  <View style={styles.alsoAvailableRow}>
+                    {missingServices.map((serviceCode) => {
+                      const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
+                      return (
+                        <TouchableOpacity
+                          key={serviceCode}
+                          style={[styles.unsubscribedPill, { borderColor: colors.stroke }]}
+                          onPress={() => handleDiscoveryServicePress(serviceCode)}
+                          activeOpacity={0.7}
+                        >
+                          <Text style={styles.unsubscribedPillText}>
+                            {service?.name || serviceCode}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {discoveryMode && (
+                    <Text style={[styles.discoveryHint, { color: colors.textMuted }]}>
+                      Tap to learn more or start free trial
+                    </Text>
+                  )}
+                </View>
               )}
-            </View>
+            </>
+          ) : (
+            <>
+              <Text style={[styles.watchLabel, { color: colors.textMuted }]}>WATCH ON:</Text>
+              <View style={styles.servicesRow}>
+                <NotAvailableBadge onPress={handleUnavailablePress} />
+              </View>
+            </>
           )}
         </View>
       </TouchableOpacity>
@@ -312,16 +323,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   watchLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     marginBottom: 8,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   servicesRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
   },
   moreBadge: {
     paddingHorizontal: 12,
@@ -337,23 +349,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  discoverySection: {
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  alsoAvailableSection: {
+    marginTop: 16,
   },
   alsoAvailableLabel: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 8,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
-  discoveryServicesRow: {
+  alsoAvailableRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 4,
+    gap: 6,
+  },
+  unsubscribedPill: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: '#2b2b2b',
+  },
+  unsubscribedPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#A0A0A0',
   },
   discoveryHint: {
     fontSize: 11,

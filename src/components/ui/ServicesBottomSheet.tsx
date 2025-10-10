@@ -4,15 +4,17 @@
  * Industry-standard Modal + Pressable pattern
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Modal,
-  Pressable,
+  TouchableOpacity,
   ScrollView,
   SafeAreaView,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { STREAMING_SERVICES, SERVICE_BRAND_COLORS } from '../../constants/services';
 
@@ -33,6 +35,61 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
   onServicePress,
   channel,
 }) => {
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    } else {
+      slideAnim.setValue(0);
+    }
+  }, [visible]);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          slideAnim.setValue(1 - gestureState.dy / 400);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dy > 50 || gestureState.vy > 0.5) {
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => onClose());
+        } else {
+          Animated.spring(slideAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 65,
+            friction: 11,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [600, 0],
+  });
+
+  const backdropOpacity = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
   return (
     <Modal
       visible={visible}
@@ -41,19 +98,35 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
       onRequestClose={onClose}
       statusBarTranslucent
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.bottomSheet} onPress={(e) => e.stopPropagation()}>
-          <SafeAreaView style={styles.safeArea}>
-            {/* Handle */}
-            <View style={styles.handle} />
+      <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+      </Animated.View>
 
-            {/* Header */}
-            <View style={styles.header}>
-              <Text style={styles.title}>Available Services</Text>
-              <Pressable onPress={onClose} style={styles.closeButton}>
-                <Text style={styles.closeButtonText}>✕</Text>
-              </Pressable>
-            </View>
+      <Animated.View
+        style={[
+          styles.bottomSheet,
+          {
+            transform: [{ translateY }],
+          },
+        ]}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          {/* Handle */}
+          <View style={styles.handleContainer} {...panResponder.panHandlers}>
+            <View style={styles.handle} />
+          </View>
+
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>Available Services</Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+              <Text style={styles.closeButtonText}>✕</Text>
+            </TouchableOpacity>
+          </View>
 
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
               {/* Your Services */}
@@ -69,19 +142,17 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
                     const brandColor = SERVICE_BRAND_COLORS[serviceCode] || '#0066CC';
                     
                     return (
-                      <Pressable
+                      <TouchableOpacity
                         key={serviceCode}
-                        style={({pressed}) => [
-                          styles.serviceRow,
-                          pressed && styles.serviceRowPressed
-                        ]}
+                        style={styles.serviceRow}
                         onPress={() => onServicePress(serviceCode)}
+                        activeOpacity={0.7}
                       >
                         <View style={[styles.serviceBadge, { backgroundColor: brandColor }]}>
                           <Text style={styles.serviceBadgeText}>{service.name}</Text>
                         </View>
                         <Text style={styles.arrowText}>→</Text>
-                      </Pressable>
+                      </TouchableOpacity>
                     );
                   })}
                 </View>
@@ -126,45 +197,47 @@ export const ServicesBottomSheet: React.FC<ServicesBottomSheetProps> = ({
                   Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
                 </Text>
               </View>
-            </ScrollView>
-          </SafeAreaView>
-        </Pressable>
-      </Pressable>
+          </ScrollView>
+        </SafeAreaView>
+      </Animated.View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   backdrop: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   bottomSheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: '80%',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 24,
   },
   safeArea: {
     maxHeight: '100%',
   },
+  handleContainer: {
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
   handle: {
     width: 40,
-    height: 4,
+    height: 5,
     backgroundColor: '#E0E0E0',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 8,
+    borderRadius: 8,
+    opacity: 0.5,
   },
   header: {
     flexDirection: 'row',
@@ -218,9 +291,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-  },
-  serviceRowPressed: {
-    backgroundColor: '#F8F9FA',
   },
   serviceRowDisabled: {
     flexDirection: 'row',

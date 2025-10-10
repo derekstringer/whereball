@@ -3,7 +3,7 @@
  * Unified filter experience with sports, teams, services, and game state
  */
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,7 +11,9 @@ import {
   TouchableOpacity,
   Modal,
   ScrollView,
+  Animated,
   PanResponder,
+  Dimensions,
 } from 'react-native';
 import { useAppStore } from '../../store/appStore';
 import { useTheme } from '../../hooks/useTheme';
@@ -41,12 +43,47 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
     subscriptions,
   } = useAppStore();
 
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.spring(slideAnim, {
+        toValue: 1,
+        useNativeDriver: true,
+        tension: 65,
+        friction: 11,
+      }).start();
+    } else {
+      slideAnim.setValue(0);
+    }
+  }, [visible]);
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: (_, gestureState) => gestureState.dy > 5,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dy) > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dy > 0) {
+          slideAnim.setValue(1 - gestureState.dy / 400);
+        }
+      },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dy > 50) onClose();
+        if (gestureState.dy > 50 || gestureState.vy > 0.5) {
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => onClose());
+        } else {
+          Animated.spring(slideAnim, {
+            toValue: 1,
+            useNativeDriver: true,
+            tension: 65,
+            friction: 11,
+          }).start();
+        }
       },
     })
   ).current;
@@ -62,6 +99,40 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
   const followedTeamIds = follows.map(f => f.team_id);
   const subscribedServiceCodes = subscriptions.map(s => s.service_code);
 
+  // Sport icons and colors
+  const sportData = {
+    nhl: { icon: '🏒', label: 'Hockey', color: '#00B8CC' },
+    nba: { icon: '🏀', label: 'Basketball', color: '#FF6B35' },
+    nfl: { icon: '🏈', label: 'Football', color: '#4CAF50' },
+    mlb: { icon: '⚾', label: 'Baseball', color: '#9C27B0' },
+  };
+
+  // Get active filter summary
+  const getActiveFilterSummary = () => {
+    const parts: string[] = [];
+    if (filters.sports.length > 0 && filters.sports.length < 4) {
+      parts.push(filters.sports.map(s => s.toUpperCase()).join(', '));
+    }
+    if (filters.myTeamsOnly) parts.push('My Teams');
+    if (filters.myServicesOnly) parts.push('My Services');
+    if (filters.showAllServices) parts.push('Discovery');
+    if (filters.nationalOnly) parts.push('National');
+    if (filters.liveOnly) parts.push('Live');
+    return parts.length > 0 ? parts.join(' • ') : null;
+  };
+
+  const filterSummary = getActiveFilterSummary();
+
+  const translateY = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [600, 0],
+  });
+
+  const backdropOpacity = slideAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+
   return (
     <Modal
       visible={visible}
@@ -69,13 +140,25 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
       animationType="slide"
       onRequestClose={onClose}
     >
-      <TouchableOpacity
-        style={styles.overlay}
-        activeOpacity={1}
-        onPress={onClose}
+      <Animated.View style={[styles.overlay, { opacity: backdropOpacity }]}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+      </Animated.View>
+
+      <Animated.View
+        style={[
+          styles.sheet,
+          {
+            backgroundColor: colors.filterSheetBg,
+            transform: [{ translateY }],
+          },
+        ]}
       >
         <TouchableOpacity
-          style={[styles.sheet, { backgroundColor: colors.filterSheetBg }]}
+          style={styles.sheetContent}
           activeOpacity={1}
           onPress={(e) => e.stopPropagation()}
         >
@@ -83,7 +166,16 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             <View style={[styles.handle, { backgroundColor: colors.textMuted }]} />
           </View>
           
-          <View style={styles.header}>
+            {/* Applied Filters Summary Bar */}
+            {filterSummary && (
+              <View style={[styles.summaryBar, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}>
+                <Text style={[styles.summaryText, { color: colors.primary }]}>
+                  Active: {filterSummary}
+                </Text>
+              </View>
+            )}
+
+            <View style={styles.header}>
             <View style={styles.headerLeft}>
               <Text style={[styles.title, { color: colors.text }]}>Filters</Text>
               {activeCount > 0 && (
@@ -99,43 +191,52 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             )}
           </View>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Sports Section */}
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Sports</Text>
-              <View style={styles.chipsRow}>
-                {['nhl', 'nba', 'nfl', 'mlb'].map(sport => {
-                  const isSelected = filters.sports.includes(sport);
-                  return (
-                    <TouchableOpacity
-                      key={sport}
-                      style={[
-                        styles.chip,
-                        { backgroundColor: colors.card, borderColor: colors.stroke },
-                        isSelected && {
-                          borderColor: colors.accent,
-                          shadowColor: colors.accent,
-                          shadowOpacity: 0.25,
-                          shadowRadius: 8,
-                        },
-                      ]}
-                      onPress={() => toggleSportFilter(sport)}
-                      activeOpacity={0.8}
-                    >
-                      <Text
+            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+              {/* Sports Section */}
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>Sports</Text>
+                <View style={styles.chipsRow}>
+                  {Object.entries(sportData).map(([sport, data]) => {
+                    const isSelected = filters.sports.includes(sport);
+                    const sportCount = filters.sports.length;
+                    return (
+                      <TouchableOpacity
+                        key={sport}
                         style={[
-                          styles.chipText,
-                          { color: colors.textSecondary },
-                          isSelected && { color: colors.accent },
+                          styles.sportChip,
+                          { backgroundColor: colors.card, borderColor: colors.stroke },
+                          isSelected && {
+                            borderColor: data.color,
+                            backgroundColor: data.color + '15',
+                            shadowColor: data.color,
+                            shadowOpacity: 0.3,
+                            shadowRadius: 8,
+                            elevation: 4,
+                          },
                         ]}
+                        onPress={() => toggleSportFilter(sport)}
+                        activeOpacity={0.8}
                       >
-                        {sport.toUpperCase()}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                        <Text style={styles.sportIcon}>{data.icon}</Text>
+                        <Text
+                          style={[
+                            styles.sportLabel,
+                            { color: colors.textSecondary },
+                            isSelected && { color: data.color, fontWeight: '700' },
+                          ]}
+                        >
+                          {data.label}
+                        </Text>
+                        {isSelected && (
+                          <View style={[styles.sportBadge, { backgroundColor: data.color }]}>
+                            <Text style={styles.sportBadgeText}>✓</Text>
+                          </View>
+                        )}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
-            </View>
 
             {/* Teams Section */}
             {followedTeamIds.length > 0 && (
@@ -299,7 +400,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                     On My Services
                   </Text>
                   <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
-                    Available on your subscriptions
+                    Games available on your subscriptions
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -333,13 +434,14 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                       filters.showAllServices && { color: colors.accent },
                     ]}
                   >
-                    Discovery Mode
+                    On Any Services
                   </Text>
                   <Text style={[styles.toggleDescription, { color: colors.textSecondary }]}>
-                    Show games on ANY service
+                    Games available on any streaming platforms
                   </Text>
                 </View>
               </TouchableOpacity>
+
 
               <TouchableOpacity
                 style={[
@@ -458,31 +560,44 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             </View>
           </ScrollView>
 
-          <View style={[styles.footer, { borderTopColor: colors.divider }]}>
-            <TouchableOpacity
-              style={[styles.applyButton, { backgroundColor: colors.primary }]}
-              onPress={onClose}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.applyButtonText}>Apply Filters</Text>
-            </TouchableOpacity>
-          </View>
+            <View style={[styles.footer, { borderTopColor: colors.divider }]}>
+              <TouchableOpacity
+                style={[styles.applyButton, { backgroundColor: colors.primary }]}
+                onPress={onClose}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.applyButtonText}>
+                  {activeCount > 0 ? `Apply ${activeCount} Filter${activeCount !== 1 ? 's' : ''}` : 'Close'}
+                </Text>
+              </TouchableOpacity>
+            </View>
         </TouchableOpacity>
-      </TouchableOpacity>
+      </Animated.View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
   },
   sheet: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 24,
+  },
+  sheetContent: {
     paddingBottom: 20,
   },
   handleContainer: {
@@ -493,6 +608,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 5,
     borderRadius: 8,
+    opacity: 0.5,
   },
   header: {
     flexDirection: 'row',
@@ -541,6 +657,20 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  summaryBar: {
+    marginHorizontal: 24,
+    marginTop: 8,
+    marginBottom: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  summaryText: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -559,6 +689,39 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 14,
+    fontWeight: '700',
+  },
+  sportChip: {
+    flex: 1,
+    minWidth: '45%',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    borderWidth: 2,
+    alignItems: 'center',
+    gap: 6,
+    position: 'relative',
+  },
+  sportIcon: {
+    fontSize: 32,
+  },
+  sportLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  sportBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sportBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
     fontWeight: '700',
   },
   togglesList: {
