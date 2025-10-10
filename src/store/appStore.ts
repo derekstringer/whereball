@@ -75,7 +75,7 @@ const DEFAULT_THEME: ThemeState = {
 // Default filters
 const DEFAULT_FILTERS: GameFilters = {
   sports: ['nhl'], // Default to NHL only
-  myTeamsOnly: true,
+  myTeamsOnly: false, // Don't restrict to teams by default
   selectedTeams: [],
   myServicesOnly: false,
   showAllServices: false,
@@ -129,8 +129,9 @@ export const useAppStore = create<AppStore>((set) => ({
       }
       
       // Toggle boolean filters
-      if (typeof state.filters[filterKey] === 'boolean') {
-        newFilters[filterKey] = !state.filters[filterKey];
+      const currentValue = state.filters[filterKey];
+      if (typeof currentValue === 'boolean') {
+        (newFilters[filterKey] as boolean) = !currentValue;
       }
       
       return { filters: newFilters };

@@ -173,7 +173,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
 
             <View style={styles.header}>
             <View style={styles.headerLeft}>
-              <Text style={[styles.title, { color: colors.text }]}>Filters</Text>
+              <Text style={[styles.title, { color: colors.text }]}>GAMES FILTER</Text>
               {activeCount > 0 && (
                 <View style={[styles.badge, { backgroundColor: colors.primary }]}>
                   <Text style={styles.badgeText}>{activeCount}</Text>
