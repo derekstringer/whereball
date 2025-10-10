@@ -157,11 +157,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
           },
         ]}
       >
-        <TouchableOpacity
-          style={styles.sheetContent}
-          activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
-        >
+        <View style={styles.sheetContent}>
           <View style={styles.handleContainer} {...panResponder.panHandlers}>
             <View style={[styles.handle, { backgroundColor: colors.textMuted }]} />
           </View>
@@ -571,7 +567,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
                 </Text>
               </TouchableOpacity>
             </View>
-        </TouchableOpacity>
+        </View>
       </Animated.View>
     </Modal>
   );
