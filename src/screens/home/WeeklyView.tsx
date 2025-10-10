@@ -21,7 +21,6 @@ import {
   BlackoutBadge,
   Tooltip,
 } from '../../components/ui/ServiceBadge';
-import { ServicesBottomSheet } from '../../components/ui/ServicesBottomSheet';
 import { STREAMING_SERVICES, SERVICE_ABBREVIATIONS } from '../../constants/services';
 import {
   getUserServicesForGame,
@@ -47,12 +46,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const [expandedGames, setExpandedGames] = useState<Set<string>>(new Set());
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipMessage, setTooltipMessage] = useState('');
-  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
-  const [bottomSheetServices, setBottomSheetServices] = useState<{
-    userServices: string[];
-    missingServices: string[];
-    channel?: string;
-  }>({ userServices: [], missingServices: [] });
   
   const { preferredServices, filters } = useAppStore();
 
@@ -275,22 +268,17 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                 setTooltipVisible(true);
               };
 
-              // Determine which service to show (preferred or first alphabetically)
-              const primaryService = userServices.length > 0
-                ? (userServices.find(s => preferredServices.includes(s)) || userServices[0])
-                : null;
-              
-              const remainingCount = userServices.length - 1;
+              // Sort services: preferred first, then alphabetically
+              const sortedServices = [...userServices].sort((a, b) => {
+                const aPreferred = preferredServices.includes(a);
+                const bPreferred = preferredServices.includes(b);
+                if (aPreferred && !bPreferred) return -1;
+                if (!aPreferred && bPreferred) return 1;
+                return a.localeCompare(b);
+              });
 
-              const handleMorePress = () => {
-                // Get channel from game broadcasts
-                const channel = game.broadcasts.find(b => 
-                  userServices.some(s => b.network.toLowerCase().includes(s.toLowerCase()))
-                )?.network || game.broadcasts[0]?.network;
-                
-                setBottomSheetServices({ userServices, missingServices, channel });
-                setBottomSheetVisible(true);
-              };
+              const primaryService = sortedServices[0] || null;
+              const remainingCount = sortedServices.length - 1;
 
               const isGameExpanded = expandedGames.has(game.id);
 
@@ -338,19 +326,14 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                               onPress={() => handleBadgePress(primaryService)}
                             />
                             {remainingCount > 0 && (
-                              <TouchableOpacity
+                              <View
                                 style={[styles.moreBadge, { 
                                   backgroundColor: colors.surface,
                                   borderColor: colors.stroke,
                                 }]}
-                                onPress={(e) => {
-                                  e.stopPropagation();
-                                  handleMorePress();
-                                }}
-                                activeOpacity={0.7}
                               >
                                 <Text style={[styles.moreBadgeText, { color: colors.textMuted }]}>+{remainingCount}</Text>
-                              </TouchableOpacity>
+                              </View>
                             )}
                           </>
                         ) : (
@@ -413,19 +396,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         visible={tooltipVisible}
         message={tooltipMessage}
         onDismiss={() => setTooltipVisible(false)}
-      />
-      <ServicesBottomSheet
-        visible={bottomSheetVisible}
-        onClose={() => setBottomSheetVisible(false)}
-        userServices={bottomSheetServices.userServices}
-        missingServices={bottomSheetServices.missingServices}
-        channel={bottomSheetServices.channel}
-        onServicePress={(serviceCode) => {
-          // TODO: Deep link to service
-          setBottomSheetVisible(false);
-          setTooltipMessage(`Opening ${STREAMING_SERVICES.find(s => s.code === serviceCode)?.name}...`);
-          setTooltipVisible(true);
-        }}
       />
       <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>

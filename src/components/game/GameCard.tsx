@@ -9,6 +9,7 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
+  Animated,
 } from 'react-native';
 import type { NHLGame } from '../../lib/nhl-api';
 import { formatGameTime } from '../../lib/nhl-api';
@@ -18,7 +19,6 @@ import {
   BlackoutBadge,
   Tooltip,
 } from '../ui/ServiceBadge';
-import { ServicesBottomSheet } from '../ui/ServicesBottomSheet';
 import { STREAMING_SERVICES } from '../../constants/services';
 import {
   getUserServicesForGame,
@@ -26,28 +26,41 @@ import {
   getServiceNames,
 } from '../../lib/broadcast-mapper';
 import { useTheme } from '../../hooks/useTheme';
+import { useAppStore } from '../../store/appStore';
 
 interface GameCardProps {
   game: NHLGame;
   userServiceCodes?: string[];
   onPress?: () => void;
   onShowTooltip?: (message: string) => void;
+  expanded?: boolean;
 }
 
-export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [], onPress, onShowTooltip }) => {
+export const GameCard: React.FC<GameCardProps> = ({ 
+  game, 
+  userServiceCodes = [], 
+  onPress, 
+  onShowTooltip,
+  expanded = false 
+}) => {
   const { colors } = useTheme();
+  const { preferredServices } = useAppStore();
   const gameTime = formatGameTime(game.startTime);
   const isLive = game.gameState === 'LIVE';
-  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
-  const [bottomSheetServices, setBottomSheetServices] = useState<{
-    userServices: string[];
-    missingServices: string[];
-    channel?: string;
-  }>({ userServices: [], missingServices: [] });
+  const [showAllServices, setShowAllServices] = useState(false);
 
   // Get services for this game
   const userServices = getUserServicesForGame(game, userServiceCodes);
   const missingServices = getMissingServicesForGame(game, userServiceCodes);
+  
+  // Sort services: preferred first, then alphabetically
+  const sortedServices = [...userServices].sort((a, b) => {
+    const aPreferred = preferredServices.includes(a);
+    const bPreferred = preferredServices.includes(b);
+    if (aPreferred && !bPreferred) return -1;
+    if (!aPreferred && bPreferred) return 1;
+    return a.localeCompare(b);
+  });
   
   // Simple blackout heuristic
   const isBlackedOut = game.broadcasts.some(b => 
@@ -84,34 +97,13 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
     }
   };
 
-  const handleMorePress = () => {
-    const channel = game.broadcasts[0]?.network;
-    setBottomSheetServices({ userServices, missingServices, channel });
-    setBottomSheetVisible(true);
-  };
-
-  // TODO: Implement dynamic width measurement to show as many as fit
-  // For now, safe default of 2 prevents overflow
-  const maxVisibleServices = 2;
-  const visibleServices = userServices.slice(0, maxVisibleServices);
-  const remainingCount = Math.max(0, userServices.length - maxVisibleServices);
+  // Show first service or first 2 if not expanded
+  const maxVisibleServices = showAllServices ? sortedServices.length : 2;
+  const visibleServices = sortedServices.slice(0, maxVisibleServices);
+  const remainingCount = Math.max(0, sortedServices.length - maxVisibleServices);
 
   return (
-    <>
-      <ServicesBottomSheet
-        visible={bottomSheetVisible}
-        onClose={() => setBottomSheetVisible(false)}
-        userServices={bottomSheetServices.userServices}
-        missingServices={bottomSheetServices.missingServices}
-        channel={bottomSheetServices.channel}
-        onServicePress={(serviceCode) => {
-          setBottomSheetVisible(false);
-          if (onShowTooltip) {
-            onShowTooltip(`Opening ${STREAMING_SERVICES.find(s => s.code === serviceCode)?.name}...`);
-          }
-        }}
-      />
-      <TouchableOpacity
+    <TouchableOpacity
         style={[styles.card, { 
           backgroundColor: colors.card, 
           borderColor: colors.stroke,
@@ -166,11 +158,16 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
                 ))}
                 {remainingCount > 0 && (
                   <TouchableOpacity
-                    style={styles.moreBadge}
-                    onPress={handleMorePress}
-                    activeOpacity={0.7}
+                    style={[styles.moreBadge, { 
+                      backgroundColor: colors.surface,
+                      borderColor: colors.stroke,
+                    }]}
+                    onPress={() => setShowAllServices(!showAllServices)}
+                    activeOpacity={0.8}
                   >
-                    <Text style={styles.moreBadgeText}>+{remainingCount}</Text>
+                    <Text style={[styles.moreBadgeText, { color: colors.textMuted }]}>
+                      {showAllServices ? '−' : `+${remainingCount}`}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </>
@@ -178,9 +175,15 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
               <NotAvailableBadge onPress={handleUnavailablePress} />
             )}
           </View>
+          
+          {/* Also available on (when services expanded) */}
+          {showAllServices && missingServices.length > 0 && (
+            <Text style={[styles.alsoAvailableText, { color: colors.textSecondary }]}>
+              Also available on: {getServiceNames(missingServices)}
+            </Text>
+          )}
         </View>
       </TouchableOpacity>
-    </>
   );
 };
 
@@ -293,15 +296,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#999999',
-    backgroundColor: '#F5F5F5',
     minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   moreBadgeText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#666666',
     textAlign: 'center',
+  },
+  alsoAvailableText: {
+    fontSize: 13,
+    marginTop: 8,
+    lineHeight: 18,
   },
   moreNetworks: {
     fontSize: 13,
