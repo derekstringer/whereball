@@ -27,8 +27,8 @@ export const darkColors = {
   success: '#2AD678',
   warning: '#F6C445',
   danger: '#FF4D67',
-  nationalBadge: '#007AFF', // National broadcast badge (cyan gradient start)
-  nationalBadgeEnd: '#00C6FF', // National broadcast badge gradient end
+  nationalBadge: '#00BFFF', // National broadcast badge (bright sporty cyan)
+  nationalBadgeEnd: '#33E0FF', // National broadcast badge gradient end
   
   // Utility
   border: 'rgba(255, 255, 255, 0.06)',
@@ -61,8 +61,8 @@ export const lightColors = {
   success: '#2AD678',
   warning: '#F6C445',
   danger: '#FF4D67',
-  nationalBadge: '#007AFF', // National broadcast badge (cyan gradient start)
-  nationalBadgeEnd: '#00C6FF', // National broadcast badge gradient end
+  nationalBadge: '#00BFFF', // National broadcast badge (bright sporty cyan)
+  nationalBadgeEnd: '#33E0FF', // National broadcast badge gradient end
   
   // Utility
   border: 'rgba(0, 0, 0, 0.06)',
