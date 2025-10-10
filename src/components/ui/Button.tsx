@@ -11,6 +11,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
+import { useTheme } from '../../hooks/useTheme';
 
 interface ButtonProps {
   title: string;
@@ -31,15 +32,16 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
 
   return (
     <TouchableOpacity
       style={[
         styles.button,
-        variant === 'primary' && styles.primaryButton,
+        variant === 'primary' && { backgroundColor: colors.primary },
         variant === 'secondary' && styles.secondaryButton,
-        variant === 'outline' && styles.outlineButton,
+        variant === 'outline' && { borderColor: colors.primary },
         isDisabled && styles.disabledButton,
         style,
       ]}
@@ -49,7 +51,7 @@ export const Button: React.FC<ButtonProps> = ({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'outline' ? '#0066CC' : '#FFFFFF'}
+          color={variant === 'outline' ? colors.primary : '#FFFFFF'}
         />
       ) : (
         <Text
@@ -57,7 +59,7 @@ export const Button: React.FC<ButtonProps> = ({
             styles.buttonText,
             variant === 'primary' && styles.primaryButtonText,
             variant === 'secondary' && styles.secondaryButtonText,
-            variant === 'outline' && styles.outlineButtonText,
+            variant === 'outline' && { color: colors.primary },
             isDisabled && styles.disabledButtonText,
             textStyle,
           ]}
@@ -79,7 +81,6 @@ const styles = StyleSheet.create({
     minHeight: 56,
   },
   primaryButton: {
-    backgroundColor: '#0066CC',
   },
   secondaryButton: {
     backgroundColor: '#FF6B35',
@@ -87,7 +88,6 @@ const styles = StyleSheet.create({
   outlineButton: {
     backgroundColor: 'transparent',
     borderWidth: 2,
-    borderColor: '#0066CC',
   },
   disabledButton: {
     opacity: 0.5,
@@ -104,7 +104,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   outlineButtonText: {
-    color: '#0066CC',
   },
   disabledButtonText: {
     color: '#CCCCCC',

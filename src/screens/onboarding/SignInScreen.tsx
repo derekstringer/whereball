@@ -17,12 +17,14 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { signInWithEmail, signInWithApple, signInWithGoogle } from '../../lib/auth';
 import { trackEvent } from '../../lib/analytics';
+import { useTheme } from '../../hooks/useTheme';
 
 interface SignInScreenProps {
   navigation: any;
 }
 
 export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [emailError, setEmailError] = useState('');
@@ -91,7 +93,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -102,8 +104,8 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
         >
           <View style={styles.content}>
             <Text style={styles.emoji}>🏒</Text>
-            <Text style={styles.title}>Welcome to WhereBall</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.text }]}>Welcome to WhereBall</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               We route you to the legal option for YOUR ZIP and services.
             </Text>
 
@@ -130,9 +132,9 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
               />
 
               <View style={styles.divider}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>OR</Text>
-                <View style={styles.dividerLine} />
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+                <Text style={[styles.dividerText, { color: colors.textSecondary }]}>OR</Text>
+                <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
               </View>
 
               {Platform.OS === 'ios' && (
@@ -154,7 +156,7 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
               />
             </View>
 
-            <Text style={styles.disclaimer}>
+            <Text style={[styles.disclaimer, { color: colors.textSecondary }]}>
               By continuing, you agree to our Terms of Service and Privacy Policy
             </Text>
           </View>
@@ -167,7 +169,6 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
@@ -189,13 +190,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 17,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 48,
     lineHeight: 24,
@@ -211,12 +210,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E5E5',
   },
   dividerText: {
     marginHorizontal: 16,
     fontSize: 14,
-    color: '#999999',
     fontWeight: '600',
   },
   socialButton: {
@@ -224,7 +221,6 @@ const styles = StyleSheet.create({
   },
   disclaimer: {
     fontSize: 13,
-    color: '#999999',
     textAlign: 'center',
     lineHeight: 18,
   },

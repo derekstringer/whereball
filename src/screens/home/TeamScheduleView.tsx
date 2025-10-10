@@ -14,6 +14,7 @@ import { getGamesForDateRange, type NHLGame } from '../../lib/nhl-api';
 import { useAppStore } from '../../store/appStore';
 import { GameCard } from '../../components/game/GameCard';
 import { Tooltip } from '../../components/ui/ServiceBadge';
+import { useTheme } from '../../hooks/useTheme';
 
 interface TeamScheduleViewProps {
   followedTeamCodes: string[];
@@ -24,6 +25,7 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
   followedTeamCodes,
   userServiceCodes,
 }) => {
+  const { colors } = useTheme();
   const [games, setGames] = useState<NHLGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [tooltipVisible, setTooltipVisible] = useState(false);
@@ -125,9 +127,9 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066CC" />
-        <Text style={styles.loadingText}>Loading team schedule...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading team schedule...</Text>
       </View>
     );
   }
@@ -142,16 +144,16 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
         message={tooltipMessage}
         onDismiss={() => setTooltipVisible(false)}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: colors.text }]}>
           {followedTeamCodes.length === 1 
             ? `${followedTeamCodes[0]} Schedule`
             : followedTeamCodes.length > 1
             ? `${followedTeamCodes.length} Teams Schedule`
             : 'Teams Schedule'}
         </Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
           {followedTeamCodes.length > 1 
             ? `Next ${filteredGames.length} games from your teams`
             : `Next ${filteredGames.length} games`}
@@ -159,17 +161,17 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
 
         {/* Stats Bar */}
         {filteredGames.length > 0 && (
-          <View style={styles.statsBar}>
+          <View style={[styles.statsBar, { backgroundColor: colors.surface }]}>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{availableGames}</Text>
-              <Text style={styles.statLabel}>Available</Text>
+              <Text style={[styles.statNumber, { color: colors.primary }]}>{availableGames}</Text>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Available</Text>
             </View>
             {blackedOutGames > 0 && (
               <>
-                <View style={styles.statDivider} />
+                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                 <View style={styles.statItem}>
-                  <Text style={[styles.statNumber, styles.statNumberWarning]}>{blackedOutGames}</Text>
-                  <Text style={styles.statLabel}>Blackouts</Text>
+                  <Text style={[styles.statNumber, { color: colors.danger }]}>{blackedOutGames}</Text>
+                  <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Blackouts</Text>
                 </View>
               </>
             )}
@@ -195,13 +197,13 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
       {filteredGames.length === 0 && (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyEmoji}>🏒</Text>
-          <Text style={styles.emptyText}>No upcoming games found</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>No upcoming games found</Text>
         </View>
       )}
 
       {/* Legal Disclaimer */}
       <View style={styles.legalFooter}>
-        <Text style={styles.legalText}>
+        <Text style={[styles.legalText, { color: colors.textSecondary }]}>
           Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
         </Text>
       </View>
@@ -213,7 +215,6 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   scrollContent: {
     paddingBottom: 24,
@@ -222,12 +223,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 15,
-    color: '#666666',
   },
   header: {
     paddingHorizontal: 24,
@@ -237,12 +236,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 15,
-    color: '#666666',
     marginBottom: 16,
   },
   statsBar: {
@@ -250,7 +247,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 12,
-    backgroundColor: '#F8F9FA',
     borderRadius: 12,
     gap: 16,
     marginBottom: 16,
@@ -261,15 +257,12 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0066CC',
     lineHeight: 28,
   },
   statNumberWarning: {
-    color: '#FF6B35',
   },
   statLabel: {
     fontSize: 12,
-    color: '#666666',
     marginTop: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -277,7 +270,6 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 32,
-    backgroundColor: '#E0E0E0',
   },
   summaryCard: {
     backgroundColor: '#FFFFFF',
@@ -428,7 +420,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 15,
-    color: '#666666',
   },
   legalFooter: {
     paddingHorizontal: 24,
@@ -437,7 +428,6 @@ const styles = StyleSheet.create({
   },
   legalText: {
     fontSize: 11,
-    color: '#999999',
     textAlign: 'center',
     lineHeight: 16,
   },

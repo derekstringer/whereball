@@ -16,12 +16,14 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
+import { useTheme } from '../../hooks/useTheme';
 
 interface ZipEntryScreenProps {
   navigation: any;
 }
 
 export const ZipEntryScreen: React.FC<ZipEntryScreenProps> = ({ navigation }) => {
+  const { colors } = useTheme();
   const [zip, setZip] = useState('');
   const [loading, setLoading] = useState(false);
   const [zipError, setZipError] = useState('');
@@ -69,7 +71,7 @@ export const ZipEntryScreen: React.FC<ZipEntryScreenProps> = ({ navigation }) =>
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
@@ -79,11 +81,11 @@ export const ZipEntryScreen: React.FC<ZipEntryScreenProps> = ({ navigation }) =>
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            <Text style={styles.progress}>Step 1 of 3</Text>
+            <Text style={[styles.progress, { color: colors.textSecondary }]}>Step 1 of 3</Text>
             
             <Text style={styles.emoji}>📍</Text>
-            <Text style={styles.title}>What's your ZIP code?</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: colors.text }]}>What's your ZIP code?</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               We'll use this to check blackouts and find the right streaming options for your area.
             </Text>
 
@@ -111,7 +113,7 @@ export const ZipEntryScreen: React.FC<ZipEntryScreenProps> = ({ navigation }) =>
               />
             </View>
 
-            <Text style={styles.note}>
+            <Text style={[styles.note, { color: colors.textSecondary, backgroundColor: colors.surface }]}>
               💡 We only use your ZIP to determine blackouts. We never share your location data.
             </Text>
           </View>
@@ -124,7 +126,6 @@ export const ZipEntryScreen: React.FC<ZipEntryScreenProps> = ({ navigation }) =>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
@@ -140,7 +141,6 @@ const styles = StyleSheet.create({
   },
   progress: {
     fontSize: 15,
-    color: '#999999',
     fontWeight: '600',
     marginBottom: 24,
   },
@@ -152,13 +152,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 17,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 48,
     lineHeight: 24,
@@ -168,10 +166,8 @@ const styles = StyleSheet.create({
   },
   note: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
     lineHeight: 20,
-    backgroundColor: '#F5F5F5',
     padding: 16,
     borderRadius: 12,
   },

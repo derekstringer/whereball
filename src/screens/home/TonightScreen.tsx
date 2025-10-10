@@ -25,10 +25,12 @@ import { SettingsScreen } from '../settings/SettingsScreen';
 import { FilterBottomSheet } from '../../components/ui/FilterBottomSheet';
 import { Modal } from 'react-native';
 import { NHL_TEAMS } from '../../constants/teams';
+import { useTheme } from '../../hooks/useTheme';
 
 type TabView = 'daily' | 'weekly' | 'team';
 
 export const TonightScreen: React.FC = () => {
+  const { colors } = useTheme();
   const [activeTab, setActiveTab] = useState<TabView>('daily');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames] = useState<NHLGame[]>([]);
@@ -185,10 +187,10 @@ export const TonightScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0066CC" />
-          <Text style={styles.loadingText}>Loading today's games...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading today's games...</Text>
         </View>
       </SafeAreaView>
     );
@@ -235,7 +237,7 @@ export const TonightScreen: React.FC = () => {
             onPress={goToPreviousDay}
             activeOpacity={0.7}
           >
-            <Text style={styles.dateArrowText}>←</Text>
+            <Text style={[styles.dateArrowText, { color: colors.primary }]}>←</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -243,7 +245,7 @@ export const TonightScreen: React.FC = () => {
             onPress={isToday ? undefined : goToToday}
             activeOpacity={isToday ? 1 : 0.7}
           >
-            <Text style={[styles.dateRange, isToday && styles.dateRangeCurrent]}>
+            <Text style={[styles.dateRange, { color: colors.text }, isToday && { color: colors.primary }]}>
               {selectedDate.toLocaleDateString('en-US', {
                 weekday: 'long',
                 month: 'long',
@@ -251,7 +253,7 @@ export const TonightScreen: React.FC = () => {
               })}
             </Text>
             {!isToday && (
-              <Text style={styles.todayHint}>Tap for today</Text>
+              <Text style={[styles.todayHint, { color: colors.primary }]}>Tap for today</Text>
             )}
           </TouchableOpacity>
 
@@ -260,30 +262,30 @@ export const TonightScreen: React.FC = () => {
             onPress={goToNextDay}
             activeOpacity={0.7}
           >
-            <Text style={styles.dateArrowText}>→</Text>
+            <Text style={[styles.dateArrowText, { color: colors.primary }]}>→</Text>
           </TouchableOpacity>
         </View>
       </View>
 
         {error && (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>⚠️ {error}</Text>
+          <View style={[styles.errorContainer, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.errorText, { color: colors.danger }]}>⚠️ {error}</Text>
           </View>
         )}
 
         {games.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>🏒</Text>
-            <Text style={styles.emptyTitle}>No games scheduled today</Text>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No games scheduled today</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
               Check back during the NHL season for tonight's matchups!
             </Text>
           </View>
         ) : filteredGames.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyEmoji}>🔍</Text>
-            <Text style={styles.emptyTitle}>No games match your filters</Text>
-            <Text style={styles.emptyText}>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>No games match your filters</Text>
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
               Try adjusting your filters to see more games.
             </Text>
           </View>
@@ -305,10 +307,10 @@ export const TonightScreen: React.FC = () => {
         )}
 
       <View style={styles.footer}>
-        <Text style={styles.footerText}>
+        <Text style={[styles.footerText, { color: colors.textSecondary }]}>
           Pull down to refresh • Data from NHL.com
         </Text>
-        <Text style={styles.legalText}>
+        <Text style={[styles.legalText, { color: colors.textSecondary }]}>
           Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
         </Text>
       </View>
@@ -324,31 +326,31 @@ export const TonightScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <Tooltip
         visible={tooltipVisible}
         message={tooltipMessage}
         onDismiss={() => setTooltipVisible(false)}
       />
       {/* Header with Hamburger + Filter */}
-      <View style={styles.topBar}>
+      <View style={[styles.topBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity
           style={styles.iconButton}
           onPress={handleSettingsPress}
           activeOpacity={0.7}
         >
-          <Text style={styles.hamburger}>☰</Text>
+          <Text style={[styles.hamburger, { color: colors.textSecondary }]}>☰</Text>
         </TouchableOpacity>
-        <Text style={styles.topBarTitle}>🏒 WhereBall</Text>
+        <Text style={[styles.topBarTitle, { color: colors.text }]}>🏒 WhereBall</Text>
         <TouchableOpacity
           style={styles.iconButton}
           onPress={() => setShowFilters(true)}
           activeOpacity={0.7}
         >
           <View style={styles.filterIconWrapper}>
-            <Text style={styles.filterIcon}>🎚️</Text>
+            <Text style={[styles.filterIcon, { color: colors.textSecondary }]}>🎚️</Text>
             {activeFilterCount > 0 && (
-              <View style={styles.filterCountBadge}>
+              <View style={[styles.filterCountBadge, { backgroundColor: colors.primary }]}>
                 <Text style={styles.filterCountText}>{activeFilterCount}</Text>
               </View>
             )}
@@ -357,33 +359,33 @@ export const TonightScreen: React.FC = () => {
       </View>
 
       {/* Tab Bar */}
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'daily' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'daily' && { borderBottomColor: colors.primary }]}
           onPress={() => setActiveTab('daily')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'daily' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'daily' && { color: colors.primary }]}>
             Daily
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'weekly' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'weekly' && { borderBottomColor: colors.primary }]}
           onPress={() => setActiveTab('weekly')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'weekly' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'weekly' && { color: colors.primary }]}>
             Weekly
           </Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.tab, activeTab === 'team' && styles.tabActive]}
+          style={[styles.tab, activeTab === 'team' && { borderBottomColor: colors.primary }]}
           onPress={() => setActiveTab('team')}
           activeOpacity={0.7}
         >
-          <Text style={[styles.tabText, activeTab === 'team' && styles.tabTextActive]}>
+          <Text style={[styles.tabText, { color: colors.textSecondary }, activeTab === 'team' && { color: colors.primary }]}>
             Teams
           </Text>
         </TouchableOpacity>
@@ -415,7 +417,6 @@ export const TonightScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   loadingContainer: {
     flex: 1,
@@ -425,7 +426,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 15,
-    color: '#666666',
   },
   scrollContent: {
     flexGrow: 1,
@@ -444,11 +444,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000000',
     marginBottom: 4,
   },
   filterBadge: {
-    backgroundColor: '#0066CC',
     borderRadius: 12,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -463,7 +461,6 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 16,
-    color: '#666666',
     textAlign: 'center',
   },
   dateNav: {
@@ -480,7 +477,6 @@ const styles = StyleSheet.create({
   },
   dateArrowText: {
     fontSize: 24,
-    color: '#0066CC',
     fontWeight: '600',
   },
   dateCenter: {
@@ -490,16 +486,13 @@ const styles = StyleSheet.create({
   },
   dateRange: {
     fontSize: 18,
-    color: '#000000',
     fontWeight: '700',
     textAlign: 'center',
   },
   dateRangeCurrent: {
-    color: '#0066CC',
   },
   todayHint: {
     fontSize: 12,
-    color: '#0066CC',
     marginTop: 4,
     fontWeight: '600',
   },
@@ -548,12 +541,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 24,
     marginBottom: 16,
     padding: 16,
-    backgroundColor: '#FFF3E0',
     borderRadius: 12,
   },
   errorText: {
     fontSize: 14,
-    color: '#FF6B35',
     lineHeight: 20,
   },
   gamesContainer: {
@@ -579,13 +570,11 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000000',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptyText: {
     fontSize: 15,
-    color: '#666666',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -596,13 +585,11 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 13,
-    color: '#999999',
     textAlign: 'center',
     marginBottom: 12,
   },
   legalText: {
     fontSize: 11,
-    color: '#999999',
     textAlign: 'center',
     lineHeight: 16,
   },
@@ -612,14 +599,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   topBarTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
   },
   iconButton: {
     width: 40,
@@ -629,20 +613,17 @@ const styles = StyleSheet.create({
   },
   hamburger: {
     fontSize: 24,
-    color: '#666666',
   },
   filterIconWrapper: {
     position: 'relative',
   },
   filterIcon: {
     fontSize: 24,
-    color: '#666666',
   },
   filterCountBadge: {
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: '#0066CC',
     borderRadius: 10,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -657,9 +638,7 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
   },
   tab: {
     flex: 1,
@@ -669,14 +648,11 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#0066CC',
   },
   tabText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#999999',
   },
   tabTextActive: {
-    color: '#0066CC',
   },
 });

@@ -14,6 +14,7 @@ import {
 import { getGamesGroupedByDate, type NHLGame } from '../../lib/nhl-api';
 import { trackEvent } from '../../lib/analytics';
 import { useAppStore } from '../../store/appStore';
+import { useTheme } from '../../hooks/useTheme';
 import {
   ServiceBadge,
   NotAvailableBadge,
@@ -38,6 +39,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   followedTeamCodes,
   userServiceCodes,
 }) => {
+  const { colors } = useTheme();
   const [gamesByDate, setGamesByDate] = useState<Record<string, NHLGame[]>>({});
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, -1 = last week, 1 = next week
@@ -219,15 +221,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
     const isExpanded = expandedDays.has(dateKey);
 
     return (
-      <View key={dateKey} style={[styles.daySection, isToday && styles.daySectionToday]}>
+      <View key={dateKey} style={[styles.daySection, { backgroundColor: colors.card, borderColor: colors.stroke }, isToday && { borderColor: colors.primary, borderWidth: 2 }]}>
         <View style={styles.dayHeader}>
           <View style={styles.dayHeaderLeft}>
-            <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
+            <Text style={[styles.dayName, { color: colors.text }, isToday && { color: colors.primary }]}>
               {isToday
                 ? 'Today'
                 : date.toLocaleDateString('en-US', { weekday: 'short' })}
             </Text>
-            <Text style={styles.dayDate}>
+            <Text style={[styles.dayDate, { color: colors.textSecondary }]}>
               {date.toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
@@ -235,7 +237,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
             </Text>
           </View>
           <View style={styles.dayHeaderRight}>
-            <Text style={styles.gameCount}>
+            <Text style={[styles.gameCount, { color: colors.textSecondary }]}>
               {myTeamGames.length === 0
                 ? 'No games'
                 : `${myTeamGames.length} game${myTeamGames.length !== 1 ? 's' : ''}`}
@@ -244,7 +246,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         </View>
 
         {myTeamGames.length > 0 && (
-          <View style={styles.gamesContainer}>
+          <View style={[styles.gamesContainer, { gap: 8 }]}>
             {(isExpanded ? myTeamGames : myTeamGames.slice(0, 3)).map((game, index) => {
               const userServices = getUserServicesForGame(game, userServiceCodes);
               const missingServices = getMissingServicesForGame(game, userServiceCodes);
@@ -293,7 +295,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               const isGameExpanded = expandedGames.has(game.id);
 
               return (
-                <View key={`${game.id}-${index}`}>
+                <View key={`${game.id}-${index}`} style={{ marginBottom: 8 }}>
                   {isGameExpanded ? (
                     <GameCard
                       game={game}
@@ -306,12 +308,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                     />
                   ) : (
                     <TouchableOpacity
-                      style={styles.gameRow}
+                      style={[styles.gameRow, { 
+                        backgroundColor: colors.surface,
+                        borderColor: colors.stroke,
+                      }]}
                       onPress={() => toggleGameExpanded(game.id)}
-                      activeOpacity={0.7}
+                      activeOpacity={0.8}
                     >
                       <View style={styles.gameTeams}>
-                        <Text style={styles.gameText} numberOfLines={1}>
+                        <Text style={[styles.gameText, { color: colors.text }]} numberOfLines={1}>
                           {game.awayTeam.abbreviation} @ {game.homeTeam.abbreviation}
                         </Text>
                       </View>
@@ -349,7 +354,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
             })}
             {myTeamGames.length > 3 && (
               <TouchableOpacity onPress={() => toggleDayExpanded(dateKey)}>
-                <Text style={styles.moreGamesText}>
+                <Text style={[styles.moreGamesText, { color: colors.primary }]}>
                   {isExpanded 
                     ? '− Show less' 
                     : `+${myTeamGames.length - 3} more`}
@@ -364,9 +369,9 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066CC" />
-        <Text style={styles.loadingText}>Loading this week's games...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: colors.bg }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.textSecondary }]}>Loading this week's games...</Text>
       </View>
     );
   }
@@ -412,7 +417,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
           setTooltipVisible(true);
         }}
       />
-      <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={[styles.container, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           {/* Week Navigation */}
           <View style={styles.weekNav}>
@@ -421,7 +426,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               onPress={() => setWeekOffset(prev => prev - 1)}
               activeOpacity={0.7}
             >
-              <Text style={styles.weekArrowText}>←</Text>
+              <Text style={[styles.weekArrowText, { color: colors.primary }]}>←</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -429,13 +434,13 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               onPress={!isCurrentWeek ? () => setWeekOffset(0) : undefined}
               activeOpacity={isCurrentWeek ? 1 : 0.7}
             >
-              <Text style={[styles.weekRange, isCurrentWeek && styles.weekRangeCurrent]}>
+              <Text style={[styles.weekRange, { color: colors.text }, isCurrentWeek && { color: colors.primary }]}>
                 {getWeekRange().weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                 {' - '}
                 {getWeekRange().weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
               </Text>
               {!isCurrentWeek && (
-                <Text style={styles.thisWeekHint}>Tap for this week</Text>
+                <Text style={[styles.thisWeekHint, { color: colors.primary }]}>Tap for this week</Text>
               )}
             </TouchableOpacity>
 
@@ -444,23 +449,23 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               onPress={() => setWeekOffset(prev => prev + 1)}
               activeOpacity={0.7}
             >
-              <Text style={styles.weekArrowText}>→</Text>
+              <Text style={[styles.weekArrowText, { color: colors.primary }]}>→</Text>
             </TouchableOpacity>
           </View>
 
           {/* Stats Bar */}
           {totalMyTeamGames > 0 && (
-            <View style={styles.statsBar}>
+            <View style={[styles.statsBar, { backgroundColor: colors.surface }]}>
               <View style={styles.statItem}>
-                <Text style={styles.statNumber}>{totalMyTeamGames}</Text>
-                <Text style={styles.statLabel}>Games</Text>
+                <Text style={[styles.statNumber, { color: colors.primary }]}>{totalMyTeamGames}</Text>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Games</Text>
               </View>
               {totalBlackouts > 0 && (
                 <>
-                  <View style={styles.statDivider} />
+                  <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
                   <View style={styles.statItem}>
-                    <Text style={[styles.statNumber, styles.statNumberWarning]}>{totalBlackouts}</Text>
-                    <Text style={styles.statLabel}>Blackouts</Text>
+                    <Text style={[styles.statNumber, { color: colors.danger }]}>{totalBlackouts}</Text>
+                    <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Blackouts</Text>
                   </View>
                 </>
               )}
@@ -472,7 +477,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       
       {/* Legal Disclaimer */}
       <View style={styles.legalFooter}>
-        <Text style={styles.legalText}>
+        <Text style={[styles.legalText, { color: colors.textSecondary }]}>
           Team and service names used for identification only. Not affiliated with or endorsed by any league or provider.
         </Text>
       </View>
@@ -484,7 +489,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
   },
   scrollContent: {
     paddingBottom: 24,
@@ -493,12 +497,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 15,
-    color: '#666666',
   },
   header: {
     paddingHorizontal: 24,
@@ -508,18 +510,17 @@ const styles = StyleSheet.create({
   daySection: {
     marginHorizontal: 24,
     marginBottom: 16,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   daySectionToday: {
-    borderWidth: 2,
-    borderColor: '#0066CC',
     shadowColor: '#0066CC',
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -539,10 +540,8 @@ const styles = StyleSheet.create({
   dayName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#000000',
   },
   dayNameToday: {
-    color: '#0066CC',
   },
   weekNav: {
     flexDirection: 'row',
@@ -558,7 +557,6 @@ const styles = StyleSheet.create({
   },
   weekArrowText: {
     fontSize: 24,
-    color: '#0066CC',
     fontWeight: '600',
   },
   weekCenter: {
@@ -568,16 +566,13 @@ const styles = StyleSheet.create({
   },
   weekRange: {
     fontSize: 18,
-    color: '#000000',
     fontWeight: '700',
     textAlign: 'center',
   },
   weekRangeCurrent: {
-    color: '#0066CC',
   },
   thisWeekHint: {
     fontSize: 12,
-    color: '#0066CC',
     marginTop: 4,
     fontWeight: '600',
   },
@@ -585,9 +580,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
+    paddingVertical: 16,
+    borderRadius: 16,
     gap: 16,
   },
   statItem: {
@@ -596,15 +590,12 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0066CC',
     lineHeight: 28,
   },
   statNumberWarning: {
-    color: '#FF6B35',
   },
   statLabel: {
     fontSize: 12,
-    color: '#666666',
     marginTop: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -612,29 +603,26 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 32,
-    backgroundColor: '#E0E0E0',
   },
   dayDate: {
     fontSize: 15,
-    color: '#666666',
   },
   dayHeaderRight: {},
   gameCount: {
     fontSize: 14,
-    color: '#666666',
     fontWeight: '600',
   },
   gamesContainer: {
-    gap: 8,
+    // gap set inline for better control
   },
   gameRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
   },
   gameTeams: {
     flex: 1,
@@ -642,7 +630,6 @@ const styles = StyleSheet.create({
   gameText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#333333',
   },
   gameStatus: {
     flexDirection: 'row',
@@ -686,10 +673,11 @@ const styles = StyleSheet.create({
   },
   moreGamesText: {
     fontSize: 13,
-    color: '#0066CC',
-    fontWeight: '600',
-    paddingLeft: 12,
-    marginTop: 4,
+    fontWeight: '700',
+    paddingLeft: 16,
+    marginTop: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   moreBadge: {
     paddingHorizontal: 8,
@@ -713,7 +701,6 @@ const styles = StyleSheet.create({
   },
   legalText: {
     fontSize: 11,
-    color: '#999999',
     textAlign: 'center',
     lineHeight: 16,
   },

@@ -3,30 +3,28 @@
  * Provides the current theme colors based on colorMode setting
  */
 
-import { useColorScheme, Appearance } from 'react-native';
+import { Appearance } from 'react-native';
 import { useAppStore } from '../store/appStore';
-import { darkColors, lightColors, type ColorMode } from '../styles/tokens';
-import { useEffect, useState } from 'react';
+import { darkColors, lightColors } from '../styles/tokens';
+import { useEffect } from 'react';
 
 export const useTheme = () => {
-  const { colorMode } = useAppStore();
-  const systemColorScheme = useColorScheme();
-  const [, forceUpdate] = useState({});
+  const { colorMode, systemThemeUpdateTrigger, triggerSystemThemeUpdate } = useAppStore();
   
-  // Force re-render when system theme changes
+  // Listen for system theme changes and trigger store update
   useEffect(() => {
     if (colorMode === 'system') {
       const subscription = Appearance.addChangeListener(() => {
-        forceUpdate({});
+        triggerSystemThemeUpdate();
       });
       return () => subscription.remove();
     }
-  }, [colorMode]);
+  }, [colorMode, triggerSystemThemeUpdate]);
   
-  // Determine effective mode
+  // Determine effective mode - always get fresh value from Appearance when system mode
   const effectiveMode: 'light' | 'dark' = 
     colorMode === 'system' 
-      ? (systemColorScheme || 'dark')
+      ? (Appearance.getColorScheme() || 'dark')
       : colorMode;
   
   // Return appropriate colors

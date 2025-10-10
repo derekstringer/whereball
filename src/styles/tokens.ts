@@ -1,6 +1,6 @@
 /**
  * Design Tokens - Dark Mode First Design System
- * Version 1.2 - Electric Cyan Theme
+ * Version 1.3 - Sleek Sporty Dark Polish
  */
 
 export type ColorMode = 'light' | 'dark' | 'system';
@@ -17,6 +17,7 @@ export const darkColors = {
   // Text
   text: '#E6EAF2',
   textSecondary: '#8A93A6',
+  textMuted: '#AEB6C1',
   
   // Brand
   primary: '#00E5FF',      // Electric cyan
@@ -26,11 +27,15 @@ export const darkColors = {
   success: '#2AD678',
   warning: '#F6C445',
   danger: '#FF4D67',
+  nationalBadge: '#FF6A3D', // National broadcast badge
   
   // Utility
   border: 'rgba(255, 255, 255, 0.06)',
+  stroke: 'rgba(255, 255, 255, 0.06)',
+  divider: 'rgba(255, 255, 255, 0.08)',
   borderStrong: 'rgba(255, 255, 255, 0.16)',
   overlay: 'rgba(0, 0, 0, 0.5)',
+  filterSheetBg: '#121722',
 };
 
 // Light Mode Colors
@@ -45,20 +50,25 @@ export const lightColors = {
   // Text
   text: '#000000',
   textSecondary: '#666666',
+  textMuted: '#888888',
   
-  // Brand (same as dark)
-  primary: '#00E5FF',
-  accent: '#22D1EE',
+  // Brand (deeper blue for light mode)
+  primary: '#0077CC',      // Deep blue (better for light backgrounds)
+  accent: '#0095DD',       // Lighter blue accent
   
   // Semantic
   success: '#2AD678',
   warning: '#F6C445',
   danger: '#FF4D67',
+  nationalBadge: '#FF6A3D',
   
   // Utility
   border: 'rgba(0, 0, 0, 0.06)',
+  stroke: 'rgba(0, 0, 0, 0.06)',
+  divider: 'rgba(0, 0, 0, 0.08)',
   borderStrong: 'rgba(0, 0, 0, 0.16)',
   overlay: 'rgba(0, 0, 0, 0.5)',
+  filterSheetBg: '#F5F5F5',
 };
 
 // Typography Scale
@@ -68,7 +78,7 @@ export const typography = {
     lineHeight: 36,
     fontWeight: '700' as const,
     textTransform: 'uppercase' as const,
-    letterSpacing: 0.5,
+    letterSpacing: -0.32, // -1% tracking
   },
   h2: {
     fontSize: 24,
@@ -112,8 +122,10 @@ export const spacing = {
 export const radii = {
   sm: 8,
   md: 12,
+  input: 12,
   lg: 16,
   xl: 20,
+  card: 24,
   pill: 9999,
 };
 
@@ -139,6 +151,13 @@ export const shadowsDark = {
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
+  },
+  card: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 12,
   },
 };
 
@@ -171,6 +190,7 @@ export const shadowsLight = {
 export const animation = {
   fast: 150,
   normal: 200,
+  tap: 220,
   slow: 300,
 };
 

@@ -17,6 +17,7 @@ import { NHL_TEAMS } from '../../constants/teams';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
 import { trackEvent } from '../../lib/analytics';
+import { useTheme } from '../../hooks/useTheme';
 
 interface TeamPickerScreenProps {
   navigation: any;
@@ -27,6 +28,7 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
   navigation,
   route,
 }) => {
+  const { colors } = useTheme();
   const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const { user, isPremium } = useAppStore();
@@ -97,29 +99,35 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
         }
       }
 
-      // Navigate to main app (Tonight screen) regardless of save status
-      navigation.navigate('Main');
+      // Navigate to main app (Tonight screen) and reset stack to prevent going back
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
     } catch (error: any) {
       console.error('Error:', error);
       // Still navigate even if there's an error (demo mode)
-      navigation.navigate('Main');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          <Text style={styles.progress}>Step 3 of 3</Text>
+          <Text style={[styles.progress, { color: colors.textSecondary }]}>Step 3 of 3</Text>
 
           <Text style={styles.emoji}>🏒</Text>
-          <Text style={styles.title}>Follow your team</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text }]}>Follow your team</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Select all the teams you want to follow.
           </Text>
 
@@ -128,14 +136,33 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
               const isSelected = selectedTeams.includes(team.id);
               const primaryColor = team.primary_colors?.light || '#0066CC';
 
+              // Check if team is LAK or PIT (black teams that need visible border)
+              const isDarkTeam = team.short_code === 'LAK' || team.short_code === 'PIT';
+              
+              // Debug logging for PIT
+              if (team.short_code === 'PIT' && isSelected) {
+                console.log('PIT Debug:', {
+                  shortCode: team.short_code,
+                  isDarkTeam,
+                  primaryColor,
+                  borderColor: isDarkTeam ? colors.border : primaryColor,
+                  borderWidth: isDarkTeam ? 3 : 2,
+                });
+              }
+              
               return (
                 <TouchableOpacity
                   key={team.id}
                   style={[
                     styles.teamCard,
-                    isSelected && {
-                      backgroundColor: primaryColor,
-                      borderColor: primaryColor,
+                    {
+                      backgroundColor: isSelected ? primaryColor : colors.surface,
+                      borderColor: isSelected 
+                        ? (isDarkTeam ? '#666666' : primaryColor)
+                        : 'transparent',
+                      borderWidth: isSelected 
+                        ? (isDarkTeam ? 0.75 : 2) 
+                        : 2,
                     },
                   ]}
                   onPress={() => toggleTeam(team.id)}
@@ -144,6 +171,7 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
                   <Text
                     style={[
                       styles.teamName,
+                      { color: colors.text },
                       isSelected && styles.teamNameSelected,
                     ]}
                   >
@@ -152,6 +180,7 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
                   <Text
                     style={[
                       styles.teamCity,
+                      { color: colors.textSecondary },
                       isSelected && styles.teamCitySelected,
                     ]}
                   >
@@ -169,7 +198,7 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
             disabled={loading || selectedTeams.length === 0}
           />
 
-          <Text style={styles.upgradeNote}>
+          <Text style={[styles.upgradeNote, { color: colors.textSecondary, backgroundColor: colors.surface }]}>
             🧪 Testing mode: Multi-team enabled
           </Text>
         </View>
@@ -181,7 +210,6 @@ export const TeamPickerScreen: React.FC<TeamPickerScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
@@ -194,7 +222,6 @@ const styles = StyleSheet.create({
   },
   progress: {
     fontSize: 15,
-    color: '#999999',
     fontWeight: '600',
     marginBottom: 24,
   },
@@ -206,13 +233,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 17,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
@@ -225,7 +250,6 @@ const styles = StyleSheet.create({
   },
   teamCard: {
     width: '48%',
-    backgroundColor: '#F5F5F5',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
@@ -236,7 +260,6 @@ const styles = StyleSheet.create({
   teamName: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000000',
     marginBottom: 4,
   },
   teamNameSelected: {
@@ -244,7 +267,6 @@ const styles = StyleSheet.create({
   },
   teamCity: {
     fontSize: 14,
-    color: '#666666',
   },
   teamCitySelected: {
     color: '#FFFFFF',
@@ -252,10 +274,8 @@ const styles = StyleSheet.create({
   },
   upgradeNote: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
     lineHeight: 20,
-    backgroundColor: '#F5F5F5',
     padding: 16,
     borderRadius: 12,
     marginTop: 16,

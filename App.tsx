@@ -100,7 +100,13 @@ export default function App() {
           <Stack.Screen name="ZipEntry" component={ZipEntryScreen} />
           <Stack.Screen name="ServicesSelector" component={ServicesSelectorScreen} />
           <Stack.Screen name="TeamPicker" component={TeamPickerScreen} />
-          <Stack.Screen name="Main" component={TonightScreen} />
+          <Stack.Screen 
+            name="Main" 
+            component={TonightScreen}
+            options={{
+              gestureEnabled: false, // Disable swipe back gesture
+            }}
+          />
         </Stack.Navigator>
       </NavigationContainer>
     </>

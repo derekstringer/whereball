@@ -15,6 +15,7 @@ import { Checkbox } from '../../components/ui/Checkbox';
 import { STREAMING_SERVICES } from '../../constants/services';
 import { supabase } from '../../lib/supabase';
 import { useAppStore } from '../../store/appStore';
+import { useTheme } from '../../hooks/useTheme';
 
 interface ServicesSelectorScreenProps {
   navigation: any;
@@ -25,6 +26,7 @@ export const ServicesSelectorScreen: React.FC<ServicesSelectorScreenProps> = ({
   navigation,
   route,
 }) => {
+  const { colors } = useTheme();
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const { user } = useAppStore();
@@ -83,17 +85,17 @@ export const ServicesSelectorScreen: React.FC<ServicesSelectorScreenProps> = ({
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.content}>
-          <Text style={styles.progress}>Step 2 of 3</Text>
+          <Text style={[styles.progress, { color: colors.textSecondary }]}>Step 2 of 3</Text>
 
           <Text style={styles.emoji}>📺</Text>
-          <Text style={styles.title}>Pick your streaming services</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.text }]}>Pick your streaming services</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
             Select all the services you currently subscribe to. We'll show you which ones carry each game.
           </Text>
 
@@ -115,7 +117,7 @@ export const ServicesSelectorScreen: React.FC<ServicesSelectorScreenProps> = ({
             disabled={loading || selectedServices.length === 0}
           />
 
-          <Text style={styles.note}>
+          <Text style={[styles.note, { color: colors.textSecondary, backgroundColor: colors.surface }]}>
             💡 You can always change your services later in Settings.
           </Text>
         </View>
@@ -127,7 +129,6 @@ export const ServicesSelectorScreen: React.FC<ServicesSelectorScreenProps> = ({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
@@ -140,7 +141,6 @@ const styles = StyleSheet.create({
   },
   progress: {
     fontSize: 15,
-    color: '#999999',
     fontWeight: '600',
     marginBottom: 24,
   },
@@ -152,13 +152,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#000000',
     textAlign: 'center',
     marginBottom: 12,
   },
   subtitle: {
     fontSize: 17,
-    color: '#666666',
     textAlign: 'center',
     marginBottom: 32,
     lineHeight: 24,
@@ -168,10 +166,8 @@ const styles = StyleSheet.create({
   },
   note: {
     fontSize: 14,
-    color: '#666666',
     textAlign: 'center',
     lineHeight: 20,
-    backgroundColor: '#F5F5F5',
     padding: 16,
     borderRadius: 12,
     marginTop: 16,

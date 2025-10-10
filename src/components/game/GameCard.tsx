@@ -25,6 +25,7 @@ import {
   getMissingServicesForGame,
   getServiceNames,
 } from '../../lib/broadcast-mapper';
+import { useTheme } from '../../hooks/useTheme';
 
 interface GameCardProps {
   game: NHLGame;
@@ -34,6 +35,7 @@ interface GameCardProps {
 }
 
 export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [], onPress, onShowTooltip }) => {
+  const { colors } = useTheme();
   const gameTime = formatGameTime(game.startTime);
   const isLive = game.gameState === 'LIVE';
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
@@ -110,20 +112,23 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
         }}
       />
       <TouchableOpacity
-        style={styles.card}
+        style={[styles.card, { 
+          backgroundColor: colors.card, 
+          borderColor: colors.stroke,
+        }]}
         onPress={onPress}
-        activeOpacity={0.7}
+        activeOpacity={0.8}
         disabled={!onPress}
       >
         <View style={styles.header}>
-          <Text style={styles.time}>{gameTime}</Text>
+          <Text style={[styles.time, { color: colors.textSecondary }]}>{gameTime}</Text>
           <View style={styles.headerBadges}>
             {isLive && <View style={styles.liveBadge}>
               <Text style={styles.liveText}>LIVE NOW</Text>
             </View>}
             {isNational && (
-              <View style={styles.nationalBadge}>
-                <Text style={styles.nationalText}>National</Text>
+              <View style={[styles.nationalBadge, { backgroundColor: colors.nationalBadge }]}>
+                <Text style={[styles.nationalText, { color: colors.card }]}>National</Text>
               </View>
             )}
           </View>
@@ -131,21 +136,21 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
 
         <View style={styles.matchup}>
           <View style={styles.team}>
-            <Text style={styles.teamAbbr}>{game.awayTeam.abbreviation}</Text>
-            <Text style={styles.teamName}>{game.awayTeam.name}</Text>
+            <Text style={[styles.teamAbbr, { color: colors.text }]}>{game.awayTeam.abbreviation}</Text>
+            <Text style={[styles.teamName, { color: colors.textSecondary }]}>{game.awayTeam.name}</Text>
           </View>
           
-          <Text style={styles.at}>@</Text>
+          <Text style={[styles.at, { color: colors.textSecondary }]}>@</Text>
           
           <View style={styles.team}>
-            <Text style={styles.teamAbbr}>{game.homeTeam.abbreviation}</Text>
-            <Text style={styles.teamName}>{game.homeTeam.name}</Text>
+            <Text style={[styles.teamAbbr, { color: colors.text }]}>{game.homeTeam.abbreviation}</Text>
+            <Text style={[styles.teamName, { color: colors.textSecondary }]}>{game.homeTeam.name}</Text>
           </View>
         </View>
 
         {/* Service Badges Row */}
         <View style={styles.watchSection}>
-          <Text style={styles.watchLabel}>Watch on:</Text>
+          <Text style={[styles.watchLabel, { color: colors.textMuted }]}>Watch on:</Text>
           <View style={styles.servicesRow}>
             {isBlackedOut ? (
               <BlackoutBadge onPress={handleBlackoutPress} />
@@ -181,17 +186,15 @@ export const GameCard: React.FC<GameCardProps> = ({ game, userServiceCodes = [],
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 24,
     padding: 20,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 12,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
   },
   header: {
     flexDirection: 'row',
@@ -202,7 +205,6 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#666666',
   },
   headerBadges: {
     flexDirection: 'row',
@@ -233,17 +235,14 @@ const styles = StyleSheet.create({
   teamAbbr: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#000000',
     marginBottom: 4,
   },
   teamName: {
     fontSize: 13,
-    color: '#666666',
   },
   at: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#CCCCCC',
     marginHorizontal: 12,
   },
   broadcastInfo: {
@@ -264,15 +263,15 @@ const styles = StyleSheet.create({
     color: '#0066CC',
   },
   nationalBadge: {
-    backgroundColor: '#FFF3E0',
     paddingHorizontal: 8,
     paddingVertical: 6,
     borderRadius: 6,
   },
   nationalText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: '#FF6B35',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   watchSection: {
     marginTop: 4,
@@ -280,8 +279,9 @@ const styles = StyleSheet.create({
   watchLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#666666',
     marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   servicesRow: {
     flexDirection: 'row',

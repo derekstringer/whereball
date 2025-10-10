@@ -10,6 +10,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
+import { useTheme } from '../../hooks/useTheme';
 
 interface CheckboxProps {
   label: string;
@@ -24,16 +25,24 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   onPress,
   containerStyle,
 }) => {
+  const { colors } = useTheme();
+  
   return (
     <TouchableOpacity
       style={[styles.container, containerStyle]}
       onPress={onPress}
       activeOpacity={0.7}
     >
-      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-        {checked && <View style={styles.checkmark} />}
+      <View style={[
+        styles.checkbox,
+        { 
+          backgroundColor: checked ? colors.primary : colors.surface,
+          borderColor: checked ? colors.primary : colors.border,
+        }
+      ]}>
+        {checked && <View style={[styles.checkmark, { backgroundColor: colors.bg }]} />}
       </View>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
     </TouchableOpacity>
   );
 };
@@ -49,25 +58,19 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: '#CCCCCC',
-    backgroundColor: '#FFFFFF',
     marginRight: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#0066CC',
-    borderColor: '#0066CC',
   },
   checkmark: {
     width: 12,
     height: 12,
-    backgroundColor: '#FFFFFF',
     borderRadius: 2,
   },
   label: {
     fontSize: 16,
-    color: '#000000',
     flex: 1,
   },
 });

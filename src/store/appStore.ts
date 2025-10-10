@@ -18,7 +18,9 @@ export interface GameFilters {
 interface AppStore extends AppState {
   // Color Mode
   colorMode: ColorMode;
+  systemThemeUpdateTrigger: number;
   setColorMode: (mode: ColorMode) => void;
+  triggerSystemThemeUpdate: () => void;
   
   // Filters
   filters: GameFilters;
@@ -80,8 +82,12 @@ export const useAppStore = create<AppStore>((set) => ({
   ...initialState,
   filters: DEFAULT_FILTERS,
   colorMode: 'dark', // Default to dark mode
+  systemThemeUpdateTrigger: 0,
 
   setColorMode: (mode) => set({ colorMode: mode }),
+
+  triggerSystemThemeUpdate: () =>
+    set((state) => ({ systemThemeUpdateTrigger: state.systemThemeUpdateTrigger + 1 })),
 
   setFilters: (filters) => set({ filters }),
 
