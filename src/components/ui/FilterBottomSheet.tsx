@@ -187,7 +187,11 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             )}
           </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              style={styles.content} 
+              contentContainerStyle={styles.contentContainer}
+              showsVerticalScrollIndicator={false}
+            >
               {/* Sports Section */}
               <View style={styles.section}>
                 <Text style={[styles.sectionTitle, { color: colors.text }]}>My Sports</Text>
@@ -641,7 +645,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
-    marginBottom: 16,
+  },
+  contentContainer: {
+    paddingBottom: 24,
   },
   section: {
     marginBottom: 24,
