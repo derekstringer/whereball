@@ -100,6 +100,7 @@ export const ZipEntryScreen: React.FC<ZipEntryScreenProps> = ({ navigation }) =>
                   setZipError('');
                 }}
                 placeholder="75201"
+                placeholderTextColor={colors.textMuted + '60'}
                 keyboardType="number-pad"
                 maxLength={10}
                 error={zipError}
