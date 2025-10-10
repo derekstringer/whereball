@@ -315,8 +315,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                       onPress={() => toggleGameExpanded(game.id)}
                       activeOpacity={0.8}
                     >
-                      <View style={styles.gameTeams}>
-                        <Text style={[styles.gameText, { color: colors.text }]} numberOfLines={1}>
+                      <View style={styles.gameInfo}>
+                        <Text style={[styles.gameTime, { color: colors.textMuted }]}>
+                          {new Date(game.startTime).toLocaleTimeString('en-US', { 
+                            hour: 'numeric', 
+                            minute: '2-digit',
+                            hour12: true 
+                          })}
+                        </Text>
+                        <Text style={[styles.gameTeamsCompact, { color: colors.text }]} numberOfLines={1}>
                           {game.awayTeam.abbreviation} @ {game.homeTeam.abbreviation}
                         </Text>
                       </View>
@@ -332,14 +339,17 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                             />
                             {remainingCount > 0 && (
                               <TouchableOpacity
-                                style={styles.moreBadge}
+                                style={[styles.moreBadge, { 
+                                  backgroundColor: colors.surface,
+                                  borderColor: colors.stroke,
+                                }]}
                                 onPress={(e) => {
                                   e.stopPropagation();
                                   handleMorePress();
                                 }}
                                 activeOpacity={0.7}
                               >
-                                <Text style={styles.moreBadgeText}>+{remainingCount}</Text>
+                                <Text style={[styles.moreBadgeText, { color: colors.textMuted }]}>+{remainingCount}</Text>
                               </TouchableOpacity>
                             )}
                           </>
@@ -619,17 +629,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: 12,
     borderWidth: 1,
+    gap: 8,
   },
-  gameTeams: {
+  gameInfo: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    minWidth: 0,
   },
-  gameText: {
-    fontSize: 15,
+  gameTime: {
+    fontSize: 12,
     fontWeight: '600',
+    minWidth: 52,
+  },
+  gameTeamsCompact: {
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
   gameStatus: {
     flexDirection: 'row',
@@ -680,18 +701,17 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   moreBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 4,
-    borderRadius: 4,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: '#999999',
-    backgroundColor: '#F5F5F5',
-    minWidth: 40,
+    minWidth: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   moreBadgeText: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#666666',
     textAlign: 'center',
   },
   legalFooter: {
