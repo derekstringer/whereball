@@ -190,7 +190,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
               {/* Sports Section */}
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Sports</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>My Sports</Text>
                 <View style={styles.chipsRow}>
                   {Object.entries(sportData).map(([sport, data]) => {
                     const isSelected = filters.sports.includes(sport);
@@ -237,7 +237,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             {/* Teams Section */}
             {followedTeamIds.length > 0 && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Teams</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>My Teams</Text>
                 <View style={styles.chipsGrid}>
                   {followedTeamIds.map(teamId => {
                     const team = NHL_TEAMS.find(t => t.id === teamId);
@@ -278,7 +278,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             {/* Services Section */}
             {subscribedServiceCodes.length > 0 && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>Services</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>My Subscription Services</Text>
                 <View style={styles.togglesList}>
                   {subscribedServiceCodes.map(serviceCode => {
                     const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
