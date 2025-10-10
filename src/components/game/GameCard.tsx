@@ -99,7 +99,7 @@ export const GameCard: React.FC<GameCardProps> = ({
 
   const handleNationalBadgePress = () => {
     if (onShowTooltip) {
-      onShowTooltip('National Broadcast\nWatchable anywhere — no blackouts, no limits.');
+      onShowTooltip('National Broadcast\nWatchable anywhere in the U.S. — no blackouts.');
     }
   };
 
