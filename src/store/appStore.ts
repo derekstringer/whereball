@@ -7,11 +7,23 @@ import { AppState, User, UserSubscription, Follow, ThemeState } from '../types';
 import { ColorMode } from '../styles/tokens';
 
 export interface GameFilters {
+  // Sport filtering
+  sports: string[]; // ['nhl', 'nba', 'nfl', 'mlb', 'ncaaf']
+  
+  // Team filtering
   myTeamsOnly: boolean;
-  nationalOnly: boolean;
-  availableOnly: boolean; // On MY Services
-  streamingOnly: boolean; // On ANY Services - NEW!
+  selectedTeams: string[]; // Team IDs
+  
+  // Service filtering
+  myServicesOnly: boolean;
+  showAllServices: boolean; // Discovery mode
+  selectedServices: string[]; // Service codes
+  
+  // Game state
   liveOnly: boolean;
+  nationalOnly: boolean;
+  
+  // Override
   showAll: boolean;
 }
 
@@ -26,6 +38,9 @@ interface AppStore extends AppState {
   filters: GameFilters;
   setFilters: (filters: GameFilters) => void;
   toggleFilter: (filterKey: keyof GameFilters) => void;
+  toggleSportFilter: (sport: string) => void;
+  toggleTeamFilter: (teamId: string) => void;
+  toggleServiceFilter: (serviceCode: string) => void;
   resetFilters: () => void;
   
   // Actions
@@ -59,11 +74,14 @@ const DEFAULT_THEME: ThemeState = {
 
 // Default filters
 const DEFAULT_FILTERS: GameFilters = {
+  sports: ['nhl'], // Default to NHL only
   myTeamsOnly: true,
-  nationalOnly: false,
-  availableOnly: false,
-  streamingOnly: false,
+  selectedTeams: [],
+  myServicesOnly: false,
+  showAllServices: false,
+  selectedServices: [],
   liveOnly: false,
+  nationalOnly: false,
   showAll: false,
 };
 
@@ -98,14 +116,10 @@ export const useAppStore = create<AppStore>((set) => ({
       // If toggling "Show All", turn off others
       if (filterKey === 'showAll' && !state.filters.showAll) {
         return {
-  filters: {
-    myTeamsOnly: false,
-    nationalOnly: false,
-    availableOnly: false,
-    streamingOnly: false,
-    liveOnly: false,
-    showAll: false,
-  },
+          filters: {
+            ...DEFAULT_FILTERS,
+            showAll: true,
+          },
         };
       }
       
@@ -114,8 +128,36 @@ export const useAppStore = create<AppStore>((set) => ({
         newFilters.showAll = false;
       }
       
-      newFilters[filterKey] = !state.filters[filterKey];
+      // Toggle boolean filters
+      if (typeof state.filters[filterKey] === 'boolean') {
+        newFilters[filterKey] = !state.filters[filterKey];
+      }
+      
       return { filters: newFilters };
+    }),
+
+  toggleSportFilter: (sport: string) =>
+    set((state) => {
+      const sports = state.filters.sports.includes(sport)
+        ? state.filters.sports.filter(s => s !== sport)
+        : [...state.filters.sports, sport];
+      return { filters: { ...state.filters, sports } };
+    }),
+
+  toggleTeamFilter: (teamId: string) =>
+    set((state) => {
+      const selectedTeams = state.filters.selectedTeams.includes(teamId)
+        ? state.filters.selectedTeams.filter(t => t !== teamId)
+        : [...state.filters.selectedTeams, teamId];
+      return { filters: { ...state.filters, selectedTeams } };
+    }),
+
+  toggleServiceFilter: (serviceCode: string) =>
+    set((state) => {
+      const selectedServices = state.filters.selectedServices.includes(serviceCode)
+        ? state.filters.selectedServices.filter(s => s !== serviceCode)
+        : [...state.filters.selectedServices, serviceCode];
+      return { filters: { ...state.filters, selectedServices } };
     }),
 
   resetFilters: () => set({ filters: DEFAULT_FILTERS }),

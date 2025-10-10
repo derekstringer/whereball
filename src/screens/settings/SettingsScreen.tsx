@@ -27,7 +27,17 @@ interface SettingsScreenProps {
 }
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
-  const { subscriptions, setSubscriptions, follows, setFollows, colorMode, setColorMode, systemThemeUpdateTrigger } = useAppStore();
+  const { 
+    subscriptions, 
+    setSubscriptions, 
+    follows, 
+    setFollows, 
+    colorMode, 
+    setColorMode, 
+    systemThemeUpdateTrigger,
+    preferredServices,
+    togglePreferredService
+  } = useAppStore();
   const { colors, mode } = useTheme();
   const [zip, setZip] = useState('75201'); // TODO: Get from store
   const [selectedTeams, setSelectedTeams] = useState<string[]>(
@@ -198,7 +208,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>📺 Your Streaming Services</Text>
           <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-            Select all services you subscribe to
+            Select all services you subscribe to • {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''} connected
           </Text>
           <View style={styles.servicesGrid}>
             {STREAMING_SERVICES
@@ -241,6 +251,66 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
               ))}
           </View>
         </View>
+
+        {/* Preferred Services */}
+        {selectedServices.length > 0 && (
+          <View style={[styles.section, { backgroundColor: colors.card }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>⭐ Preferred Services</Text>
+            <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
+              Mark your favorite services to see them first in game cards • {preferredServices.length} preferred
+            </Text>
+            <View style={styles.servicesGrid}>
+              {STREAMING_SERVICES
+                .filter(service => selectedServices.includes(service.code))
+                .sort((a, b) => {
+                  // Preferred services first
+                  const aPreferred = preferredServices.includes(a.code);
+                  const bPreferred = preferredServices.includes(b.code);
+                  if (aPreferred && !bPreferred) return -1;
+                  if (!aPreferred && bPreferred) return 1;
+                  return a.name.localeCompare(b.name);
+                })
+                .map(service => (
+                  <TouchableOpacity
+                    key={service.code}
+                    style={[
+                      styles.serviceChip,
+                      { backgroundColor: colors.surface },
+                      preferredServices.includes(service.code) && {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.accent,
+                      },
+                    ]}
+                    onPress={() => {
+                      togglePreferredService(service.code);
+                      const isPreferred = preferredServices.includes(service.code);
+                      const action = isPreferred ? 'removed from' : 'added to';
+                      showToastNotification(`${service.name} ${action} preferred services`);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.serviceChipText,
+                        { color: colors.textSecondary },
+                        preferredServices.includes(service.code) && {
+                          color: colors.accent,
+                        },
+                      ]}
+                    >
+                      {preferredServices.includes(service.code) ? '⭐ ' : ''}
+                      {service.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+            </View>
+            {preferredServices.length === 0 && (
+              <Text style={[styles.hintText, { color: colors.textSecondary }]}>
+                Tap a service above to mark it as preferred
+              </Text>
+            )}
+          </View>
+        )}
 
         {/* Appearance */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
@@ -582,5 +652,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   themeOptionTextActive: {
+  },
+  hintText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
