@@ -282,7 +282,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
             {/* Services Section */}
             {subscribedServiceCodes.length > 0 && (
               <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: colors.text }]}>My Subscription Services</Text>
+                <Text style={[styles.sectionTitle, { color: colors.text }]}>My Streaming Services</Text>
                 <View style={styles.togglesList}>
                   {subscribedServiceCodes.map(serviceCode => {
                     const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   contentContainer: {
-    paddingBottom: 24,
+    paddingBottom: 80,
   },
   section: {
     marginBottom: 24,
