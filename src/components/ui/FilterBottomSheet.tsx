@@ -329,7 +329,7 @@ export const FilterBottomSheet: React.FC<FilterBottomSheetProps> = ({
 
             {/* Quick Filters Section */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Quick Filters</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Game Filters</Text>
               
               <TouchableOpacity
                 style={[
