@@ -44,7 +44,8 @@ export const GameCard: React.FC<GameCardProps> = ({
   expanded = false 
 }) => {
   const { colors } = useTheme();
-  const { preferredServices } = useAppStore();
+  const { preferredServices, filters } = useAppStore();
+  const discoveryMode = filters.showAllServices;
   const gameTime = formatGameTime(game.startTime);
   const isLive = game.gameState === 'LIVE';
   const [showAllServices, setShowAllServices] = useState(false);
@@ -95,6 +96,14 @@ export const GameCard: React.FC<GameCardProps> = ({
         : '';
       onShowTooltip(`Likely blacked out in your area.${alternatives}`);
     }
+  };
+
+  const handleDiscoveryServicePress = (serviceCode: string) => {
+    const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
+    if (onShowTooltip) {
+      onShowTooltip(`${service?.name} - Tap to learn more or start free trial`);
+    }
+    // TODO: Navigate to affiliate link or service info page
   };
 
   // Show first service or first 2 if not expanded
@@ -176,11 +185,34 @@ export const GameCard: React.FC<GameCardProps> = ({
             )}
           </View>
           
-          {/* Also available on (when services expanded) */}
-          {showAllServices && missingServices.length > 0 && (
-            <Text style={[styles.alsoAvailableText, { color: colors.textSecondary }]}>
-              Also available on: {getServiceNames(missingServices)}
-            </Text>
+          {/* Also available on (when services expanded or discovery mode) */}
+          {(showAllServices || discoveryMode) && missingServices.length > 0 && (
+            <View style={styles.discoverySection}>
+              <Text style={[styles.alsoAvailableLabel, { color: colors.textMuted }]}>
+                Also available on:
+              </Text>
+              <View style={styles.discoveryServicesRow}>
+                {missingServices.map((serviceCode) => (
+                  <View key={serviceCode} style={{ opacity: discoveryMode ? 0.6 : 0.4 }}>
+                    <TouchableOpacity
+                      onPress={() => handleDiscoveryServicePress(serviceCode)}
+                      activeOpacity={0.7}
+                      disabled={!discoveryMode}
+                    >
+                      <ServiceBadge
+                        serviceCode={serviceCode}
+                        size="medium"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+              {discoveryMode && (
+                <Text style={[styles.discoveryHint, { color: colors.textMuted }]}>
+                  Tap to learn more or start free trial
+                </Text>
+              )}
+            </View>
           )}
         </View>
       </TouchableOpacity>
@@ -305,10 +337,28 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
   },
-  alsoAvailableText: {
-    fontSize: 13,
+  discoverySection: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  alsoAvailableLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  discoveryServicesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+  },
+  discoveryHint: {
+    fontSize: 11,
     marginTop: 8,
-    lineHeight: 18,
+    fontStyle: 'italic',
   },
   moreNetworks: {
     fontSize: 13,
