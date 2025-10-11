@@ -110,18 +110,9 @@ export const TonightScreen: React.FC = () => {
       );
     }
 
-    // Filter: Show All Available Services (Discovery Mode)
-    // When enabled, shows games available on ANY service, not just user's
-    if (filters.showAllServices) {
-      filtered = filtered.filter(game =>
-        game.broadcasts.some(b => {
-          const network = b.network.toLowerCase();
-          return ['espn+', 'hulu', 'youtube', 'fubo', 'paramount', 'sling', 'directv', 'max', 'peacock'].some(service =>
-            network.includes(service)
-          );
-        })
-      );
-    }
+    // NOTE: showAllServices is a DISPLAY TOGGLE, not a filter
+    // It controls whether "ALSO AVAILABLE ON" section appears on cards
+    // It does NOT affect which games are shown
 
     // Filter: Selected Services
     if (filters.selectedServices.length > 0) {
