@@ -23,6 +23,7 @@ import { FilterPanel } from '../../components/daily-v2/FilterPanel';
 export const DailyV2: React.FC = () => {
   const { colors } = useTheme();
   const { subscriptions, follows, filters } = useAppStore();
+  const [selectedDate, setSelectedDate] = useState(new Date());
   const [games, setGames] = useState<NHLGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -30,21 +31,41 @@ export const DailyV2: React.FC = () => {
 
   const userServiceCodes = subscriptions.map(s => s.service_code);
 
+  const isToday = useMemo(() => {
+    const today = new Date();
+    return selectedDate.toDateString() === today.toDateString();
+  }, [selectedDate]);
+
   useEffect(() => {
     loadGames();
-  }, []);
+  }, [selectedDate]);
 
   const loadGames = async () => {
     try {
       setLoading(true);
-      const today = new Date();
-      const gamesForDate = await getGamesForDate(today);
+      const gamesForDate = await getGamesForDate(selectedDate);
       setGames(gamesForDate);
     } catch (err) {
       console.error('Error loading games:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const goToPreviousDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() - 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToNextDay = () => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + 1);
+    setSelectedDate(newDate);
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
   };
 
   const toggleFilters = () => {
@@ -116,6 +137,44 @@ export const DailyV2: React.FC = () => {
       <Animated.View style={[{ height: filterPanelHeight, overflow: 'hidden' }]}>
         <FilterPanel />
       </Animated.View>
+
+      {/* Date Navigation */}
+      <View style={[styles.dateNav, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={styles.dateArrow}
+          onPress={goToPreviousDay}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.dateArrowText, { color: colors.primary }]}>←</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.dateCenter}
+          onPress={isToday ? undefined : goToToday}
+          activeOpacity={isToday ? 1 : 0.7}
+        >
+          <Text style={[styles.dateText, { color: colors.text }, isToday && { color: colors.primary }]}>
+            {selectedDate.toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </Text>
+          {!isToday && (
+            <Text style={[styles.todayHint, { color: colors.primary }]}>
+              Tap for today
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.dateArrow}
+          onPress={goToNextDay}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.dateArrowText, { color: colors.primary }]}>→</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* Content */}
       <ScrollView style={styles.content}>
@@ -190,5 +249,38 @@ const styles = StyleSheet.create({
   },
   sportSection: {
     marginBottom: 24,
+  },
+  dateNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  dateArrow: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateArrowText: {
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  dateCenter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  dateText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  todayHint: {
+    fontSize: 11,
+    marginTop: 4,
+    fontWeight: '600',
   },
 });

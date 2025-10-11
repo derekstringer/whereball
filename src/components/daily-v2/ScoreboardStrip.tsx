@@ -3,9 +3,10 @@
  */
 
 import React from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet } from 'react-native';
 import { NHLGame } from '../../lib/nhl-api';
 import { GameTile } from './GameTile';
+import { GameCardExpanded } from './GameCardExpanded';
 import { useAppStore } from '../../store/appStore';
 import { deepLinkToService } from '../../lib/service-helpers';
 
@@ -35,22 +36,33 @@ export const ScoreboardStrip: React.FC<ScoreboardStripProps> = ({
   };
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
-      {games.map((game) => (
-        <GameTile
-          key={game.id}
-          game={game}
+    <View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.container}
+      >
+        {games.map((game) => (
+          <GameTile
+            key={game.id}
+            game={game}
+            userServiceCodes={userServiceCodes}
+            isExpanded={expandedGameId === game.id}
+            onPress={() => handleGamePress(game.id)}
+            onServicePress={(serviceCode) => handleServicePress(game.id, serviceCode)}
+          />
+        ))}
+      </ScrollView>
+      
+      {/* Expanded game card (shown below strip) */}
+      {expandedGameId && (
+        <GameCardExpanded
+          game={games.find(g => g.id === expandedGameId)!}
           userServiceCodes={userServiceCodes}
-          isExpanded={expandedGameId === game.id}
-          onPress={() => handleGamePress(game.id)}
-          onServicePress={(serviceCode) => handleServicePress(game.id, serviceCode)}
+          onCollapse={() => setExpandedGameId?.('NHL', null)}
         />
-      ))}
-    </ScrollView>
+      )}
+    </View>
   );
 };
 
