@@ -11,11 +11,13 @@ export interface NHLGame {
     id: number;
     name: string;
     abbreviation: string;
+    score?: number; // Optional: only present for LIVE/FINAL games
   };
   awayTeam: {
     id: number;
     name: string;
     abbreviation: string;
+    score?: number; // Optional: only present for LIVE/FINAL games
   };
   venue: string;
   gameState: 'FUT' | 'LIVE' | 'FINAL' | 'OFF';

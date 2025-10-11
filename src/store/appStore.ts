@@ -43,6 +43,10 @@ interface AppStore extends AppState {
   toggleServiceFilter: (serviceCode: string) => void;
   resetFilters: () => void;
   
+  // DailyV2 Expansion State
+  expandedGameIdBySport: Record<string, string | null>;
+  setExpandedGameId: (sport: string, gameId: string | null) => void;
+  
   // Actions
   setUser: (user: User | null) => void;
   setAuthenticated: (isAuthenticated: boolean) => void;
@@ -101,11 +105,20 @@ export const useAppStore = create<AppStore>((set) => ({
   filters: DEFAULT_FILTERS,
   colorMode: 'dark', // Default to dark mode
   systemThemeUpdateTrigger: 0,
+  expandedGameIdBySport: {},
 
   setColorMode: (mode) => set({ colorMode: mode }),
 
   triggerSystemThemeUpdate: () =>
     set((state) => ({ systemThemeUpdateTrigger: state.systemThemeUpdateTrigger + 1 })),
+
+  setExpandedGameId: (sport, gameId) =>
+    set((state) => ({
+      expandedGameIdBySport: {
+        ...state.expandedGameIdBySport,
+        [sport]: gameId,
+      },
+    })),
 
   setFilters: (filters) => set({ filters }),
 
