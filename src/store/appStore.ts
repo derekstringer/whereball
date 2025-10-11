@@ -78,7 +78,7 @@ const DEFAULT_FILTERS: GameFilters = {
   myTeamsOnly: false, // Don't restrict to teams by default
   selectedTeams: [],
   myServicesOnly: false,
-  showAllServices: false,
+  showAllServices: true, // Display toggle: ON by default to show affiliate opportunities
   selectedServices: [],
   liveOnly: false,
   nationalOnly: false,
