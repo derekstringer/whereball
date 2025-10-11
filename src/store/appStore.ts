@@ -77,7 +77,7 @@ const DEFAULT_FILTERS: GameFilters = {
   sports: ['nhl'], // Default to NHL only
   myTeamsOnly: false, // Don't restrict to teams by default
   selectedTeams: [],
-  myServicesOnly: false,
+  myServicesOnly: true, // Default ON: Show only watchable games (much more intuitive!)
   showAllServices: true, // Display toggle: ON by default to show affiliate opportunities
   selectedServices: [],
   liveOnly: false,
