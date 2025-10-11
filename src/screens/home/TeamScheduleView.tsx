@@ -98,8 +98,15 @@ export const TeamScheduleView: React.FC<TeamScheduleViewProps> = ({
       );
     }
 
-    if (filters.myServicesOnly) {
-      filtered = filtered.filter(game => isGameAvailable(game));
+    if (filters.myServicesOnly && filters.selectedServices.length > 0) {
+      filtered = filtered.filter(game =>
+        game.broadcasts.some(b => {
+          const network = b.network.toLowerCase();
+          return filters.selectedServices.some(service =>
+            network.includes(service.toLowerCase())
+          );
+        })
+      );
     }
 
     // NOTE: showAllServices is a DISPLAY TOGGLE, not a filter

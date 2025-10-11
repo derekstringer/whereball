@@ -12,9 +12,11 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { getGamesGroupedByDate, type NHLGame } from '../../lib/nhl-api';
+import { getServicesForGame } from '../../lib/broadcast-mapper';
 import { trackEvent } from '../../lib/analytics';
 import { useAppStore } from '../../store/appStore';
 import { useTheme } from '../../hooks/useTheme';
+import { NHL_TEAMS } from '../../constants/teams';
 import {
   ServiceBadge,
   NotAvailableBadge,
@@ -99,12 +101,14 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       return filtered;
     }
 
-    // Filter: My Teams Only
-    if (filters.myTeamsOnly) {
-      filtered = filtered.filter(game =>
-        followedTeamCodes.includes(game.homeTeam.abbreviation) ||
-        followedTeamCodes.includes(game.awayTeam.abbreviation)
-      );
+    // Filter: My Teams Only (uses selectedTeams when myTeamsOnly is ON)
+    if (filters.myTeamsOnly && filters.selectedTeams.length > 0) {
+      filtered = filtered.filter(game => {
+        const homeTeamId = NHL_TEAMS.find(t => t.short_code === game.homeTeam.abbreviation)?.id;
+        const awayTeamId = NHL_TEAMS.find(t => t.short_code === game.awayTeam.abbreviation)?.id;
+        return (homeTeamId && filters.selectedTeams.includes(homeTeamId)) ||
+               (awayTeamId && filters.selectedTeams.includes(awayTeamId));
+      });
     }
 
     // Filter: National Games Only
@@ -114,17 +118,12 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
       );
     }
 
-    // Filter: Available on My Services Only
-    if (filters.myServicesOnly) {
-      filtered = filtered.filter(game =>
-        game.broadcasts.some(b => {
-          const network = b.network.toLowerCase();
-          return userServiceCodes.some(service => 
-            network.includes(service.toLowerCase()) || 
-            service.toLowerCase().includes(network)
-          );
-        })
-      );
+    // Filter: Available on My Services (uses selectedServices when myServicesOnly is ON)
+    if (filters.myServicesOnly && filters.selectedServices.length > 0) {
+      filtered = filtered.filter(game => {
+        const gameServices = getServicesForGame(game);
+        return gameServices.some(service => filters.selectedServices.includes(service));
+      });
     }
 
     // NOTE: showAllServices is a DISPLAY TOGGLE, not a filter

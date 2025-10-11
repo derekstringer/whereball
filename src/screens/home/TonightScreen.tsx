@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { GameCard } from '../../components/game/GameCard';
 import { getGamesForDate, type NHLGame } from '../../lib/nhl-api';
+import { getServicesForGame } from '../../lib/broadcast-mapper';
 import { trackEvent } from '../../lib/analytics';
 import { Tooltip } from '../../components/ui/ServiceBadge';
 import { useAppStore } from '../../store/appStore';
@@ -82,12 +83,14 @@ export const TonightScreen: React.FC = () => {
       return filtered.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
     }
 
-    // Filter: My Teams Only
-    if (filters.myTeamsOnly) {
-      filtered = filtered.filter(game =>
-        followedTeamCodes.includes(game.homeTeam.abbreviation) ||
-        followedTeamCodes.includes(game.awayTeam.abbreviation)
-      );
+    // Filter: My Teams Only (uses selectedTeams when myTeamsOnly is ON)
+    if (filters.myTeamsOnly && filters.selectedTeams.length > 0) {
+      filtered = filtered.filter(game => {
+        const homeTeamId = NHL_TEAMS.find(t => t.short_code === game.homeTeam.abbreviation)?.id;
+        const awayTeamId = NHL_TEAMS.find(t => t.short_code === game.awayTeam.abbreviation)?.id;
+        return (homeTeamId && filters.selectedTeams.includes(homeTeamId)) ||
+               (awayTeamId && filters.selectedTeams.includes(awayTeamId));
+      });
     }
 
     // Filter: National Games Only
@@ -97,51 +100,22 @@ export const TonightScreen: React.FC = () => {
       );
     }
 
-    // Filter: Available on My Services Only
-    if (filters.myServicesOnly) {
-      filtered = filtered.filter(game =>
-        game.broadcasts.some(b => {
-          const network = b.network.toLowerCase();
-          return userServiceCodes.some(service => 
-            network.includes(service.toLowerCase()) || 
-            service.toLowerCase().includes(network)
-          );
-        })
-      );
+    // Filter: Available on My Services (uses selectedServices when myServicesOnly is ON)
+    if (filters.myServicesOnly && filters.selectedServices.length > 0) {
+      filtered = filtered.filter(game => {
+        const gameServices = getServicesForGame(game);
+        return gameServices.some(service => filters.selectedServices.includes(service));
+      });
     }
 
     // NOTE: showAllServices is a DISPLAY TOGGLE, not a filter
     // It controls whether "ALSO AVAILABLE ON" section appears on cards
     // It does NOT affect which games are shown
 
-    // Filter: Selected Services
-    if (filters.selectedServices.length > 0) {
-      filtered = filtered.filter(game =>
-        game.broadcasts.some(b => {
-          const network = b.network.toLowerCase();
-          return filters.selectedServices.some(service =>
-            network.includes(service.toLowerCase())
-          );
-        })
-      );
-    }
-
     // Filter: Sport Type
     if (filters.sports.length > 0) {
       // Currently only NHL, but prepared for multi-sport
       // filtered = filtered.filter(game => filters.sports.includes(game.league.toLowerCase()));
-    }
-
-    // Filter: Selected Teams
-    if (filters.selectedTeams.length > 0) {
-      // Team IDs from follows are stored as full team IDs (e.g., 'nhl_bos')
-      // Need to map game team abbreviations to full team IDs
-      filtered = filtered.filter(game => {
-        const homeTeamId = NHL_TEAMS.find(t => t.short_code === game.homeTeam.abbreviation)?.id;
-        const awayTeamId = NHL_TEAMS.find(t => t.short_code === game.awayTeam.abbreviation)?.id;
-        return (homeTeamId && filters.selectedTeams.includes(homeTeamId)) ||
-               (awayTeamId && filters.selectedTeams.includes(awayTeamId));
-      });
     }
 
     // Filter: Live Games Only

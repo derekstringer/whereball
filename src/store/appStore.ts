@@ -75,7 +75,7 @@ const DEFAULT_THEME: ThemeState = {
 // Default filters
 const DEFAULT_FILTERS: GameFilters = {
   sports: ['nhl'], // Default to NHL only
-  myTeamsOnly: false, // Don't restrict to teams by default
+  myTeamsOnly: true, // Default ON: Show followed teams' games (that's why they followed them!)
   selectedTeams: [],
   myServicesOnly: true, // Default ON: Show only watchable games (much more intuitive!)
   showAllServices: true, // Display toggle: ON by default to show affiliate opportunities
@@ -128,10 +128,40 @@ export const useAppStore = create<AppStore>((set) => ({
         newFilters.showAll = false;
       }
       
-      // Toggle boolean filters
-      const currentValue = state.filters[filterKey];
-      if (typeof currentValue === 'boolean') {
-        (newFilters[filterKey] as boolean) = !currentValue;
+      // Special handling for myTeamsOnly toggle
+      if (filterKey === 'myTeamsOnly') {
+        const willBeOn = !state.filters.myTeamsOnly;
+        newFilters.myTeamsOnly = willBeOn;
+        
+        // If turning ON myTeamsOnly, auto-select all followed teams
+        if (willBeOn) {
+          newFilters.selectedTeams = state.follows.map(f => f.team_id);
+        }
+        // If turning OFF myTeamsOnly, clear selected teams
+        else {
+          newFilters.selectedTeams = [];
+        }
+      }
+      // Special handling for myServicesOnly toggle
+      else if (filterKey === 'myServicesOnly') {
+        const willBeOn = !state.filters.myServicesOnly;
+        newFilters.myServicesOnly = willBeOn;
+        
+        // If turning ON myServicesOnly, auto-select all subscribed services
+        if (willBeOn) {
+          newFilters.selectedServices = state.subscriptions.map(s => s.service_code);
+        }
+        // If turning OFF myServicesOnly, clear selected services
+        else {
+          newFilters.selectedServices = [];
+        }
+      }
+      // Toggle other boolean filters
+      else {
+        const currentValue = state.filters[filterKey];
+        if (typeof currentValue === 'boolean') {
+          (newFilters[filterKey] as boolean) = !currentValue;
+        }
       }
       
       return { filters: newFilters };
@@ -169,7 +199,21 @@ export const useAppStore = create<AppStore>((set) => ({
 
   setPremium: (isPremium) => set({ isPremium }),
 
-  setSubscriptions: (subscriptions) => set({ subscriptions }),
+  setSubscriptions: (subscriptions) => 
+    set((state) => {
+      // If myServicesOnly is on, auto-select all new subscriptions in the filter
+      if (state.filters.myServicesOnly) {
+        const newServiceCodes = subscriptions.map(s => s.service_code);
+        return {
+          subscriptions,
+          filters: {
+            ...state.filters,
+            selectedServices: newServiceCodes,
+          },
+        };
+      }
+      return { subscriptions };
+    }),
 
   addSubscription: (subscription) =>
     set((state) => ({
@@ -183,7 +227,21 @@ export const useAppStore = create<AppStore>((set) => ({
       ),
     })),
 
-  setFollows: (follows) => set({ follows }),
+  setFollows: (follows) => 
+    set((state) => {
+      // If myTeamsOnly is on, auto-select all followed teams in the filter
+      if (state.filters.myTeamsOnly) {
+        const newTeamIds = follows.map(f => f.team_id);
+        return {
+          follows,
+          filters: {
+            ...state.filters,
+            selectedTeams: newTeamIds,
+          },
+        };
+      }
+      return { follows };
+    }),
 
   addFollow: (follow) =>
     set((state) => ({
