@@ -23,8 +23,8 @@ import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGame
 import { FilterBottomSheet } from '../../components/ui/FilterBottomSheet';
 import { SettingsScreen } from '../settings/SettingsScreen';
 
-// Cache window: ±30 days from current date
-const CACHE_WINDOW_DAYS = 30;
+// Cache window: Today + 45 days forward
+const CACHE_WINDOW_DAYS_FORWARD = 45;
 
 interface CachedDate {
   date: string; // YYYY-MM-DD
@@ -62,11 +62,11 @@ export const DailyV2: React.FC = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
+    // Start at today, load forward 45 days
     const start = new Date(today);
-    start.setDate(start.getDate() - CACHE_WINDOW_DAYS);
     
     const end = new Date(today);
-    end.setDate(end.getDate() + CACHE_WINDOW_DAYS);
+    end.setDate(end.getDate() + CACHE_WINDOW_DAYS_FORWARD);
     
     await loadDateRange(start, end);
     setCacheRange({ start, end });
@@ -322,13 +322,6 @@ export const DailyV2: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Debug Info */}
-      <View style={{ backgroundColor: '#FF0000', padding: 8 }}>
-        <Text style={{ color: '#FFFFFF', fontSize: 12 }}>
-          DEBUG: Today={todayDateKey} | TodayIndex={todayIndex} | TotalItems={flatData.length}
-        </Text>
-      </View>
-      
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity
@@ -341,8 +334,10 @@ export const DailyV2: React.FC = () => {
         
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>WhereBall</Text>
-          <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7}>
-            <Text style={styles.goToToday}>Go To Today</Text>
+          <TouchableOpacity onPress={loadEarlierGames} disabled={loadingMore} activeOpacity={0.7}>
+            <Text style={styles.goToToday}>
+              {loadingMore ? 'Loading...' : 'Earlier Games...'}
+            </Text>
           </TouchableOpacity>
         </View>
         
@@ -360,17 +355,6 @@ export const DailyV2: React.FC = () => {
         data={flatData}
         renderItem={renderItem}
         keyExtractor={getItemKey}
-        onLayout={() => {
-          // Scroll to today after layout completes
-          if (todayIndex >= 0 && todayIndex < itemOffsets.length && flatListRef.current) {
-            setTimeout(() => {
-              flatListRef.current?.scrollToOffset({
-                offset: itemOffsets[todayIndex],
-                animated: false,
-              });
-            }, 50);
-          }
-        }}
         getItemLayout={(data, index) => {
           // Use pre-calculated offsets (O(1) lookup instead of O(n) iteration)
           if (!data || index >= data.length || index >= itemOffsets.length) {
