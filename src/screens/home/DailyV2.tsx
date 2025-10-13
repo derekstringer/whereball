@@ -23,8 +23,8 @@ import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGame
 import { FilterBottomSheet } from '../../components/ui/FilterBottomSheet';
 import { SettingsScreen } from '../settings/SettingsScreen';
 
-// Cache window: Today + 45 days forward
-const CACHE_WINDOW_DAYS_FORWARD = 45;
+// Cache window: Today + 90 days forward (covers most of season)
+const CACHE_WINDOW_DAYS_FORWARD = 90;
 
 interface CachedDate {
   date: string; // YYYY-MM-DD
@@ -53,7 +53,7 @@ export const DailyV2: React.FC = () => {
   const userServiceCodes = subscriptions.map(s => s.service_code);
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
 
-  // Initialize cache with today ±30 days
+  // Initialize cache with today + forward days
   useEffect(() => {
     initializeCache();
   }, []);
@@ -71,6 +71,20 @@ export const DailyV2: React.FC = () => {
     await loadDateRange(start, end);
     setCacheRange({ start, end });
     setLoading(false);
+  };
+
+  // Auto-load more games when scrolling near end
+  const handleEndReached = async () => {
+    if (!cacheRange || loadingMore) return;
+    
+    setLoadingMore(true);
+    const newEnd = new Date(cacheRange.end);
+    newEnd.setDate(newEnd.getDate() + 45); // Load 45 more days
+    
+    await loadDateRange(new Date(cacheRange.end.getTime() + 86400000), newEnd);
+    
+    setCacheRange({ start: cacheRange.start, end: newEnd });
+    setLoadingMore(false);
   };
 
   const loadDateRange = async (start: Date, end: Date) => {
@@ -301,6 +315,8 @@ export const DailyV2: React.FC = () => {
         data={flatData}
         renderItem={renderItem}
         keyExtractor={getItemKey}
+        onEndReached={handleEndReached}
+        onEndReachedThreshold={1.5}
         getItemLayout={(data, index) => {
           // Use pre-calculated offsets (O(1) lookup instead of O(n) iteration)
           if (!data || index >= data.length || index >= itemOffsets.length) {
