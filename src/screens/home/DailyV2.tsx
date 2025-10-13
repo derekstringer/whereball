@@ -54,6 +54,7 @@ export const DailyV2: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const flatListRef = React.useRef<FlatList>(null);
   const lastPrefetchTime = React.useRef<number>(0);
+  const hasScrolledToToday = React.useRef(false);
   const isProgrammaticScroll = React.useRef(false);
   const PREFETCH_COOLDOWN_MS = 500; // 500ms cooldown between prefetches
 
@@ -245,7 +246,33 @@ export const DailyV2: React.FC = () => {
     if (listData.length === 0) return 0;
     const index = listData.findIndex(item => item.type === 'date' && item.dateKey === todayDateKey);
     return index >= 0 ? index : 0;
-  }, [listData.length > 0, todayDateKey]);
+  }, [listData.length, todayDateKey]);
+
+  // Scroll to today after data loads (if initialScrollIndex didn't work)
+  React.useEffect(() => {
+    if (!loading && listData.length > 0 && !hasScrolledToToday.current && flatListRef.current) {
+      const index = listData.findIndex(item => item.type === 'date' && item.dateKey === todayDateKey);
+      
+      if (index >= 0) {
+        hasScrolledToToday.current = true;
+        
+        // Small delay to ensure FlatList is mounted and measured
+        setTimeout(() => {
+          if (flatListRef.current) {
+            isProgrammaticScroll.current = true;
+            flatListRef.current.scrollToIndex({
+              index,
+              animated: false,
+              viewPosition: 0,
+            });
+            setTimeout(() => {
+              isProgrammaticScroll.current = false;
+            }, 100);
+          }
+        }, 100);
+      }
+    }
+  }, [loading, listData.length, todayDateKey]);
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
