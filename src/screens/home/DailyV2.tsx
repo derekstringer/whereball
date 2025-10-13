@@ -295,11 +295,10 @@ export const DailyV2: React.FC = () => {
   };
 
   const scrollToToday = () => {
-    if (todayIndex >= 0 && flatListRef.current) {
-      flatListRef.current.scrollToIndex({
-        index: todayIndex,
+    if (todayIndex >= 0 && todayIndex < itemOffsets.length && flatListRef.current) {
+      flatListRef.current.scrollToOffset({
+        offset: itemOffsets[todayIndex],
         animated: true,
-        viewPosition: 0,
       });
     }
   };
@@ -361,7 +360,17 @@ export const DailyV2: React.FC = () => {
         data={flatData}
         renderItem={renderItem}
         keyExtractor={getItemKey}
-        initialScrollIndex={todayIndex >= 0 ? todayIndex : 0}
+        onLayout={() => {
+          // Scroll to today after layout completes
+          if (todayIndex >= 0 && todayIndex < itemOffsets.length && flatListRef.current) {
+            setTimeout(() => {
+              flatListRef.current?.scrollToOffset({
+                offset: itemOffsets[todayIndex],
+                animated: false,
+              });
+            }, 50);
+          }
+        }}
         getItemLayout={(data, index) => {
           // Use pre-calculated offsets (O(1) lookup instead of O(n) iteration)
           if (!data || index >= data.length || index >= itemOffsets.length) {
