@@ -1,33 +1,32 @@
 /**
  * DailyV2 Screen - Vertical Infinite Scroll (Apple Calendar style)
- * Stable SectionList implementation with deterministic scrolling
+ * Stable SectionList with debounced header rendering to prevent flicker
  */
 
-import React, { useEffect, useRef, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import {
   SafeAreaView,
+  SectionList,
   View,
   Text,
   StyleSheet,
-  SectionList,
   TouchableOpacity,
   ActivityIndicator,
   InteractionManager,
   Modal,
-} from 'react-native';
-import { useTheme } from '../../hooks/useTheme';
-import { getGamesForDate, type NHLGame } from '../../lib/nhl-api';
-import { DateHeader } from '../../components/daily-v2/DateHeader';
-import { VerticalGameCard } from '../../components/daily-v2/VerticalGameCard';
-import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGameCardExpanded';
-import { useAppStore } from '../../store/appStore';
-import { FilterBottomSheet } from '../../components/ui/FilterBottomSheet';
-import { SettingsScreen } from '../settings/SettingsScreen';
+} from "react-native";
+import { useTheme } from "../../hooks/useTheme";
+import { getGamesForDate, NHLGame } from "../../lib/nhl-api";
+import { DateHeader } from "../../components/daily-v2/DateHeader";
+import { VerticalGameCard } from "../../components/daily-v2/VerticalGameCard";
+import { VerticalGameCardExpanded } from "../../components/daily-v2/VerticalGameCardExpanded";
+import { useAppStore } from "../../store/appStore";
+import { FilterBottomSheet } from "../../components/ui/FilterBottomSheet";
+import { SettingsScreen } from "../settings/SettingsScreen";
 
-const ITEM_HEIGHT = 100; // average height of one game card
-const HEADER_HEIGHT = 36; // average height of one date header
+const ITEM_HEIGHT = 95;
+const HEADER_HEIGHT = 36;
 const CACHE_WINDOW_DAYS = 30;
-const PREFETCH_INCREMENT_DAYS = 14;
 
 interface GameSection {
   title: string;
@@ -39,21 +38,25 @@ interface GameSection {
 export const DailyV2: React.FC = () => {
   const { colors } = useTheme();
   const { subscriptions, expandedGameIdBySport, setExpandedGameId } = useAppStore();
-  const [gamesCache, setGamesCache] = useState<Record<string, NHLGame[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+
   const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
   const hasScrolledToToday = useRef(false);
+  const [gamesCache, setGamesCache] = useState<Record<string, NHLGame[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [activeHeader, setActiveHeader] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const userServiceCodes = subscriptions.map(s => s.service_code);
 
+  // Dates setup
   const todayKey = useMemo(() => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate()
+    ).padStart(2, "0")}`;
   }, []);
 
-  // Load 60 days of data (today ±30 days)
   useEffect(() => {
     (async () => {
       const start = new Date();
@@ -62,15 +65,17 @@ export const DailyV2: React.FC = () => {
       end.setDate(end.getDate() + CACHE_WINDOW_DAYS);
 
       const cache: Record<string, NHLGame[]> = {};
-      const current = new Date(start);
-      while (current <= end) {
-        const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}-${String(current.getDate()).padStart(2, '0')}`;
+      const cur = new Date(start);
+      while (cur <= end) {
+        const key = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(
+          cur.getDate()
+        ).padStart(2, "0")}`;
         try {
-          cache[key] = await getGamesForDate(new Date(current));
+          cache[key] = await getGamesForDate(new Date(cur));
         } catch {
           cache[key] = [];
         }
-        current.setDate(current.getDate() + 1);
+        cur.setDate(cur.getDate() + 1);
       }
       setGamesCache(cache);
       setLoading(false);
@@ -79,22 +84,22 @@ export const DailyV2: React.FC = () => {
 
   const sections = useMemo((): GameSection[] => {
     const keys = Object.keys(gamesCache).sort();
-    return keys.map(key => ({
+    return keys.map((key) => ({
       title: key,
-      date: new Date(key + 'T12:00:00'),
+      date: new Date(key + "T12:00:00"),
       isToday: key === todayKey,
       data: gamesCache[key] ?? [],
     }));
   }, [gamesCache, todayKey]);
 
-  const getItemLayout = (data: any, index: number) => ({
+  const getItemLayout = (_: any, index: number) => ({
     length: ITEM_HEIGHT,
     offset: ITEM_HEIGHT * index,
     index,
   });
 
-  const scrollToToday = () => {
-    const todayIndex = sections.findIndex(s => s.title === todayKey);
+  const scrollToToday = useCallback(() => {
+    const todayIndex = sections.findIndex((s) => s.title === todayKey);
     if (todayIndex < 0) return;
     InteractionManager.runAfterInteractions(() => {
       sectionListRef.current?.scrollToLocation({
@@ -103,18 +108,38 @@ export const DailyV2: React.FC = () => {
         animated: true,
       });
     });
-  };
+  }, [sections, todayKey]);
 
-  const handleContentReady = () => {
-    if (!hasScrolledToToday.current && sections.length > 0) {
+  useEffect(() => {
+    if (!loading && !hasScrolledToToday.current) {
       hasScrolledToToday.current = true;
       scrollToToday();
     }
+  }, [loading, scrollToToday]);
+
+  const renderSectionHeader = ({ section }: { section: GameSection }) => {
+    // Show one sticky header at a time, debounce updates to prevent flicker
+    if (activeHeader === section.title) {
+      return <DateHeader date={section.date} isToday={section.isToday} />;
+    }
+    return null;
   };
 
-  const renderSectionHeader = ({ section }: { section: GameSection }) => (
-    <DateHeader date={section.date} isToday={section.isToday} />
-  );
+  // Debounce visible section change (prevents flicker)
+  const handleViewableItemsChanged = useRef(
+    (() => {
+      let timeout: NodeJS.Timeout | null = null;
+      return ({ viewableItems }: any) => {
+        if (!viewableItems?.length) return;
+        const first = viewableItems.find((v: any) => v.section);
+        if (!first) return;
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          setActiveHeader(first.section.title);
+        }, 80);
+      };
+    })()
+  ).current;
 
   const renderItem = ({ item }: { item: NHLGame }) => {
     const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
@@ -148,7 +173,7 @@ export const DailyV2: React.FC = () => {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[styles.loadingText, { color: colors.text }]}>Loading games...</Text>
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading games…</Text>
         </View>
       </SafeAreaView>
     );
@@ -189,7 +214,13 @@ export const DailyV2: React.FC = () => {
         keyExtractor={(item) => item.id}
         stickySectionHeadersEnabled
         getItemLayout={getItemLayout}
-        onContentSizeChange={handleContentReady}
+        initialNumToRender={15}
+        windowSize={10}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={{
+          itemVisiblePercentThreshold: 50,
+          minimumViewTime: 50,
+        }}
         onScrollToIndexFailed={(info) => {
           setTimeout(() => {
             sectionListRef.current?.scrollToLocation({
@@ -197,10 +228,8 @@ export const DailyV2: React.FC = () => {
               itemIndex: 0,
               animated: false,
             });
-          }, 300);
+          }, 250);
         }}
-        initialNumToRender={15}
-        windowSize={10}
       />
 
       <FilterBottomSheet
