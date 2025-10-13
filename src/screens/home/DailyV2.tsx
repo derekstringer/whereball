@@ -237,21 +237,7 @@ export const DailyV2: React.FC = () => {
     if (item.type === 'header') {
       return (
         <View style={styles.headerContainer}>
-          <View style={{ flex: 1 }}>
-            <DateHeader date={item.dateObj} isToday={item.isToday} />
-          </View>
-          {item.isFirst && (
-            <TouchableOpacity 
-              onPress={loadEarlierGames} 
-              disabled={loadingMore}
-              style={styles.inlineLink}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.inlineLinkText, { color: '#00D9FF' }]}>
-                {loadingMore ? '...' : 'Earlier Games...'}
-              </Text>
-            </TouchableOpacity>
-          )}
+          <DateHeader date={item.dateObj} isToday={item.isToday} />
         </View>
       );
     }
@@ -295,9 +281,10 @@ export const DailyV2: React.FC = () => {
   };
 
   const scrollToToday = () => {
-    if (todayIndex >= 0 && todayIndex < itemOffsets.length && flatListRef.current) {
+    // Since list starts at today, just scroll to top
+    if (flatListRef.current) {
       flatListRef.current.scrollToOffset({
-        offset: itemOffsets[todayIndex],
+        offset: 0,
         animated: true,
       });
     }
@@ -334,10 +321,8 @@ export const DailyV2: React.FC = () => {
         
         <View style={styles.headerCenter}>
           <Text style={[styles.headerTitle, { color: colors.text }]}>WhereBall</Text>
-          <TouchableOpacity onPress={loadEarlierGames} disabled={loadingMore} activeOpacity={0.7}>
-            <Text style={styles.goToToday}>
-              {loadingMore ? 'Loading...' : 'Earlier Games...'}
-            </Text>
+          <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7}>
+            <Text style={styles.goToToday}>Go To Today</Text>
           </TouchableOpacity>
         </View>
         
