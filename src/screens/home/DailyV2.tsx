@@ -129,39 +129,16 @@ export const DailyV2: React.FC = () => {
   };
 
   const getTodayDateKey = (): string => {
+    // Use local date components directly to avoid timezone issues
     const now = new Date();
-    now.setHours(0, 0, 0, 0); // Normalize to midnight
-    return formatDateKey(now);
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const todayDateKey = useMemo(() => getTodayDateKey(), []);
 
-  // Manual load functions
-  const loadEarlierGames = async () => {
-    if (!cacheRange || loadingMore) return;
-    
-    setLoadingMore(true);
-    const newStart = new Date(cacheRange.start);
-    newStart.setDate(newStart.getDate() - 14);
-    
-    await loadDateRange(newStart, new Date(cacheRange.start.getTime() - 86400000));
-    
-    setCacheRange({ start: newStart, end: cacheRange.end });
-    setLoadingMore(false);
-  };
-
-  const loadMoreGames = async () => {
-    if (!cacheRange || loadingMore) return;
-    
-    setLoadingMore(true);
-    const newEnd = new Date(cacheRange.end);
-    newEnd.setDate(newEnd.getDate() + 14);
-    
-    await loadDateRange(new Date(cacheRange.end.getTime() + 86400000), newEnd);
-    
-    setCacheRange({ start: cacheRange.start, end: newEnd });
-    setLoadingMore(false);
-  };
 
   // Flatten sections into single array with headers interspersed + pre-calculate offsets
   const { flatData, stickyIndices, todayIndex, itemOffsets } = useMemo(() => {
@@ -235,41 +212,11 @@ export const DailyV2: React.FC = () => {
 
   const renderItem = ({ item }: { item: FlatItem }) => {
     if (item.type === 'header') {
-      return (
-        <View style={styles.headerRow}>
-          <View style={{ flex: 1 }}>
-            <DateHeader date={item.dateObj} isToday={item.isToday} />
-          </View>
-          {item.isFirst && (
-            <TouchableOpacity 
-              onPress={loadEarlierGames} 
-              disabled={loadingMore}
-              style={styles.inlineLink}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.inlineLinkText, { color: '#00D9FF' }]}>
-                {loadingMore ? '...' : 'Earlier Games...'}
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      );
+      return <DateHeader date={item.dateObj} isToday={item.isToday} />;
     }
 
     if (item.type === 'footer') {
-      return (
-        <View style={styles.footerContainer}>
-          <TouchableOpacity 
-            onPress={loadMoreGames} 
-            disabled={loadingMore}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.footerLinkText, { color: '#00D9FF' }]}>
-              {loadingMore ? 'Loading...' : 'More Games...'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      );
+      return null;
     }
 
     // Game item
@@ -295,10 +242,10 @@ export const DailyV2: React.FC = () => {
   };
 
   const scrollToToday = () => {
-    // Scroll to today's actual position using pre-calculated offset
-    if (todayIndex >= 0 && todayIndex < itemOffsets.length && flatListRef.current) {
+    // Today is always at top, scroll to 0
+    if (flatListRef.current) {
       flatListRef.current.scrollToOffset({
-        offset: itemOffsets[todayIndex],
+        offset: 0,
         animated: true,
       });
     }
@@ -463,26 +410,5 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  inlineLink: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  inlineLinkText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  footerContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    alignItems: 'flex-end',
-  },
-  footerLinkText: {
-    fontSize: 13,
-    fontWeight: '600',
   },
 });
