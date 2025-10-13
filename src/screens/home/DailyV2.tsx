@@ -295,10 +295,10 @@ export const DailyV2: React.FC = () => {
   };
 
   const scrollToToday = () => {
-    // Since list starts at today, just scroll to top
-    if (flatListRef.current) {
+    // Scroll to today's actual position using pre-calculated offset
+    if (todayIndex >= 0 && todayIndex < itemOffsets.length && flatListRef.current) {
       flatListRef.current.scrollToOffset({
-        offset: 0,
+        offset: itemOffsets[todayIndex],
         animated: true,
       });
     }
