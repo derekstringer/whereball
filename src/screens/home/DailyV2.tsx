@@ -54,7 +54,6 @@ export const DailyV2: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const flatListRef = React.useRef<FlatList>(null);
   const lastPrefetchTime = React.useRef<number>(0);
-  const hasScrolledToToday = React.useRef(false);
   const isProgrammaticScroll = React.useRef(false);
   const PREFETCH_COOLDOWN_MS = 500; // 500ms cooldown between prefetches
 
@@ -241,33 +240,12 @@ export const DailyV2: React.FC = () => {
     return items;
   }, [gamesCache, todayDateKey]);
 
-  // Scroll to today after initial load
-  React.useEffect(() => {
-    if (!loading && listData.length > 0 && !hasScrolledToToday.current) {
-      const index = listData.findIndex(item => item.type === 'date' && item.dateKey === todayDateKey);
-      
-      if (index >= 0 && flatListRef.current) {
-        hasScrolledToToday.current = true;
-        isProgrammaticScroll.current = true;
-        
-        // Use same double-scroll technique as scrollToToday button
-        flatListRef.current.scrollToIndex({
-          index,
-          animated: false,
-          viewPosition: 0,
-        });
-        // Second scroll for accuracy after React Native measures items
-        setTimeout(() => {
-          flatListRef.current?.scrollToIndex({
-            index,
-            animated: false,
-            viewPosition: 0,
-          });
-          isProgrammaticScroll.current = false;
-        }, 50);
-      }
-    }
-  }, [loading, todayDateKey]);
+  // Calculate initial scroll index (where FlatList should start)
+  const initialScrollIndex = useMemo(() => {
+    if (listData.length === 0) return 0;
+    const index = listData.findIndex(item => item.type === 'date' && item.dateKey === todayDateKey);
+    return index >= 0 ? index : 0;
+  }, [listData.length > 0, todayDateKey]);
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
@@ -380,6 +358,7 @@ export const DailyV2: React.FC = () => {
         data={listData}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        initialScrollIndex={initialScrollIndex}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={{
           itemVisiblePercentThreshold: 50,
