@@ -253,13 +253,25 @@ export const DailyV2: React.FC = () => {
     
     if (todayIndex >= 0 && sectionListRef.current) {
       isProgrammaticScroll.current = true;
+      
+      // First scroll
       sectionListRef.current.scrollToLocation({
         sectionIndex: todayIndex,
         itemIndex: 0,
         animated: false,
         viewPosition: 0,
       });
+      
+      // Second scroll for accuracy after React Native measures items
       setTimeout(() => {
+        if (sectionListRef.current) {
+          sectionListRef.current.scrollToLocation({
+            sectionIndex: todayIndex,
+            itemIndex: 0,
+            animated: false,
+            viewPosition: 0,
+          });
+        }
         isProgrammaticScroll.current = false;
       }, 50);
     }
