@@ -1,21 +1,18 @@
 /**
  * DailyV2 Screen - Vertical Infinite Scroll (Apple Calendar style)
- * Smart caching with windowed prefetch
- * Using SectionList for proper sectioned data structure (see ARCHITECTURE.md)
+ * Using FlatList with initialScrollIndex and stickyHeaderIndices
  */
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  SectionList,
-  SectionListData,
+  FlatList,
   ActivityIndicator,
   TouchableOpacity,
   Modal,
-  InteractionManager,
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
@@ -35,12 +32,11 @@ interface CachedDate {
   loaded: boolean;
 }
 
-interface GameSection {
-  title: string; // Date key (YYYY-MM-DD)
-  date: Date;
-  isToday: boolean;
-  data: NHLGame[];
-}
+// Flattened item types
+type FlatItem = 
+  | { type: 'header'; date: string; dateObj: Date; isToday: boolean; isFirst: boolean }
+  | { type: 'game'; game: NHLGame }
+  | { type: 'footer' };
 
 export const DailyV2: React.FC = () => {
   const { colors } = useTheme();
@@ -52,13 +48,12 @@ export const DailyV2: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const sectionListRef = React.useRef<SectionList<NHLGame, GameSection>>(null);
-  const isProgrammaticScroll = React.useRef(false);
+  const flatListRef = useRef<FlatList>(null);
 
   const userServiceCodes = subscriptions.map(s => s.service_code);
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
 
-  // Initialize cache with today ±14 days
+  // Initialize cache with today ±30 days
   useEffect(() => {
     initializeCache();
   }, []);
@@ -126,7 +121,6 @@ export const DailyV2: React.FC = () => {
   };
 
   const formatDateKey = (date: Date): string => {
-    // Use local date to avoid timezone issues
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -138,13 +132,15 @@ export const DailyV2: React.FC = () => {
     return formatDateKey(now);
   };
 
-  // Manual load functions (user-triggered only)
+  const todayDateKey = useMemo(() => getTodayDateKey(), []);
+
+  // Manual load functions
   const loadEarlierGames = async () => {
     if (!cacheRange || loadingMore) return;
     
     setLoadingMore(true);
     const newStart = new Date(cacheRange.start);
-    newStart.setDate(newStart.getDate() - 14); // Load 14 more days
+    newStart.setDate(newStart.getDate() - 14);
     
     await loadDateRange(newStart, new Date(cacheRange.start.getTime() - 86400000));
     
@@ -157,7 +153,7 @@ export const DailyV2: React.FC = () => {
     
     setLoadingMore(true);
     const newEnd = new Date(cacheRange.end);
-    newEnd.setDate(newEnd.getDate() + 14); // Load 14 more days
+    newEnd.setDate(newEnd.getDate() + 14);
     
     await loadDateRange(new Date(cacheRange.end.getTime() + 86400000), newEnd);
     
@@ -165,72 +161,50 @@ export const DailyV2: React.FC = () => {
     setLoadingMore(false);
   };
 
-  // Memoize today's date string to avoid recalculating
-  const todayDateKey = useMemo(() => getTodayDateKey(), []);
-
-  // Build sections from cache
-  const sections = useMemo((): GameSection[] => {
-    // Sort cache by date
+  // Flatten sections into single array with headers interspersed
+  const { flatData, stickyIndices, todayIndex } = useMemo(() => {
     const sortedDates = Array.from(gamesCache.keys()).sort();
-    
-    return sortedDates.map(dateStr => {
-      const cached = gamesCache.get(dateStr);
-      const date = new Date(dateStr + 'T12:00:00');
-      const isToday = dateStr === todayDateKey;
-      
-      return {
-        title: dateStr,
-        date,
-        isToday,
-        data: cached?.games || [],
-      };
-    });
-  }, [gamesCache, todayDateKey]);
+    const flat: FlatItem[] = [];
+    const sticky: number[] = [];
+    let todayIdx = -1;
 
-  // Scroll to today section after data loads
-  React.useEffect(() => {
-    if (!loading && sections.length > 0) {
-      const todayIndex = sections.findIndex(section => section.title === todayDateKey);
-      
-      if (todayIndex >= 0) {
-        // Use InteractionManager to wait for everything to render
-        const handle = InteractionManager.runAfterInteractions(() => {
-          if (sectionListRef.current) {
-            isProgrammaticScroll.current = true;
-            try {
-              sectionListRef.current.scrollToLocation({
-                sectionIndex: todayIndex,
-                itemIndex: 0,
-                animated: false,
-                viewPosition: 0,
-              });
-            } catch (error) {
-              console.log('Initial scroll failed:', error);
-            }
-            
-            // Second attempt after short delay
-            setTimeout(() => {
-              try {
-                if (sectionListRef.current) {
-                  sectionListRef.current.scrollToLocation({
-                    sectionIndex: todayIndex,
-                    itemIndex: 0,
-                    animated: false,
-                    viewPosition: 0,
-                  });
-                }
-              } catch (error) {
-                console.log('Second scroll attempt failed:', error);
-              }
-              isProgrammaticScroll.current = false;
-            }, 100);
-          }
-        });
-        
-        return () => handle.cancel();
+    sortedDates.forEach((dateStr, sectionIdx) => {
+      const cached = gamesCache.get(dateStr);
+      const dateObj = new Date(dateStr + 'T12:00:00');
+      const isToday = dateStr === todayDateKey;
+      const isFirst = sectionIdx === 0;
+
+      // Add header
+      const headerIndex = flat.length;
+      sticky.push(headerIndex);
+      flat.push({ 
+        type: 'header', 
+        date: dateStr, 
+        dateObj, 
+        isToday,
+        isFirst 
+      });
+
+      if (isToday) {
+        todayIdx = headerIndex;
       }
-    }
-  }, [loading, sections.length, todayDateKey]);
+
+      // Add games
+      const games = cached?.games || [];
+      games.forEach(game => {
+        flat.push({ type: 'game', game });
+      });
+    });
+
+    // Add footer
+    flat.push({ type: 'footer' });
+
+    return { 
+      flatData: flat, 
+      stickyIndices: sticky,
+      todayIndex: todayIdx 
+    };
+  }, [gamesCache, todayDateKey]);
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
@@ -240,16 +214,14 @@ export const DailyV2: React.FC = () => {
     }
   };
 
-  const renderSectionHeader = ({ section }: { section: SectionListData<NHLGame, GameSection> }) => {
-    const isFirstSection = sections[0]?.title === section.title;
-    
-    return (
-      <View>
-        <View style={styles.sectionHeaderRow}>
+  const renderItem = ({ item }: { item: FlatItem }) => {
+    if (item.type === 'header') {
+      return (
+        <View style={styles.headerContainer}>
           <View style={{ flex: 1 }}>
-            <DateHeader date={section.date} isToday={section.isToday} />
+            <DateHeader date={item.dateObj} isToday={item.isToday} />
           </View>
-          {isFirstSection && (
+          {item.isFirst && (
             <TouchableOpacity 
               onPress={loadEarlierGames} 
               disabled={loadingMore}
@@ -262,17 +234,32 @@ export const DailyV2: React.FC = () => {
             </TouchableOpacity>
           )}
         </View>
-      </View>
-    );
-  };
+      );
+    }
 
-  const renderItem = ({ item }: { item: NHLGame }) => {
-    const isExpanded = expandedGameId === item.id;
+    if (item.type === 'footer') {
+      return (
+        <View style={styles.footerContainer}>
+          <TouchableOpacity 
+            onPress={loadMoreGames} 
+            disabled={loadingMore}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.footerLinkText, { color: '#00D9FF' }]}>
+              {loadingMore ? 'Loading...' : 'More Games...'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    // Game item
+    const isExpanded = expandedGameId === item.game.id;
     
     if (isExpanded) {
       return (
         <VerticalGameCardExpanded
-          game={item}
+          game={item.game}
           userServiceCodes={userServiceCodes}
           onCollapse={() => setExpandedGameId?.('NHL', null)}
         />
@@ -281,31 +268,28 @@ export const DailyV2: React.FC = () => {
     
     return (
       <VerticalGameCard
-        game={item}
+        game={item.game}
         userServiceCodes={userServiceCodes}
-        onPress={() => handleGamePress(item.id)}
+        onPress={() => handleGamePress(item.game.id)}
       />
     );
   };
 
-  // Go to today function
   const scrollToToday = () => {
-    const todayIndex = sections.findIndex(section => section.title === todayDateKey);
-    
-    if (todayIndex >= 0 && sectionListRef.current) {
-      isProgrammaticScroll.current = true;
-      sectionListRef.current.scrollToLocation({
-        sectionIndex: todayIndex,
-        itemIndex: 0,
-        animated: false,
+    if (todayIndex >= 0 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({
+        index: todayIndex,
+        animated: true,
         viewPosition: 0,
       });
-      setTimeout(() => {
-        isProgrammaticScroll.current = false;
-      }, 50);
     }
   };
 
+  const getItemKey = (item: FlatItem, index: number) => {
+    if (item.type === 'header') return `header-${item.date}`;
+    if (item.type === 'footer') return 'footer';
+    return item.game.id;
+  };
 
   if (loading) {
     return (
@@ -346,39 +330,29 @@ export const DailyV2: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <SectionList<NHLGame, GameSection>
-        ref={sectionListRef}
-        sections={sections}
-        renderSectionHeader={renderSectionHeader}
+      <FlatList
+        ref={flatListRef}
+        data={flatData}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
-        stickySectionHeadersEnabled={true}
-        onScrollToIndexFailed={(info: any) => {
+        keyExtractor={getItemKey}
+        initialScrollIndex={todayIndex >= 0 ? todayIndex : 0}
+        getItemLayout={(data, index) => ({
+          length: 100, // Approximate item height
+          offset: 100 * index,
+          index,
+        })}
+        stickyHeaderIndices={stickyIndices}
+        onScrollToIndexFailed={(info) => {
           setTimeout(() => {
-            const todayIndex = sections.findIndex(section => section.title === todayDateKey);
-            if (sectionListRef.current && todayIndex >= 0) {
-              sectionListRef.current.scrollToLocation({
-                sectionIndex: todayIndex,
-                itemIndex: 0,
-                animated: false,
-                viewPosition: 0,
-              });
-            }
+            flatListRef.current?.scrollToIndex({
+              index: info.index,
+              animated: false,
+            });
           }, 100);
         }}
-        ListFooterComponent={
-          <View style={styles.footerContainer}>
-            <TouchableOpacity 
-              onPress={loadMoreGames} 
-              disabled={loadingMore}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.footerLinkText, { color: '#00D9FF' }]}>
-                {loadingMore ? 'Loading...' : 'More Games...'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        }
+        windowSize={10}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
       />
 
       {/* Filter Bottom Sheet */}
@@ -453,7 +427,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
   },
-  sectionHeaderRow: {
+  headerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
