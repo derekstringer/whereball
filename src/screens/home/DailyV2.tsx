@@ -237,7 +237,7 @@ export const DailyV2: React.FC = () => {
     if (item.type === 'header') {
       return (
         <>
-          <DateHeader date={item.dateObj} isToday={item.isToday} />
+          <DateHeader date={item.dateObj} isToday={false} />
           {item.isFirst && (
             <View style={styles.inlineLinkContainer}>
               <TouchableOpacity 
