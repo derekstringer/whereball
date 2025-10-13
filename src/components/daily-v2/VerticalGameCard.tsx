@@ -12,6 +12,7 @@ import { getServicesForGameSplit } from '../../lib/service-helpers';
 interface VerticalGameCardProps {
   game: NHLGame;
   userServiceCodes: string[];
+  currentTime?: Date;
   isExpanded?: boolean;
   onPress?: () => void;
 }
@@ -19,6 +20,7 @@ interface VerticalGameCardProps {
 export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
   game,
   userServiceCodes,
+  currentTime,
   isExpanded = false,
   onPress,
 }) => {
@@ -47,7 +49,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
     }
 
     // Upcoming game - calculate time until start
-    const now = new Date();
+    const now = currentTime || new Date();
     const startTime = new Date(game.startTime);
     const diffMs = startTime.getTime() - now.getTime();
     const diffMins = Math.floor(diffMs / 60000);
@@ -80,7 +82,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
       hour12: true,
     });
     return { timeDisplay: time, redIntensity: 0 };
-  }, [game.startTime, isLive, isFinal]);
+  }, [game.startTime, isLive, isFinal, currentTime]);
 
   // Render status icons
   const renderStatusIcons = () => {

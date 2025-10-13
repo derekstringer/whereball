@@ -48,10 +48,20 @@ export const DailyV2: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
   const flatListRef = useRef<FlatList>(null);
 
   const userServiceCodes = subscriptions.map(s => s.service_code);
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
+
+  // Update current time every 30 seconds for countdown calculations
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 30000); // Update every 30 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   // Initialize cache with today + forward days
   useEffect(() => {
@@ -256,6 +266,7 @@ export const DailyV2: React.FC = () => {
       <VerticalGameCard
         game={item.game}
         userServiceCodes={userServiceCodes}
+        currentTime={currentTime}
         onPress={() => handleGamePress(item.game.id)}
       />
     );
