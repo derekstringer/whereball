@@ -30,7 +30,6 @@ const CACHE_WINDOW_DAYS = 30;
 const PREFETCH_INCREMENT_DAYS = 14; // Load 14 more days when user requests
 
 interface CachedDate {
-  date: string; // YYYY-MM-DD
   games: NHLGame[];
   loaded: boolean;
 }
@@ -46,7 +45,7 @@ export const DailyV2: React.FC = () => {
   const { colors } = useTheme();
   const { subscriptions, expandedGameIdBySport, setExpandedGameId } = useAppStore();
   
-  const [gamesCache, setGamesCache] = useState<Map<string, CachedDate>>(new Map());
+  const [gamesCache, setGamesCache] = useState<Record<string, CachedDate>>({});
   const [cacheRange, setCacheRange] = useState<{ start: Date; end: Date } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -54,7 +53,6 @@ export const DailyV2: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const sectionListRef = React.useRef<SectionList<NHLGame, GameSection>>(null);
   const hasScrolledToToday = React.useRef(false);
-  const isProgrammaticScroll = React.useRef(false);
 
   const userServiceCodes = subscriptions.map(s => s.service_code);
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
@@ -80,50 +78,34 @@ export const DailyV2: React.FC = () => {
   };
 
   const loadDateRange = async (start: Date, end: Date) => {
-    const promises: Promise<void>[] = [];
+    const newData: Record<string, CachedDate> = {};
     const currentDate = new Date(start);
     
     while (currentDate <= end) {
       const dateStr = formatDateKey(currentDate);
       
       // Only load if not already in cache
-      if (!gamesCache.has(dateStr)) {
-        promises.push(loadDateGames(new Date(currentDate)));
+      if (!gamesCache[dateStr]) {
+        try {
+          const games = await getGamesForDate(new Date(currentDate));
+          newData[dateStr] = {
+            games,
+            loaded: true,
+          };
+        } catch (error) {
+          console.error(`Error loading games for ${dateStr}:`, error);
+          newData[dateStr] = {
+            games: [],
+            loaded: true,
+          };
+        }
       }
       
       currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    await Promise.all(promises);
-  };
-
-  const loadDateGames = async (date: Date) => {
-    const dateStr = formatDateKey(date);
-    
-    try {
-      const games = await getGamesForDate(date);
-      
-      setGamesCache(prev => {
-        const newCache = new Map(prev);
-        newCache.set(dateStr, {
-          date: dateStr,
-          games,
-          loaded: true,
-        });
-        return newCache;
-      });
-    } catch (error) {
-      console.error(`Error loading games for ${dateStr}:`, error);
-      setGamesCache(prev => {
-        const newCache = new Map(prev);
-        newCache.set(dateStr, {
-          date: dateStr,
-          games: [],
-          loaded: true,
-        });
-        return newCache;
-      });
-    }
+    // Merge new data with existing cache
+    setGamesCache(prev => ({ ...prev, ...newData }));
   };
 
   const formatDateKey = (date: Date): string => {
@@ -170,64 +152,34 @@ export const DailyV2: React.FC = () => {
   // Memoize today's date string to avoid recalculating
   const todayDateKey = useMemo(() => getTodayDateKey(), []);
 
-  // Build sections from cache
+  // Build sections from cache - only after cache is complete and sorted
   const sections = useMemo((): GameSection[] => {
-    // Sort cache by date
-    const sortedDates = Array.from(gamesCache.keys()).sort();
+    const keys = Object.keys(gamesCache).sort();
     
-    return sortedDates.map(dateStr => {
-      const cached = gamesCache.get(dateStr);
-      const date = new Date(dateStr + 'T12:00:00');
-      const isToday = dateStr === todayDateKey;
-      
-      return {
-        title: dateStr,
-        date,
-        isToday,
-        data: cached?.games || [],
-      };
-    });
+    return keys.map(key => ({
+      title: key,
+      date: new Date(key + 'T12:00:00'),
+      isToday: key === todayDateKey,
+      data: gamesCache[key]?.games ?? [],
+    }));
   }, [gamesCache, todayDateKey]);
 
-  // Scroll to today section after data loads
-  React.useEffect(() => {
-    // Only scroll once, and only when we have data
-    if (!loading && !hasScrolledToToday.current && sections.length > 0 && gamesCache.size > 0 && sectionListRef.current) {
-      const todayIndex = sections.findIndex(section => section.title === todayDateKey);
-      
+  // Scroll to today after content is laid out
+  const handleContentReady = () => {
+    if (!hasScrolledToToday.current && sectionListRef.current && sections.length > 0) {
+      const todayIndex = sections.findIndex(s => s.title === todayDateKey);
       if (todayIndex >= 0) {
         hasScrolledToToday.current = true;
-        
-        // Longer delay to ensure all sections are rendered
-        setTimeout(() => {
-          if (sectionListRef.current) {
-            isProgrammaticScroll.current = true;
-            
-            // First scroll
-            sectionListRef.current.scrollToLocation({
-              sectionIndex: todayIndex,
-              itemIndex: 0,
-              animated: false,
-              viewPosition: 0,
-            });
-            
-            // Second scroll for accuracy
-            setTimeout(() => {
-              if (sectionListRef.current) {
-                sectionListRef.current.scrollToLocation({
-                  sectionIndex: todayIndex,
-                  itemIndex: 0,
-                  animated: false,
-                  viewPosition: 0,
-                });
-              }
-              isProgrammaticScroll.current = false;
-            }, 100);
-          }
-        }, 200);
+        requestAnimationFrame(() => {
+          sectionListRef.current?.scrollToLocation({
+            sectionIndex: todayIndex,
+            itemIndex: 0,
+            animated: false,
+          });
+        });
       }
     }
-  }, [loading, sections.length, gamesCache.size, todayDateKey]);
+  };
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
@@ -265,31 +217,13 @@ export const DailyV2: React.FC = () => {
 
   // Go to today function
   const scrollToToday = () => {
-    const todayIndex = sections.findIndex(section => section.title === todayDateKey);
-    
-    if (todayIndex >= 0 && sectionListRef.current) {
-      isProgrammaticScroll.current = true;
-      
-      // First scroll
-      sectionListRef.current.scrollToLocation({
+    const todayIndex = sections.findIndex(s => s.title === todayDateKey);
+    if (todayIndex >= 0) {
+      sectionListRef.current?.scrollToLocation({
         sectionIndex: todayIndex,
         itemIndex: 0,
-        animated: false,
-        viewPosition: 0,
+        animated: true,
       });
-      
-      // Second scroll for accuracy after React Native measures items
-      setTimeout(() => {
-        if (sectionListRef.current) {
-          sectionListRef.current.scrollToLocation({
-            sectionIndex: todayIndex,
-            itemIndex: 0,
-            animated: false,
-            viewPosition: 0,
-          });
-        }
-        isProgrammaticScroll.current = false;
-      }, 50);
     }
   };
 
@@ -340,19 +274,9 @@ export const DailyV2: React.FC = () => {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         stickySectionHeadersEnabled={true}
-        onScrollToIndexFailed={(info: any) => {
-          setTimeout(() => {
-            const todayIndex = sections.findIndex(section => section.title === todayDateKey);
-            if (sectionListRef.current && todayIndex >= 0) {
-              sectionListRef.current.scrollToLocation({
-                sectionIndex: todayIndex,
-                itemIndex: 0,
-                animated: false,
-                viewPosition: 0,
-              });
-            }
-          }, 100);
-        }}
+        onContentSizeChange={handleContentReady}
+        initialNumToRender={15}
+        windowSize={10}
         ListHeaderComponent={
           <TouchableOpacity
             style={[styles.loadMoreButton, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}
