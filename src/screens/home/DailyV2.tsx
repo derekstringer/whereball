@@ -88,7 +88,7 @@ export const DailyV2: React.FC = () => {
   };
 
   const loadDateRange = async (start: Date, end: Date) => {
-    const promises: Promise<void>[] = [];
+    const datesToLoad: Date[] = [];
     const currentDate = new Date(start);
     
     while (currentDate <= end) {
@@ -96,42 +96,36 @@ export const DailyV2: React.FC = () => {
       
       // Only load if not already in cache
       if (!gamesCache.has(dateStr)) {
-        promises.push(loadDateGames(new Date(currentDate)));
+        datesToLoad.push(new Date(currentDate));
       }
       
       currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    await Promise.all(promises);
-  };
-
-  const loadDateGames = async (date: Date) => {
-    const dateStr = formatDateKey(date);
+    if (datesToLoad.length === 0) return;
     
-    try {
-      const games = await getGamesForDate(date);
-      
-      setGamesCache(prev => {
-        const newCache = new Map(prev);
-        newCache.set(dateStr, {
-          date: dateStr,
-          games,
-          loaded: true,
-        });
-        return newCache;
+    // Load all games in parallel
+    const results = await Promise.all(
+      datesToLoad.map(async (date) => {
+        const dateStr = formatDateKey(date);
+        try {
+          const games = await getGamesForDate(date);
+          return { date: dateStr, games, loaded: true };
+        } catch (error) {
+          console.error(`Error loading games for ${dateStr}:`, error);
+          return { date: dateStr, games: [], loaded: true };
+        }
+      })
+    );
+    
+    // Batch update the cache once
+    setGamesCache(prev => {
+      const newCache = new Map(prev);
+      results.forEach(result => {
+        newCache.set(result.date, result);
       });
-    } catch (error) {
-      console.error(`Error loading games for ${dateStr}:`, error);
-      setGamesCache(prev => {
-        const newCache = new Map(prev);
-        newCache.set(dateStr, {
-          date: dateStr,
-          games: [],
-          loaded: true,
-        });
-        return newCache;
-      });
-    }
+      return newCache;
+    });
   };
 
   const formatDateKey = (date: Date): string => {
