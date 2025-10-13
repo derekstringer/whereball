@@ -192,7 +192,7 @@ export const DailyV2: React.FC = () => {
       const todayIndex = sections.findIndex(section => section.title === todayDateKey);
       
       if (todayIndex >= 0) {
-        // Small delay to ensure SectionList is mounted
+        // Longer delay and multiple attempts to ensure scroll works
         setTimeout(() => {
           if (sectionListRef.current) {
             isProgrammaticScroll.current = true;
@@ -202,11 +202,20 @@ export const DailyV2: React.FC = () => {
               animated: false,
               viewPosition: 0,
             });
+            // Second attempt after another delay
             setTimeout(() => {
+              if (sectionListRef.current) {
+                sectionListRef.current.scrollToLocation({
+                  sectionIndex: todayIndex,
+                  itemIndex: 0,
+                  animated: false,
+                  viewPosition: 0,
+                });
+              }
               isProgrammaticScroll.current = false;
-            }, 100);
+            }, 150);
           }
-        }, 100);
+        }, 200);
       }
     }
   }, [loading, sections.length, todayDateKey]);
@@ -223,20 +232,24 @@ export const DailyV2: React.FC = () => {
     const isFirstSection = sections[0]?.title === section.title;
     
     return (
-      <View style={styles.sectionHeaderContainer}>
-        <DateHeader date={section.date} isToday={section.isToday} />
-        {isFirstSection && (
-          <TouchableOpacity 
-            onPress={loadEarlierGames} 
-            disabled={loadingMore}
-            style={styles.inlineLink}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.inlineLinkText, { color: '#00D9FF' }]}>
-              {loadingMore ? '...' : 'Earlier Games...'}
-            </Text>
-          </TouchableOpacity>
-        )}
+      <View>
+        <View style={styles.sectionHeaderRow}>
+          <View style={{ flex: 1 }}>
+            <DateHeader date={section.date} isToday={section.isToday} />
+          </View>
+          {isFirstSection && (
+            <TouchableOpacity 
+              onPress={loadEarlierGames} 
+              disabled={loadingMore}
+              style={styles.inlineLink}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.inlineLinkText, { color: '#00D9FF' }]}>
+                {loadingMore ? '...' : 'Earlier Games...'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     );
   };
@@ -428,7 +441,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
   },
-  sectionHeaderContainer: {
+  sectionHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
