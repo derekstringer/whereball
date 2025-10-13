@@ -53,6 +53,7 @@ export const DailyV2: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const sectionListRef = React.useRef<SectionList<NHLGame, GameSection>>(null);
+  const hasScrolledToToday = React.useRef(false);
   const isProgrammaticScroll = React.useRef(false);
 
   const userServiceCodes = subscriptions.map(s => s.service_code);
@@ -190,28 +191,43 @@ export const DailyV2: React.FC = () => {
 
   // Scroll to today section after data loads
   React.useEffect(() => {
-    if (!loading && sections.length > 0 && sectionListRef.current) {
+    // Only scroll once, and only when we have data
+    if (!loading && !hasScrolledToToday.current && sections.length > 0 && gamesCache.size > 0 && sectionListRef.current) {
       const todayIndex = sections.findIndex(section => section.title === todayDateKey);
       
       if (todayIndex >= 0) {
-        // Small delay to ensure SectionList is mounted
+        hasScrolledToToday.current = true;
+        
+        // Longer delay to ensure all sections are rendered
         setTimeout(() => {
           if (sectionListRef.current) {
             isProgrammaticScroll.current = true;
+            
+            // First scroll
             sectionListRef.current.scrollToLocation({
               sectionIndex: todayIndex,
               itemIndex: 0,
               animated: false,
               viewPosition: 0,
             });
+            
+            // Second scroll for accuracy
             setTimeout(() => {
+              if (sectionListRef.current) {
+                sectionListRef.current.scrollToLocation({
+                  sectionIndex: todayIndex,
+                  itemIndex: 0,
+                  animated: false,
+                  viewPosition: 0,
+                });
+              }
               isProgrammaticScroll.current = false;
             }, 100);
           }
-        }, 100);
+        }, 200);
       }
     }
-  }, [loading, sections.length, todayDateKey]);
+  }, [loading, sections.length, gamesCache.size, todayDateKey]);
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
