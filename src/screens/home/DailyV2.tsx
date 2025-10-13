@@ -25,9 +25,9 @@ import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGame
 import { FilterBottomSheet } from '../../components/ui/FilterBottomSheet';
 import { SettingsScreen } from '../settings/SettingsScreen';
 
-// Cache window: ±14 days from current date
-const CACHE_WINDOW_DAYS = 14;
-const PREFETCH_THRESHOLD_DAYS = 10; // Trigger prefetch when within 10 days of edge
+// Cache window: ±30 days from current date (2 months total)
+const CACHE_WINDOW_DAYS = 30;
+const PREFETCH_INCREMENT_DAYS = 14; // Load 14 more days when user requests
 
 interface CachedDate {
   date: string; // YYYY-MM-DD
@@ -53,9 +53,7 @@ export const DailyV2: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const sectionListRef = React.useRef<SectionList<NHLGame, GameSection>>(null);
-  const lastPrefetchTime = React.useRef<number>(0);
   const isProgrammaticScroll = React.useRef(false);
-  const PREFETCH_COOLDOWN_MS = 500; // 500ms cooldown between prefetches
 
   const userServiceCodes = subscriptions.map(s => s.service_code);
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
@@ -140,47 +138,14 @@ export const DailyV2: React.FC = () => {
     return formatDateKey(now);
   };
 
-  // Check if we need to prefetch more data
-  const checkPrefetch = useCallback((visibleDates: string[]) => {
-    // Skip prefetch during programmatic scrolling
-    if (isProgrammaticScroll.current) return;
-    if (!cacheRange || loadingMore) return;
+  // Manual prefetch - user triggered only
 
-    // Enforce cooldown period
-    const now = Date.now();
-    if (now - lastPrefetchTime.current < PREFETCH_COOLDOWN_MS) return;
-
-    const sortedDates = visibleDates.sort();
-    if (sortedDates.length === 0) return;
-
-    const firstVisible = new Date(sortedDates[0]);
-    const lastVisible = new Date(sortedDates[sortedDates.length - 1]);
-
-    // Check if we're within threshold of cache edges
-    const daysSinceStart = Math.floor(
-      (firstVisible.getTime() - cacheRange.start.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    const daysUntilEnd = Math.floor(
-      (cacheRange.end.getTime() - lastVisible.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    if (daysSinceStart <= PREFETCH_THRESHOLD_DAYS) {
-      // Prefetch earlier dates
-      lastPrefetchTime.current = now;
-      prefetchEarlier();
-    } else if (daysUntilEnd <= PREFETCH_THRESHOLD_DAYS) {
-      // Prefetch later dates
-      lastPrefetchTime.current = now;
-      prefetchLater();
-    }
-  }, [cacheRange, loadingMore]);
-
-  const prefetchEarlier = async () => {
+  const loadEarlierGames = async () => {
     if (!cacheRange || loadingMore) return;
     
     setLoadingMore(true);
     const newStart = new Date(cacheRange.start);
-    newStart.setDate(newStart.getDate() - 7);
+    newStart.setDate(newStart.getDate() - PREFETCH_INCREMENT_DAYS);
     
     await loadDateRange(newStart, new Date(cacheRange.start.getTime() - 86400000));
     
@@ -188,12 +153,12 @@ export const DailyV2: React.FC = () => {
     setLoadingMore(false);
   };
 
-  const prefetchLater = async () => {
+  const loadMoreGames = async () => {
     if (!cacheRange || loadingMore) return;
     
     setLoadingMore(true);
     const newEnd = new Date(cacheRange.end);
-    newEnd.setDate(newEnd.getDate() + 7);
+    newEnd.setDate(newEnd.getDate() + PREFETCH_INCREMENT_DAYS);
     
     await loadDateRange(new Date(cacheRange.end.getTime() + 86400000), newEnd);
     
@@ -300,13 +265,6 @@ export const DailyV2: React.FC = () => {
     }
   };
 
-  const handleViewableItemsChanged = useCallback(({ viewableItems }: any) => {
-    const visibleDates = viewableItems
-      .map((item: any) => item.section?.title)
-      .filter(Boolean);
-    
-    checkPrefetch(visibleDates);
-  }, [checkPrefetch]);
 
   if (loading) {
     return (
@@ -354,10 +312,6 @@ export const DailyV2: React.FC = () => {
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
         stickySectionHeadersEnabled={true}
-        onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={{
-          itemVisiblePercentThreshold: 50,
-        }}
         onScrollToIndexFailed={(info: any) => {
           setTimeout(() => {
             const todayIndex = sections.findIndex(section => section.title === todayDateKey);
@@ -371,12 +325,37 @@ export const DailyV2: React.FC = () => {
             }
           }, 100);
         }}
-        ListFooterComponent={
-          loadingMore ? (
-            <View style={styles.footerLoading}>
+        ListHeaderComponent={
+          <TouchableOpacity
+            style={[styles.loadMoreButton, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}
+            onPress={loadEarlierGames}
+            disabled={loadingMore}
+            activeOpacity={0.7}
+          >
+            {loadingMore ? (
               <ActivityIndicator size="small" color={colors.primary} />
-            </View>
-          ) : null
+            ) : (
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load Earlier Games (14 days)
+              </Text>
+            )}
+          </TouchableOpacity>
+        }
+        ListFooterComponent={
+          <TouchableOpacity
+            style={[styles.loadMoreButton, { backgroundColor: colors.surface, borderTopColor: colors.border }]}
+            onPress={loadMoreGames}
+            disabled={loadingMore}
+            activeOpacity={0.7}
+          >
+            {loadingMore ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Text style={[styles.loadMoreText, { color: colors.primary }]}>
+                Load More Games (14 days)
+              </Text>
+            )}
+          </TouchableOpacity>
         }
       />
 
@@ -452,8 +431,15 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
   },
-  footerLoading: {
-    paddingVertical: 20,
+  loadMoreButton: {
+    paddingVertical: 16,
     alignItems: 'center',
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
+  },
+  loadMoreText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
