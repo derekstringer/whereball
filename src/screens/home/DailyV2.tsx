@@ -163,12 +163,18 @@ export const DailyV2: React.FC = () => {
     setLoadingMore(false);
   };
 
-  // Flatten sections into single array with headers interspersed
-  const { flatData, stickyIndices, todayIndex } = useMemo(() => {
+  // Flatten sections into single array with headers interspersed + pre-calculate offsets
+  const { flatData, stickyIndices, todayIndex, itemOffsets } = useMemo(() => {
     const sortedDates = Array.from(gamesCache.keys()).sort();
     const flat: FlatItem[] = [];
     const sticky: number[] = [];
+    const offsets: number[] = [];
     let todayIdx = -1;
+    let currentOffset = 0;
+
+    const HEADER_HEIGHT = 44;
+    const GAME_HEIGHT = 96;
+    const FOOTER_HEIGHT = 60;
 
     console.log('Building flat data, today key:', todayDateKey);
 
@@ -181,6 +187,7 @@ export const DailyV2: React.FC = () => {
       // Add header
       const headerIndex = flat.length;
       sticky.push(headerIndex);
+      offsets.push(currentOffset);
       flat.push({ 
         type: 'header', 
         date: dateStr, 
@@ -188,6 +195,7 @@ export const DailyV2: React.FC = () => {
         isToday,
         isFirst 
       });
+      currentOffset += HEADER_HEIGHT;
 
       if (isToday) {
         todayIdx = headerIndex;
@@ -197,11 +205,14 @@ export const DailyV2: React.FC = () => {
       // Add games
       const games = cached?.games || [];
       games.forEach(game => {
+        offsets.push(currentOffset);
         flat.push({ type: 'game', game });
+        currentOffset += GAME_HEIGHT;
       });
     });
 
     // Add footer
+    offsets.push(currentOffset);
     flat.push({ type: 'footer' });
 
     console.log('Total items:', flat.length, 'Today index:', todayIdx);
@@ -209,7 +220,8 @@ export const DailyV2: React.FC = () => {
     return { 
       flatData: flat, 
       stickyIndices: sticky,
-      todayIndex: todayIdx 
+      todayIndex: todayIdx,
+      itemOffsets: offsets
     };
   }, [gamesCache, todayDateKey]);
 
@@ -351,40 +363,26 @@ export const DailyV2: React.FC = () => {
         keyExtractor={getItemKey}
         initialScrollIndex={todayIndex >= 0 ? todayIndex : 0}
         getItemLayout={(data, index) => {
-          // Calculate accurate layout for sticky headers
-          if (!data || index >= data.length) {
+          // Use pre-calculated offsets (O(1) lookup instead of O(n) iteration)
+          if (!data || index >= data.length || index >= itemOffsets.length) {
             return { length: 96, offset: 96 * index, index };
           }
           
           const item = data[index];
           const HEADER_HEIGHT = 44;
           const GAME_HEIGHT = 96;
+          const FOOTER_HEIGHT = 60;
           
-          let offset = 0;
-          let currentHeight = GAME_HEIGHT;
-          
-          // Calculate offset by iterating through previous items
-          for (let i = 0; i < index; i++) {
-            const prevItem = data[i];
-            if (prevItem.type === 'header') {
-              offset += HEADER_HEIGHT;
-            } else if (prevItem.type === 'game') {
-              offset += GAME_HEIGHT;
-            } else {
-              offset += 60; // footer
-            }
-          }
-          
-          // Determine current item height
+          let length = GAME_HEIGHT;
           if (item.type === 'header') {
-            currentHeight = HEADER_HEIGHT;
+            length = HEADER_HEIGHT;
           } else if (item.type === 'footer') {
-            currentHeight = 60;
+            length = FOOTER_HEIGHT;
           }
           
           return {
-            length: currentHeight,
-            offset,
+            length,
+            offset: itemOffsets[index],
             index,
           };
         }}
