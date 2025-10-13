@@ -1,295 +1,319 @@
-import React, { useMemo, useRef, useState, useCallback } from "react";
+/**
+ * DailyV2 Screen - Vertical Infinite Scroll (Apple Calendar style)
+ * Smart caching with windowed prefetch
+ * Using SectionList for proper sectioned data structure (see ARCHITECTURE.md)
+ */
+
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
+  StyleSheet,
   SafeAreaView,
   SectionList,
   SectionListData,
   ActivityIndicator,
   TouchableOpacity,
   Modal,
-  StyleSheet,
-  Platform,
-} from "react-native";
-import { useTheme } from "../../hooks/useTheme";
-import { useAppStore } from "../../store/appStore";
-import { getGamesForDate, type NHLGame } from "../../lib/nhl-api";
-import { DateHeader } from "../../components/daily-v2/DateHeader";
-import { VerticalGameCard } from "../../components/daily-v2/VerticalGameCard";
-import { VerticalGameCardExpanded } from "../../components/daily-v2/VerticalGameCardExpanded";
-import { FilterBottomSheet } from "../../components/ui/FilterBottomSheet";
-import { SettingsScreen } from "../settings/SettingsScreen";
+} from 'react-native';
+import { useTheme } from '../../hooks/useTheme';
+import { useAppStore } from '../../store/appStore';
+import { getGamesForDate, type NHLGame } from '../../lib/nhl-api';
+import { DateHeader } from '../../components/daily-v2/DateHeader';
+import { VerticalGameCard } from '../../components/daily-v2/VerticalGameCard';
+import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGameCardExpanded';
+import { FilterBottomSheet } from '../../components/ui/FilterBottomSheet';
+import { SettingsScreen } from '../settings/SettingsScreen';
 
-/** ---------- CONSTANT SIZING (ADJUST TO YOUR REALS) ---------- */
-const TOP_BAR_HEIGHT = 64;            // your app header (title + Go To Today)
-const SECTION_HEADER_HEIGHT = 44;     // height of DateHeader
-const ROW_HEIGHT = 96;                // collapsed card height used for measurement
-const LIST_HEADER_HEIGHT = 48;        // "Load Earlier" button
-const LIST_FOOTER_HEIGHT = 48;        // "Load More" button
+// Cache window: ±14 days from current date
+const CACHE_WINDOW_DAYS = 14;
+const PREFETCH_THRESHOLD_DAYS = 10; // Trigger prefetch when within 10 days of edge
 
-/** ---------- TYPES ---------- */
 interface CachedDate {
   date: string; // YYYY-MM-DD
   games: NHLGame[];
   loaded: boolean;
 }
+
 interface GameSection {
-  title: string; // YYYY-MM-DD
+  title: string; // Date key (YYYY-MM-DD)
   date: Date;
   isToday: boolean;
   data: NHLGame[];
 }
 
-/** ---------- UTIL ---------- */
-const formatDateKey = (d: Date) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-};
-const todayKey = () => formatDateKey(new Date());
-
-/** ---------- COMPONENT ---------- */
 export const DailyV2: React.FC = () => {
   const { colors } = useTheme();
   const { subscriptions, expandedGameIdBySport, setExpandedGameId } = useAppStore();
-
+  
   const [gamesCache, setGamesCache] = useState<Map<string, CachedDate>>(new Map());
+  const [cacheRange, setCacheRange] = useState<{ start: Date; end: Date } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const sectionListRef = React.useRef<SectionList<NHLGame, GameSection>>(null);
+  const lastPrefetchTime = React.useRef<number>(0);
+  const isProgrammaticScroll = React.useRef(false);
+  const PREFETCH_COOLDOWN_MS = 500; // 500ms cooldown between prefetches
 
-  const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
+  const userServiceCodes = subscriptions.map(s => s.service_code);
+  const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
 
-  const userServiceCodes = subscriptions.map((s) => s.service_code);
-  const expandedGameId = expandedGameIdBySport?.["NHL"] || null;
-
-  /** ------------ INITIAL LOAD: today ±30 days ------------ */
-  React.useEffect(() => {
-    const init = async () => {
-      const now = new Date();
-      now.setHours(0, 0, 0, 0);
-      const start = new Date(now);
-      start.setDate(start.getDate() - 30);
-      const end = new Date(now);
-      end.setDate(end.getDate() + 30);
-
-      const current = new Date(start);
-      const promises: Promise<void>[] = [];
-      while (current <= end) {
-        const key = formatDateKey(current);
-        promises.push(
-          getGamesForDate(new Date(current)).then((games) => {
-            setGamesCache((prev) => {
-              const next = new Map(prev);
-              next.set(key, { date: key, games, loaded: true });
-              return next;
-            });
-          }).catch(() => {
-            setGamesCache((prev) => {
-              const next = new Map(prev);
-              next.set(key, { date: key, games: [], loaded: true });
-              return next;
-            });
-          })
-        );
-        current.setDate(current.getDate() + 1);
-      }
-      await Promise.all(promises);
-      setLoading(false);
-    };
-    init();
+  // Initialize cache with today ±14 days
+  useEffect(() => {
+    initializeCache();
   }, []);
 
-  /** ------------ BUILD SECTIONS (stable sort) ------------ */
-  const sections: GameSection[] = useMemo(() => {
-    const keys = Array.from(gamesCache.keys()).sort(); // YYYY-MM-DD sorts lexicographically by date
-    const tKey = todayKey();
-    return keys.map((k) => {
-      const cached = gamesCache.get(k);
-      return {
-        title: k,
-        date: new Date(`${k}T12:00:00`),
-        isToday: k === tKey,
-        data: cached?.games ?? [],
-      };
-    });
-  }, [gamesCache]);
+  const initializeCache = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const start = new Date(today);
+    start.setDate(start.getDate() - CACHE_WINDOW_DAYS);
+    
+    const end = new Date(today);
+    end.setDate(end.getDate() + CACHE_WINDOW_DAYS);
+    
+    await loadDateRange(start, end);
+    setCacheRange({ start, end });
+    setLoading(false);
+  };
 
-  /** ------------ PRECOMPUTE COMPOSITE INDICES/OFFSETS ------------ 
-   * SectionList's internal "index" flattens headers + items.
-   * For each section i:
-   *   baseIndex[i] = index of that section's HEADER in the flat list
-   *   baseOffset[i] = pixel offset to that HEADER (accounts for list header)
-   */
-  const flatMeta = useMemo(() => {
-    // number of "rows" above the first section = 1 list header
-    let runningIndex = 0;
-    let runningOffset = 0;
-
-    // account for ListHeaderComponent first
-    runningIndex += 1;                 // 1 synthetic row
-    runningOffset += LIST_HEADER_HEIGHT;
-
-    const baseIndex: number[] = [];
-    const baseOffset: number[] = [];
-    const counts: number[] = [];       // items per section
-
-    sections.forEach((section) => {
-      baseIndex.push(runningIndex);
-      baseOffset.push(runningOffset);
-
-      // header row
-      runningIndex += 1;
-      runningOffset += SECTION_HEADER_HEIGHT;
-
-      // items
-      const n = section.data.length;
-      counts.push(n);
-      runningIndex += n;
-      runningOffset += n * ROW_HEIGHT;
-    });
-
-    // Optionally include ListFooter if you want exact total height; not required for getItemLayout.
-    return { baseIndex, baseOffset, counts };
-  }, [sections]);
-
-  /** ------------ getItemLayout (deterministic measurement) ------------ */
-  const getItemLayout = useCallback(
-    (_: any, index: number) => {
-      // Handle the synthetic ListHeader row at index 0
-      if (index === 0) {
-        return { length: LIST_HEADER_HEIGHT, offset: 0, index };
+  const loadDateRange = async (start: Date, end: Date) => {
+    const promises: Promise<void>[] = [];
+    const currentDate = new Date(start);
+    
+    while (currentDate <= end) {
+      const dateStr = formatDateKey(currentDate);
+      
+      // Only load if not already in cache
+      if (!gamesCache.has(dateStr)) {
+        promises.push(loadDateGames(new Date(currentDate)));
       }
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    await Promise.all(promises);
+  };
 
-      // Find which section this flat index belongs to by scanning baseIndex
-      const { baseIndex, baseOffset, counts } = flatMeta;
-      // binary search is overkill for 60 days; linear scan is fine
-      let sec = 0;
-      for (let i = 0; i < baseIndex.length; i++) {
-        if (baseIndex[i] <= index) sec = i;
-        else break;
-      }
-
-      const secBaseIdx = baseIndex[sec];      // header index for this section
-      const secBaseOff = baseOffset[sec];     // header offset for this section
-
-      if (index === secBaseIdx) {
-        // header row
-        return { length: SECTION_HEADER_HEIGHT, offset: secBaseOff, index };
-      }
-
-      // item inside the section
-      const localItemIdx = index - secBaseIdx - 1; // 0-based inside section
-      // guard
-      const maxItem = Math.max(0, counts[sec] - 1);
-      const clamped = Math.min(Math.max(localItemIdx, 0), maxItem);
-
-      const offset =
-        secBaseOff + SECTION_HEADER_HEIGHT + clamped * ROW_HEIGHT;
-
-      return { length: ROW_HEIGHT, offset, index };
-    },
-    [flatMeta]
-  );
-
-  /** ------------ Initial index (first item of today's section) ------------ */
-  const initialScrollIndex = useMemo(() => {
-    const todaySec = sections.findIndex((s) => s.isToday);
-    if (todaySec < 0) return 0; // default to beginning if not found
-    // jump to the FIRST ITEM in the section if any; if empty, jump to the header
-    const hasItems = (sections[todaySec].data?.length ?? 0) > 0;
-    const flatIndex = hasItems
-      ? flatMeta.baseIndex[todaySec] + 1
-      : flatMeta.baseIndex[todaySec];
-    return Math.max(0, flatIndex);
-  }, [sections, flatMeta]);
-
-  /** ------------ Renderers ------------ */
-  const renderSectionHeader = useCallback(
-    ({ section }: { section: SectionListData<NHLGame, GameSection> }) => (
-      <View style={{ height: SECTION_HEADER_HEIGHT, justifyContent: "center" }}>
-        <DateHeader date={section.date} isToday={section.isToday} />
-      </View>
-    ),
-    []
-  );
-
-  const handleGamePress = useCallback(
-    (id: string) => setExpandedGameId?.("NHL", id),
-    [setExpandedGameId]
-  );
-
-  const renderItem = useCallback(
-    ({ item }: { item: NHLGame }) => {
-      const isExpanded = expandedGameId === item.id;
-      if (isExpanded) {
-        return (
-          <View style={{ height: ROW_HEIGHT }}>
-            <VerticalGameCardExpanded
-              game={item}
-              userServiceCodes={userServiceCodes}
-              onCollapse={() => setExpandedGameId?.("NHL", null)}
-            />
-          </View>
-        );
-      }
-      return (
-        <View style={{ height: ROW_HEIGHT }}>
-          <VerticalGameCard
-            game={item}
-            userServiceCodes={userServiceCodes}
-            onPress={() => handleGamePress(item.id)}
-          />
-        </View>
-      );
-    },
-    [expandedGameId, handleGamePress, setExpandedGameId, userServiceCodes]
-  );
-
-  /** ------------ Go To Today (reliable jump) ------------ */
-  const scrollToToday = useCallback(() => {
-    const sec = sections.findIndex((s) => s.isToday);
-    if (sec < 0) return;
-
-    // Prefer first item; if none, go to header
-    const hasItems = (sections[sec].data?.length ?? 0) > 0;
-    const itemIndex = hasItems ? 0 : -1; // -1 means header (we'll request header)
-
-    if (sectionListRef.current) {
-      // SectionList knows sections; use scrollToLocation with proper viewOffset
-      sectionListRef.current.scrollToLocation({
-        sectionIndex: sec,
-        itemIndex: Math.max(itemIndex, 0),
-        viewPosition: 0, // align to top
-        // offset top so the sticky header doesn't cover first row
-        viewOffset: TOP_BAR_HEIGHT + (hasItems ? 0 : 0),
-        animated: true,
+  const loadDateGames = async (date: Date) => {
+    const dateStr = formatDateKey(date);
+    
+    try {
+      const games = await getGamesForDate(date);
+      
+      setGamesCache(prev => {
+        const newCache = new Map(prev);
+        newCache.set(dateStr, {
+          date: dateStr,
+          games,
+          loaded: true,
+        });
+        return newCache;
+      });
+    } catch (error) {
+      console.error(`Error loading games for ${dateStr}:`, error);
+      setGamesCache(prev => {
+        const newCache = new Map(prev);
+        newCache.set(dateStr, {
+          date: dateStr,
+          games: [],
+          loaded: true,
+        });
+        return newCache;
       });
     }
-  }, [sections]);
+  };
 
-  /** Handle rare failures (mismatch) by retrying after a frame */
-  const onScrollToIndexFailed = useCallback((info: any) => {
-    requestAnimationFrame(() => {
-      try {
-        sectionListRef.current?.scrollToLocation({
-          sectionIndex: 0,
-          itemIndex: 0,
-          animated: true,
-          viewPosition: 0,
-        });
-      } catch {}
+  const formatDateKey = (date: Date): string => {
+    // Use local date to avoid timezone issues
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getTodayDateKey = (): string => {
+    const now = new Date();
+    return formatDateKey(now);
+  };
+
+  // Check if we need to prefetch more data
+  const checkPrefetch = useCallback((visibleDates: string[]) => {
+    // Skip prefetch during programmatic scrolling
+    if (isProgrammaticScroll.current) return;
+    if (!cacheRange || loadingMore) return;
+
+    // Enforce cooldown period
+    const now = Date.now();
+    if (now - lastPrefetchTime.current < PREFETCH_COOLDOWN_MS) return;
+
+    const sortedDates = visibleDates.sort();
+    if (sortedDates.length === 0) return;
+
+    const firstVisible = new Date(sortedDates[0]);
+    const lastVisible = new Date(sortedDates[sortedDates.length - 1]);
+
+    // Check if we're within threshold of cache edges
+    const daysSinceStart = Math.floor(
+      (firstVisible.getTime() - cacheRange.start.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    const daysUntilEnd = Math.floor(
+      (cacheRange.end.getTime() - lastVisible.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    if (daysSinceStart <= PREFETCH_THRESHOLD_DAYS) {
+      // Prefetch earlier dates
+      lastPrefetchTime.current = now;
+      prefetchEarlier();
+    } else if (daysUntilEnd <= PREFETCH_THRESHOLD_DAYS) {
+      // Prefetch later dates
+      lastPrefetchTime.current = now;
+      prefetchLater();
+    }
+  }, [cacheRange, loadingMore]);
+
+  const prefetchEarlier = async () => {
+    if (!cacheRange || loadingMore) return;
+    
+    setLoadingMore(true);
+    const newStart = new Date(cacheRange.start);
+    newStart.setDate(newStart.getDate() - 7);
+    
+    await loadDateRange(newStart, new Date(cacheRange.start.getTime() - 86400000));
+    
+    setCacheRange({ start: newStart, end: cacheRange.end });
+    setLoadingMore(false);
+  };
+
+  const prefetchLater = async () => {
+    if (!cacheRange || loadingMore) return;
+    
+    setLoadingMore(true);
+    const newEnd = new Date(cacheRange.end);
+    newEnd.setDate(newEnd.getDate() + 7);
+    
+    await loadDateRange(new Date(cacheRange.end.getTime() + 86400000), newEnd);
+    
+    setCacheRange({ start: cacheRange.start, end: newEnd });
+    setLoadingMore(false);
+  };
+
+  // Memoize today's date string to avoid recalculating
+  const todayDateKey = useMemo(() => getTodayDateKey(), []);
+
+  // Build sections from cache
+  const sections = useMemo((): GameSection[] => {
+    // Sort cache by date
+    const sortedDates = Array.from(gamesCache.keys()).sort();
+    
+    return sortedDates.map(dateStr => {
+      const cached = gamesCache.get(dateStr);
+      const date = new Date(dateStr + 'T12:00:00');
+      const isToday = dateStr === todayDateKey;
+      
+      return {
+        title: dateStr,
+        date,
+        isToday,
+        data: cached?.games || [],
+      };
     });
-  }, []);
+  }, [gamesCache, todayDateKey]);
+
+  // Scroll to today section after data loads
+  React.useEffect(() => {
+    if (!loading && sections.length > 0 && sectionListRef.current) {
+      const todayIndex = sections.findIndex(section => section.title === todayDateKey);
+      
+      if (todayIndex >= 0) {
+        // Small delay to ensure SectionList is mounted
+        setTimeout(() => {
+          if (sectionListRef.current) {
+            isProgrammaticScroll.current = true;
+            sectionListRef.current.scrollToLocation({
+              sectionIndex: todayIndex,
+              itemIndex: 0,
+              animated: false,
+              viewPosition: 0,
+            });
+            setTimeout(() => {
+              isProgrammaticScroll.current = false;
+            }, 100);
+          }
+        }, 100);
+      }
+    }
+  }, [loading, sections.length, todayDateKey]);
+
+  const handleGamePress = (gameId: string) => {
+    if (expandedGameId === gameId) {
+      setExpandedGameId?.('NHL', null);
+    } else {
+      setExpandedGameId?.('NHL', gameId);
+    }
+  };
+
+  const renderSectionHeader = ({ section }: { section: SectionListData<NHLGame, GameSection> }) => {
+    return <DateHeader date={section.date} isToday={section.isToday} />;
+  };
+
+  const renderItem = ({ item }: { item: NHLGame }) => {
+    const isExpanded = expandedGameId === item.id;
+    
+    if (isExpanded) {
+      return (
+        <VerticalGameCardExpanded
+          game={item}
+          userServiceCodes={userServiceCodes}
+          onCollapse={() => setExpandedGameId?.('NHL', null)}
+        />
+      );
+    }
+    
+    return (
+      <VerticalGameCard
+        game={item}
+        userServiceCodes={userServiceCodes}
+        onPress={() => handleGamePress(item.id)}
+      />
+    );
+  };
+
+  // Go to today function
+  const scrollToToday = () => {
+    const todayIndex = sections.findIndex(section => section.title === todayDateKey);
+    
+    if (todayIndex >= 0 && sectionListRef.current) {
+      isProgrammaticScroll.current = true;
+      sectionListRef.current.scrollToLocation({
+        sectionIndex: todayIndex,
+        itemIndex: 0,
+        animated: false,
+        viewPosition: 0,
+      });
+      setTimeout(() => {
+        isProgrammaticScroll.current = false;
+      }, 50);
+    }
+  };
+
+  const handleViewableItemsChanged = useCallback(({ viewableItems }: any) => {
+    const visibleDates = viewableItems
+      .map((item: any) => item.section?.title)
+      .filter(Boolean);
+    
+    checkPrefetch(visibleDates);
+  }, [checkPrefetch]);
 
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-        <View style={styles.loading}>
+        <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={{ color: colors.text, marginTop: 8 }}>Loading games…</Text>
+          <Text style={[styles.loadingText, { color: colors.text }]}>Loading games...</Text>
         </View>
       </SafeAreaView>
     );
@@ -297,76 +321,76 @@ export const DailyV2: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Top App Bar */}
-      <View
-        style={[
-          styles.topBar,
-          { height: TOP_BAR_HEIGHT, backgroundColor: colors.surface, borderBottomColor: colors.border },
-        ]}
-      >
-        <TouchableOpacity onPress={() => setShowSettings(true)}>
-          <Text style={[styles.icon, { color: colors.text }]}>☰</Text>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setShowSettings(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.menuIcon, { color: colors.text }]}>☰</Text>
         </TouchableOpacity>
-
-        <View style={styles.titleWrap}>
-          <Text style={[styles.title, { color: colors.text }]}>WhereBall</Text>
-          <TouchableOpacity onPress={scrollToToday}>
-            <Text style={[styles.link, { color: colors.primary }]}>Go To Today</Text>
+        
+        <View style={styles.headerCenter}>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>WhereBall</Text>
+          <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7}>
+            <Text style={styles.goToToday}>Go To Today</Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity onPress={() => setShowFilters(true)}>
-          <Text style={[styles.icon, { color: colors.text }]}>🎚️</Text>
+        
+        <TouchableOpacity
+          style={styles.filterButton}
+          onPress={() => setShowFilters(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.filterIcon, { color: colors.text }]}>🎚️</Text>
         </TouchableOpacity>
       </View>
 
       <SectionList<NHLGame, GameSection>
         ref={sectionListRef}
         sections={sections}
-        keyExtractor={(item) => item.id}
         renderSectionHeader={renderSectionHeader}
         renderItem={renderItem}
-        stickySectionHeadersEnabled
-        // Deterministic layout = no flicker + reliable jumps
-        getItemLayout={getItemLayout}
-        initialScrollIndex={initialScrollIndex}
-        onScrollToIndexFailed={onScrollToIndexFailed}
-        // Keep it smooth and full height
-        style={{ flex: 1 }}
-        contentContainerStyle={{
-          paddingBottom: LIST_FOOTER_HEIGHT,
+        keyExtractor={(item) => item.id}
+        stickySectionHeadersEnabled={true}
+        onViewableItemsChanged={handleViewableItemsChanged}
+        viewabilityConfig={{
+          itemVisiblePercentThreshold: 50,
         }}
-        removeClippedSubviews={false}
-        windowSize={12}
-        ListHeaderComponent={
-          <View style={{ height: LIST_HEADER_HEIGHT, alignItems: "center", justifyContent: "center" }}>
-            <TouchableOpacity
-              onPress={() => {
-                // no-op in this sample; wire your "load earlier 14 days" here if needed
-              }}
-            >
-              <Text style={{ color: colors.primary }}>Load Earlier (14 days)</Text>
-            </TouchableOpacity>
-          </View>
-        }
+        onScrollToIndexFailed={(info: any) => {
+          setTimeout(() => {
+            const todayIndex = sections.findIndex(section => section.title === todayDateKey);
+            if (sectionListRef.current && todayIndex >= 0) {
+              sectionListRef.current.scrollToLocation({
+                sectionIndex: todayIndex,
+                itemIndex: 0,
+                animated: false,
+                viewPosition: 0,
+              });
+            }
+          }, 100);
+        }}
         ListFooterComponent={
-          <View style={{ height: LIST_FOOTER_HEIGHT, alignItems: "center", justifyContent: "center" }}>
-            <TouchableOpacity
-              onPress={() => {
-                // no-op in this sample; wire your "load more 14 days" here if needed
-              }}
-            >
-              <Text style={{ color: colors.primary }}>Load More (14 days)</Text>
-            </TouchableOpacity>
-          </View>
+          loadingMore ? (
+            <View style={styles.footerLoading}>
+              <ActivityIndicator size="small" color={colors.primary} />
+            </View>
+          ) : null
         }
       />
 
-      <FilterBottomSheet visible={showFilters} onClose={() => setShowFilters(false)} />
+      {/* Filter Bottom Sheet */}
+      <FilterBottomSheet
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+      />
+
+      {/* Settings Modal */}
       <Modal
         visible={showSettings}
         animationType="slide"
-        presentationStyle={Platform.OS === "ios" ? "pageSheet" : "fullScreen"}
+        presentationStyle="pageSheet"
         onRequestClose={() => setShowSettings(false)}
       >
         <SettingsScreen onClose={() => setShowSettings(false)} />
@@ -375,20 +399,61 @@ export const DailyV2: React.FC = () => {
   );
 };
 
-/** ---------- STYLES ---------- */
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  loading: { flex: 1, alignItems: "center", justifyContent: "center" },
-  topBar: {
-    width: "100%",
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    gap: 16,
+  container: {
+    flex: 1,
   },
-  icon: { fontSize: 20 },
-  titleWrap: { flex: 1, alignItems: "center" },
-  title: { fontSize: 20, fontWeight: "700" },
-  link: { fontSize: 14, marginTop: 2 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  menuButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuIcon: {
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  headerCenter: {
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  goToToday: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#00D9FF',
+  },
+  filterButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterIcon: {
+    fontSize: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+  },
+  footerLoading: {
+    paddingVertical: 20,
+    alignItems: 'center',
+  },
 });
