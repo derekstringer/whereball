@@ -26,11 +26,6 @@ export const DateHeader: React.FC<DateHeaderProps> = ({ date, isToday = false })
         <Text style={[styles.dateText, { color: isToday ? cyanColor : colors.text }]}>
           {dayName} – {monthDay}
         </Text>
-        {isToday && (
-          <View style={[styles.todayBadge, { backgroundColor: cyanColor }]}>
-            <Text style={styles.todayBadgeText}>TODAY</Text>
-          </View>
-        )}
       </View>
     </View>
   );

@@ -236,22 +236,23 @@ export const DailyV2: React.FC = () => {
   const renderItem = ({ item }: { item: FlatItem }) => {
     if (item.type === 'header') {
       return (
-        <>
-          <DateHeader date={item.dateObj} isToday={false} />
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <DateHeader date={item.dateObj} isToday={item.isToday} />
+          </View>
           {item.isFirst && (
-            <View style={styles.inlineLinkContainer}>
-              <TouchableOpacity 
-                onPress={loadEarlierGames} 
-                disabled={loadingMore}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.inlineLinkText, { color: '#00D9FF' }]}>
-                  {loadingMore ? '...' : 'Earlier Games...'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity 
+              onPress={loadEarlierGames} 
+              disabled={loadingMore}
+              style={styles.inlineLink}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.inlineLinkText, { color: '#00D9FF' }]}>
+                {loadingMore ? '...' : 'Earlier Games...'}
+              </Text>
+            </TouchableOpacity>
           )}
-        </>
+        </View>
       );
     }
 
@@ -463,10 +464,13 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
   },
-  inlineLinkContainer: {
-    alignItems: 'flex-end',
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  inlineLink: {
     paddingHorizontal: 16,
-    paddingVertical: 4,
+    paddingVertical: 12,
   },
   inlineLinkText: {
     fontSize: 13,
