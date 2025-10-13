@@ -29,6 +29,10 @@ import { SettingsScreen } from '../settings/SettingsScreen';
 const CACHE_WINDOW_DAYS = 30;
 const PREFETCH_INCREMENT_DAYS = 14; // Load 14 more days when user requests
 
+// Approximate heights for layout calculations
+const ITEM_HEIGHT = 100; // Approximate game card height
+const HEADER_HEIGHT = 50; // Approximate date header height
+
 interface CachedDate {
   games: NHLGame[];
   loaded: boolean;
@@ -171,14 +175,45 @@ export const DailyV2: React.FC = () => {
       if (todayIndex >= 0) {
         hasScrolledToToday.current = true;
         requestAnimationFrame(() => {
-          sectionListRef.current?.scrollToLocation({
+          try {
+            sectionListRef.current?.scrollToLocation({
+              sectionIndex: todayIndex,
+              itemIndex: 0,
+              animated: false,
+            });
+          } catch (error) {
+            console.log('Initial scroll failed, will retry', error);
+          }
+        });
+      }
+    }
+  };
+
+  // Get item layout for predictable scrolling
+  const getItemLayout = (data: any, index: number) => ({
+    length: ITEM_HEIGHT,
+    offset: ITEM_HEIGHT * index + HEADER_HEIGHT, // Add header height to offset
+    index,
+  });
+
+  // Handle scroll failures gracefully
+  const handleScrollToIndexFailed = (info: { index: number; highestMeasuredFrameIndex: number; averageItemLength: number }) => {
+    console.log('Scroll to index failed:', info);
+    // Wait for layout and try again
+    setTimeout(() => {
+      const todayIndex = sections.findIndex(s => s.title === todayDateKey);
+      if (todayIndex >= 0 && sectionListRef.current) {
+        try {
+          sectionListRef.current.scrollToLocation({
             sectionIndex: todayIndex,
             itemIndex: 0,
             animated: false,
           });
-        });
+        } catch (error) {
+          console.log('Retry scroll also failed', error);
+        }
       }
-    }
+    }, 100);
   };
 
   const handleGamePress = (gameId: string) => {
@@ -218,12 +253,16 @@ export const DailyV2: React.FC = () => {
   // Go to today function
   const scrollToToday = () => {
     const todayIndex = sections.findIndex(s => s.title === todayDateKey);
-    if (todayIndex >= 0) {
-      sectionListRef.current?.scrollToLocation({
-        sectionIndex: todayIndex,
-        itemIndex: 0,
-        animated: false,
-      });
+    if (todayIndex >= 0 && sectionListRef.current) {
+      try {
+        sectionListRef.current.scrollToLocation({
+          sectionIndex: todayIndex,
+          itemIndex: 0,
+          animated: false,
+        });
+      } catch (error) {
+        console.log('Go to today scroll failed', error);
+      }
     }
   };
 
@@ -275,6 +314,8 @@ export const DailyV2: React.FC = () => {
         keyExtractor={(item) => item.id}
         stickySectionHeadersEnabled={true}
         onContentSizeChange={handleContentReady}
+        getItemLayout={getItemLayout}
+        onScrollToIndexFailed={handleScrollToIndexFailed}
         initialNumToRender={15}
         windowSize={10}
         ListHeaderComponent={
