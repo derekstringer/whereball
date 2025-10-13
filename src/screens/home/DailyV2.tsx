@@ -73,13 +73,13 @@ export const DailyV2: React.FC = () => {
     setLoading(false);
   };
 
-  // Auto-load more games when scrolling near end
-  const handleEndReached = async () => {
+  // Manual load more games
+  const loadMoreGames = async () => {
     if (!cacheRange || loadingMore) return;
     
     setLoadingMore(true);
     const newEnd = new Date(cacheRange.end);
-    newEnd.setDate(newEnd.getDate() + 45); // Load 45 more days
+    newEnd.setDate(newEnd.getDate() + 30); // Load 30 more days
     
     await loadDateRange(new Date(cacheRange.end.getTime() + 86400000), newEnd);
     
@@ -224,7 +224,19 @@ export const DailyV2: React.FC = () => {
     }
 
     if (item.type === 'footer') {
-      return null;
+      return (
+        <View style={styles.footerContainer}>
+          <TouchableOpacity 
+            onPress={loadMoreGames} 
+            disabled={loadingMore}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.footerLinkText, { color: '#00D9FF' }]}>
+              {loadingMore ? 'Loading...' : 'More Games...'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
     }
 
     // Game item
@@ -309,8 +321,6 @@ export const DailyV2: React.FC = () => {
         data={flatData}
         renderItem={renderItem}
         keyExtractor={getItemKey}
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={1.5}
         getItemLayout={(data, index) => {
           // Use pre-calculated offsets (O(1) lookup instead of O(n) iteration)
           if (!data || index >= data.length || index >= itemOffsets.length) {
@@ -420,5 +430,14 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
+  },
+  footerContainer: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    alignItems: 'flex-end',
+  },
+  footerLinkText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
 });
