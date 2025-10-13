@@ -250,16 +250,21 @@ export const DailyV2: React.FC = () => {
         hasScrolledToToday.current = true;
         isProgrammaticScroll.current = true;
         
+        // Use same double-scroll technique as scrollToToday button
+        flatListRef.current.scrollToIndex({
+          index,
+          animated: false,
+          viewPosition: 0,
+        });
+        // Second scroll for accuracy after React Native measures items
         setTimeout(() => {
           flatListRef.current?.scrollToIndex({
             index,
             animated: false,
             viewPosition: 0,
           });
-          setTimeout(() => {
-            isProgrammaticScroll.current = false;
-          }, 100);
-        }, 100);
+          isProgrammaticScroll.current = false;
+        }, 50);
       }
     }
   }, [loading, todayDateKey]);
