@@ -1,6 +1,7 @@
 /**
  * DailyV2 Screen - Vertical Infinite Scroll (Apple Calendar style)
  * Smart caching with windowed prefetch
+ * Using SectionList for proper sectioned data structure (see ARCHITECTURE.md)
  */
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
@@ -9,7 +10,8 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  FlatList,
+  SectionList,
+  SectionListData,
   ActivityIndicator,
   TouchableOpacity,
   Modal,
@@ -33,13 +35,11 @@ interface CachedDate {
   loaded: boolean;
 }
 
-interface ListItem {
-  type: 'date' | 'game';
-  id: string;
-  date?: Date;
-  game?: NHLGame;
-  isToday?: boolean;
-  dateKey?: string;
+interface GameSection {
+  title: string; // Date key (YYYY-MM-DD)
+  date: Date;
+  isToday: boolean;
+  data: NHLGame[];
 }
 
 export const DailyV2: React.FC = () => {
@@ -52,9 +52,8 @@ export const DailyV2: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const flatListRef = React.useRef<FlatList>(null);
+  const sectionListRef = React.useRef<SectionList<NHLGame, GameSection>>(null);
   const lastPrefetchTime = React.useRef<number>(0);
-  const hasScrolledToToday = React.useRef(false);
   const isProgrammaticScroll = React.useRef(false);
   const PREFETCH_COOLDOWN_MS = 500; // 500ms cooldown between prefetches
 
@@ -205,63 +204,38 @@ export const DailyV2: React.FC = () => {
   // Memoize today's date string to avoid recalculating
   const todayDateKey = useMemo(() => getTodayDateKey(), []);
 
-  // Build flat list data from cache
-  const listData = useMemo(() => {
-    const items: ListItem[] = [];
-    
+  // Build sections from cache
+  const sections = useMemo((): GameSection[] => {
     // Sort cache by date
     const sortedDates = Array.from(gamesCache.keys()).sort();
     
-    sortedDates.forEach(dateStr => {
+    return sortedDates.map(dateStr => {
       const cached = gamesCache.get(dateStr);
-      if (!cached) return;
-      
       const date = new Date(dateStr + 'T12:00:00');
       const isToday = dateStr === todayDateKey;
       
-      // Add date header
-      items.push({
-        type: 'date',
-        id: `date-${dateStr}`,
+      return {
+        title: dateStr,
         date,
         isToday,
-        dateKey: dateStr,
-      });
-      
-      // Add games for this date
-      cached.games.forEach(game => {
-        items.push({
-          type: 'game',
-          id: `game-${game.id}`,
-          game,
-        });
-      });
+        data: cached?.games || [],
+      };
     });
-    
-    return items;
   }, [gamesCache, todayDateKey]);
 
-  // Calculate initial scroll index (where FlatList should start)
-  const initialScrollIndex = useMemo(() => {
-    if (listData.length === 0) return 0;
-    const index = listData.findIndex(item => item.type === 'date' && item.dateKey === todayDateKey);
-    return index >= 0 ? index : 0;
-  }, [listData.length, todayDateKey]);
-
-  // Scroll to today after data loads (if initialScrollIndex didn't work)
+  // Scroll to today section after data loads
   React.useEffect(() => {
-    if (!loading && listData.length > 0 && !hasScrolledToToday.current && flatListRef.current) {
-      const index = listData.findIndex(item => item.type === 'date' && item.dateKey === todayDateKey);
+    if (!loading && sections.length > 0 && sectionListRef.current) {
+      const todayIndex = sections.findIndex(section => section.title === todayDateKey);
       
-      if (index >= 0) {
-        hasScrolledToToday.current = true;
-        
-        // Small delay to ensure FlatList is mounted and measured
+      if (todayIndex >= 0) {
+        // Small delay to ensure SectionList is mounted
         setTimeout(() => {
-          if (flatListRef.current) {
+          if (sectionListRef.current) {
             isProgrammaticScroll.current = true;
-            flatListRef.current.scrollToIndex({
-              index,
+            sectionListRef.current.scrollToLocation({
+              sectionIndex: todayIndex,
+              itemIndex: 0,
               animated: false,
               viewPosition: 0,
             });
@@ -272,7 +246,7 @@ export const DailyV2: React.FC = () => {
         }, 100);
       }
     }
-  }, [loading, listData.length, todayDateKey]);
+  }, [loading, sections.length, todayDateKey]);
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
@@ -282,18 +256,17 @@ export const DailyV2: React.FC = () => {
     }
   };
 
-  const renderItem = ({ item }: { item: ListItem }) => {
-    if (item.type === 'date') {
-      return <DateHeader date={item.date!} isToday={item.isToday} />;
-    }
-    
-    const game = item.game!;
-    const isExpanded = expandedGameId === game.id;
+  const renderSectionHeader = ({ section }: { section: SectionListData<NHLGame, GameSection> }) => {
+    return <DateHeader date={section.date} isToday={section.isToday} />;
+  };
+
+  const renderItem = ({ item }: { item: NHLGame }) => {
+    const isExpanded = expandedGameId === item.id;
     
     if (isExpanded) {
       return (
         <VerticalGameCardExpanded
-          game={game}
+          game={item}
           userServiceCodes={userServiceCodes}
           onCollapse={() => setExpandedGameId?.('NHL', null)}
         />
@@ -302,31 +275,26 @@ export const DailyV2: React.FC = () => {
     
     return (
       <VerticalGameCard
-        game={game}
+        game={item}
         userServiceCodes={userServiceCodes}
-        onPress={() => handleGamePress(game.id)}
+        onPress={() => handleGamePress(item.id)}
       />
     );
   };
 
   // Go to today function
   const scrollToToday = () => {
-    const index = listData.findIndex(item => item.type === 'date' && item.dateKey === todayDateKey);
+    const todayIndex = sections.findIndex(section => section.title === todayDateKey);
     
-    if (index >= 0 && flatListRef.current) {
+    if (todayIndex >= 0 && sectionListRef.current) {
       isProgrammaticScroll.current = true;
-      flatListRef.current.scrollToIndex({
-        index,
+      sectionListRef.current.scrollToLocation({
+        sectionIndex: todayIndex,
+        itemIndex: 0,
         animated: false,
         viewPosition: 0,
       });
-      // Second scroll for accuracy after React Native measures items
       setTimeout(() => {
-        flatListRef.current?.scrollToIndex({
-          index,
-          animated: false,
-          viewPosition: 0,
-        });
         isProgrammaticScroll.current = false;
       }, 50);
     }
@@ -334,8 +302,7 @@ export const DailyV2: React.FC = () => {
 
   const handleViewableItemsChanged = useCallback(({ viewableItems }: any) => {
     const visibleDates = viewableItems
-      .filter((item: any) => item.item.type === 'date')
-      .map((item: any) => item.item.dateKey)
+      .map((item: any) => item.section?.title)
       .filter(Boolean);
     
     checkPrefetch(visibleDates);
@@ -380,22 +347,24 @@ export const DailyV2: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        ref={flatListRef}
-        data={listData}
+      <SectionList<NHLGame, GameSection>
+        ref={sectionListRef}
+        sections={sections}
+        renderSectionHeader={renderSectionHeader}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
-        initialScrollIndex={initialScrollIndex}
+        stickySectionHeadersEnabled={true}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={{
           itemVisiblePercentThreshold: 50,
         }}
-        onScrollToIndexFailed={(info) => {
+        onScrollToIndexFailed={(info: any) => {
           setTimeout(() => {
-            const index = listData.findIndex(item => item.type === 'date' && item.dateKey === todayDateKey);
-            if (flatListRef.current && index >= 0) {
-              flatListRef.current.scrollToIndex({
-                index,
+            const todayIndex = sections.findIndex(section => section.title === todayDateKey);
+            if (sectionListRef.current && todayIndex >= 0) {
+              sectionListRef.current.scrollToLocation({
+                sectionIndex: todayIndex,
+                itemIndex: 0,
                 animated: false,
                 viewPosition: 0,
               });
