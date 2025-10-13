@@ -222,7 +222,7 @@ export const DailyV2: React.FC = () => {
       sectionListRef.current?.scrollToLocation({
         sectionIndex: todayIndex,
         itemIndex: 0,
-        animated: true,
+        animated: false,
       });
     }
   };
