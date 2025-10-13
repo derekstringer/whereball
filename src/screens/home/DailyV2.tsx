@@ -311,6 +311,13 @@ export const DailyV2: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
+      {/* Debug Info */}
+      <View style={{ backgroundColor: '#FF0000', padding: 8 }}>
+        <Text style={{ color: '#FFFFFF', fontSize: 12 }}>
+          DEBUG: Today={todayDateKey} | TodayIndex={todayIndex} | TotalItems={flatData.length}
+        </Text>
+      </View>
+      
       {/* Header */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <TouchableOpacity
