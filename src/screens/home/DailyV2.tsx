@@ -237,7 +237,21 @@ export const DailyV2: React.FC = () => {
     if (item.type === 'header') {
       return (
         <View style={styles.headerContainer}>
-          <DateHeader date={item.dateObj} isToday={item.isToday} />
+          <View style={{ flex: 1 }}>
+            <DateHeader date={item.dateObj} isToday={item.isToday} />
+          </View>
+          {item.isFirst && (
+            <TouchableOpacity 
+              onPress={loadEarlierGames} 
+              disabled={loadingMore}
+              style={styles.inlineLink}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.inlineLinkText, { color: '#00D9FF' }]}>
+                {loadingMore ? '...' : 'Earlier Games...'}
+              </Text>
+            </TouchableOpacity>
+          )}
         </View>
       );
     }
