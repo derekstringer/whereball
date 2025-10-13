@@ -53,9 +53,9 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       'youtube_tv': '#FF0000',
       'fubo': '#FF6C39',
       'paramount_plus': '#0064FF',
-      'peacock': '#000000',
+      'peacock': '#6E41E2', // Peacock purple/blue
       'prime_video': '#00A8E1',
-      'apple_tv_plus': '#000000',
+      'apple_tv_plus': '#FFFFFF',
       'max': '#002BE7',
       'directv_stream': '#0073CF',
       'sling': '#FF6C00',
@@ -68,53 +68,71 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.stroke }]}>
-      {/* Keep same scoreboard header - maintain center justification */}
+      {/* Header with time and collapse */}
       <TouchableOpacity
-        style={styles.header}
+        style={styles.headerRow}
         onPress={onCollapse}
         activeOpacity={0.7}
       >
-        <View style={styles.scoreboardSection}>
-          <View style={styles.scoreboard}>
-            <View style={styles.team}>
-              <Text style={[styles.teamAbbr, { color: colors.text }]}>
-                {game.awayTeam.abbreviation}
-              </Text>
-              <Text style={[styles.score, { color: colors.text }]}>
-                {game.awayTeam.score ?? '-'}
-              </Text>
-            </View>
-
-            <Text style={[styles.at, { color: colors.textSecondary }]}>@</Text>
-
-            <View style={styles.team}>
-              <Text style={[styles.score, { color: colors.text }]}>
-                {game.homeTeam.score ?? '-'}
-              </Text>
-              <Text style={[styles.teamAbbr, { color: colors.text }]}>
-                {game.homeTeam.abbreviation}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.teamNames}>
-            <Text style={[styles.teamName, { color: colors.textSecondary }]} numberOfLines={1}>
-              {game.awayTeam.name.split(' ').pop()}
-            </Text>
-            <Text style={[styles.teamName, { color: colors.textSecondary }]} numberOfLines={1}>
-              {game.homeTeam.name.split(' ').pop()}
-            </Text>
-          </View>
-        </View>
-
+        <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+          {new Date(game.startTime).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })}
+        </Text>
         <Text style={[styles.collapseIcon, { color: colors.textSecondary }]}>▲</Text>
       </TouchableOpacity>
+
+      {/* Scoreboard - Explicit Column Grid */}
+      <View style={styles.scoreboardSection}>
+        {/* LEFT TEAM Column (flex) - Away Team */}
+        <View style={styles.teamColLeft}>
+          <View style={styles.abbrScoreRow}>
+            <Text style={[styles.teamAbbr, styles.leftAlign, { color: colors.text }]}>
+              {game.awayTeam.abbreviation}
+            </Text>
+            <Text style={[styles.score, { color: colors.text }]}>
+              {game.awayTeam.score ?? '-'}
+            </Text>
+          </View>
+          <Text
+            style={[styles.teamName, styles.leftAlign, { color: colors.textSecondary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {game.awayTeam.name.split(' ').pop()}
+          </Text>
+        </View>
+
+        {/* AT Column (fixed 24px) */}
+        <Text style={[styles.atCol, { color: colors.textSecondary }]}>@</Text>
+
+        {/* RIGHT TEAM Column (flex) - Home Team */}
+        <View style={styles.teamColRight}>
+          <View style={styles.abbrScoreRow}>
+            <Text style={[styles.score, { color: colors.text }]}>
+              {game.homeTeam.score ?? '-'}
+            </Text>
+            <Text style={[styles.teamAbbr, styles.rightAlign, { color: colors.text }]}>
+              {game.homeTeam.abbreviation}
+            </Text>
+          </View>
+          <Text
+            style={[styles.teamName, styles.rightAlign, { color: colors.textSecondary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {game.homeTeam.name.split(' ').pop()}
+          </Text>
+        </View>
+      </View>
 
       {/* Game Details */}
       <View style={styles.details}>
         {isLive && (
           <Text style={[styles.gameState, { color: colors.danger }]}>
-            Live Now
+            2nd Period • 12:34
           </Text>
         )}
         
@@ -127,7 +145,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       {hasSubscribed && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            📺 WATCH ON:
+            WATCH ON:
           </Text>
           <View style={styles.servicePills}>
             {subscribed.map((service) => (
@@ -144,28 +162,27 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         </View>
       )}
 
-      {/* Also Available On (Unsubscribed) */}
+      {/* Also Available On (Unsubscribed) - Rectangles for differentiation */}
       {showDiscovery && hasUnsubscribed && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            💡 ALSO AVAILABLE:
+            ALSO AVAILABLE ON:
           </Text>
           <View style={styles.servicePills}>
             {unsubscribed.map((service) => (
               <TouchableOpacity
                 key={service.code}
                 style={[
-                  styles.pill,
-                  styles.unsubscribedPill,
+                  styles.rectangleButton,
                   {
-                    backgroundColor: `${getServiceColor(service.code)}30`,
-                    borderColor: getServiceColor(service.code),
+                    backgroundColor: 'rgba(128, 128, 128, 0.2)',
+                    borderColor: 'rgba(128, 128, 128, 0.5)',
                   },
                 ]}
                 onPress={() => handleServicePress(service.code, false)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.pillTextMuted, { color: getServiceColor(service.code) }]}>
+                <Text style={[styles.rectangleButtonText, { color: colors.textSecondary }]}>
                   {service.name}
                 </Text>
               </TouchableOpacity>
@@ -174,28 +191,14 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         </View>
       )}
 
-      {/* CTAs */}
-      <View style={styles.actions}>
-        {hasSubscribed && (
-          <TouchableOpacity
-            style={[styles.primaryButton, { backgroundColor: colors.primary }]}
-            onPress={handleWatchNow}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.primaryButtonText}>Watch Now</Text>
-          </TouchableOpacity>
-        )}
-        
-        <TouchableOpacity
-          style={[styles.secondaryButton, { borderColor: colors.stroke }]}
-          onPress={() => {/* TODO: Set reminder */}}
-          activeOpacity={0.8}
-        >
-          <Text style={[styles.secondaryButtonText, { color: colors.text }]}>
-            Set Reminder
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Set Reminder - Full width, prominent */}
+      <TouchableOpacity
+        style={[styles.reminderButton, { backgroundColor: colors.primary }]}
+        onPress={() => {/* TODO: Set reminder */}}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.reminderButtonText}>Set Reminder</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -208,27 +211,49 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 16,
   },
-  header: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  timeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  collapseIcon: {
+    fontSize: 16,
+  },
   scoreboardSection: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  // LEFT TEAM Column (flex)
+  teamColLeft: {
     flex: 1,
-    alignItems: 'center',
-  },
-  scoreboard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    marginBottom: 4,
   },
-  team: {
+  // AT Column (fixed)
+  atCol: {
+    width: 24,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '400',
+    paddingTop: 4,
+  },
+  // RIGHT TEAM Column (flex)
+  teamColRight: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingRight: 2,
+  },
+  // Team elements
+  abbrScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    marginBottom: 2,
   },
   teamAbbr: {
     fontSize: 16,
@@ -238,23 +263,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
   },
-  at: {
-    fontSize: 14,
-  },
-  teamNames: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 8,
-  },
   teamName: {
     fontSize: 12,
-    flex: 1,
-    textAlign: 'center',
   },
-  collapseIcon: {
-    fontSize: 16,
-    marginLeft: 12,
+  leftAlign: {
+    textAlign: 'left',
+  },
+  rightAlign: {
+    textAlign: 'right',
   },
   details: {
     alignItems: 'center',
@@ -299,30 +315,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
+  rectangleButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 2,
   },
-  primaryButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 15,
+  rectangleButtonText: {
+    fontSize: 13,
     fontWeight: '700',
   },
-  secondaryButton: {
-    flex: 1,
-    paddingVertical: 12,
+  reminderButton: {
+    width: '100%',
+    paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
-    borderWidth: 1,
+    marginTop: 8,
   },
-  secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
+  reminderButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

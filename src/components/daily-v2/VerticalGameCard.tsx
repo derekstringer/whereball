@@ -136,8 +136,8 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
       activeOpacity={0.7}
     >
       <View style={styles.row}>
-        {/* Time Column */}
-        <View style={styles.timeColumn}>
+        {/* TIME Column (fixed 84px) */}
+        <View style={styles.timeCol}>
           <View
             style={[
               styles.timePill,
@@ -151,42 +151,55 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
           </View>
         </View>
 
-        {/* Scoreboard Column */}
-        <View style={styles.scoreboardColumn}>
-          <View style={styles.scoreboard}>
-            <View style={styles.team}>
-              <Text style={[styles.teamAbbr, { color: colors.text }]}>
-                {game.awayTeam.abbreviation}
-              </Text>
-              <Text style={[styles.score, { color: colors.text }]}>
-                {game.awayTeam.score ?? '-'}
-              </Text>
-            </View>
+        {/* Gutter after TIME */}
+        <View style={styles.gutter} />
 
-            <Text style={[styles.at, { color: colors.textSecondary }]}>@</Text>
-
-            <View style={styles.team}>
-              <Text style={[styles.score, { color: colors.text }]}>
-                {game.homeTeam.score ?? '-'}
-              </Text>
-              <Text style={[styles.teamAbbr, { color: colors.text }]}>
-                {game.homeTeam.abbreviation}
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.teamNames}>
-            <Text style={[styles.teamName, { color: colors.textSecondary }]} numberOfLines={1}>
-              {game.awayTeam.name.split(' ').pop()}
+        {/* LEFT TEAM Column (flex) - Away Team */}
+        <View style={styles.teamColLeft}>
+          <View style={styles.abbrScoreRow}>
+            <Text style={[styles.teamAbbr, styles.leftAlign, { color: colors.text }]}>
+              {game.awayTeam.abbreviation}
             </Text>
-            <Text style={[styles.teamName, { color: colors.textSecondary }]} numberOfLines={1}>
-              {game.homeTeam.name.split(' ').pop()}
+            <Text style={[styles.score, { color: colors.text }]}>
+              {game.awayTeam.score ?? '-'}
             </Text>
           </View>
+          <Text
+            style={[styles.teamName, styles.leftAlign, { color: colors.textSecondary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {game.awayTeam.name.split(' ').pop()}
+          </Text>
         </View>
 
-        {/* Status Icons Column */}
-        <View style={styles.statusColumn}>
+        {/* AT Column (fixed 24px) */}
+        <Text style={[styles.atCol, { color: colors.textSecondary }]}>@</Text>
+
+        {/* RIGHT TEAM Column (flex) - Home Team */}
+        <View style={styles.teamColRight}>
+          <View style={styles.abbrScoreRow}>
+            <Text style={[styles.score, { color: colors.text }]}>
+              {game.homeTeam.score ?? '-'}
+            </Text>
+            <Text style={[styles.teamAbbr, styles.rightAlign, { color: colors.text }]}>
+              {game.homeTeam.abbreviation}
+            </Text>
+          </View>
+          <Text
+            style={[styles.teamName, styles.rightAlign, { color: colors.textSecondary }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {game.homeTeam.name.split(' ').pop()}
+          </Text>
+        </View>
+
+        {/* Gutter before ACTIONS */}
+        <View style={styles.gutter} />
+
+        {/* ACTIONS Column (fixed 72px) */}
+        <View style={styles.actionsCol}>
           {renderStatusIcons()}
         </View>
       </View>
@@ -207,10 +220,13 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 10,
   },
-  timeColumn: {
-    width: 70,
+  // TIME Column (fixed)
+  timeCol: {
+    width: 84,
     alignItems: 'flex-start',
+    justifyContent: 'center',
   },
   timePill: {
     paddingHorizontal: 8,
@@ -224,21 +240,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  scoreboardColumn: {
+  // Gutter spacing
+  gutter: {
+    width: 12,
+  },
+  // LEFT TEAM Column (flex)
+  teamColLeft: {
     flex: 1,
-    alignItems: 'center',
-  },
-  scoreboard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    marginBottom: 4,
   },
-  team: {
+  // AT Column (fixed)
+  atCol: {
+    width: 24,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  // RIGHT TEAM Column (flex)
+  teamColRight: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingRight: 2,
+  },
+  // ACTIONS Column (fixed)
+  actionsCol: {
+    width: 72,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 4,
+  },
+  // Team elements
+  abbrScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
+    marginBottom: 2,
   },
   teamAbbr: {
     fontSize: 16,
@@ -248,27 +285,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
   },
-  at: {
-    fontSize: 14,
-    fontWeight: '400',
-  },
-  teamNames: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 8,
-  },
   teamName: {
     fontSize: 12,
-    flex: 1,
-    textAlign: 'center',
   },
-  statusColumn: {
-    width: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    gap: 4,
+  leftAlign: {
+    textAlign: 'left',
+  },
+  rightAlign: {
+    textAlign: 'right',
   },
   statusIcon: {
     width: 12,

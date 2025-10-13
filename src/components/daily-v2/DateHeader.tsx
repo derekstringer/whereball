@@ -17,15 +17,17 @@ export const DateHeader: React.FC<DateHeaderProps> = ({ date, isToday = false })
   const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
   const monthDay = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 
+  const cyanColor = '#00D9FF';
+
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
       <View style={styles.content}>
-        {isToday && <View style={[styles.todayDot, { backgroundColor: colors.primary }]} />}
-        <Text style={[styles.dateText, { color: isToday ? colors.primary : colors.text }]}>
+        {isToday && <View style={[styles.todayDot, { backgroundColor: cyanColor }]} />}
+        <Text style={[styles.dateText, { color: isToday ? cyanColor : colors.text }]}>
           {dayName} – {monthDay}
         </Text>
         {isToday && (
-          <View style={[styles.todayBadge, { backgroundColor: colors.primary }]}>
+          <View style={[styles.todayBadge, { backgroundColor: cyanColor }]}>
             <Text style={styles.todayBadgeText}>TODAY</Text>
           </View>
         )}
