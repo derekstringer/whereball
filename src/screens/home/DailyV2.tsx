@@ -15,6 +15,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  InteractionManager,
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
@@ -188,34 +189,45 @@ export const DailyV2: React.FC = () => {
 
   // Scroll to today section after data loads
   React.useEffect(() => {
-    if (!loading && sections.length > 0 && sectionListRef.current) {
+    if (!loading && sections.length > 0) {
       const todayIndex = sections.findIndex(section => section.title === todayDateKey);
       
       if (todayIndex >= 0) {
-        // Longer delay and multiple attempts to ensure scroll works
-        setTimeout(() => {
+        // Use InteractionManager to wait for everything to render
+        const handle = InteractionManager.runAfterInteractions(() => {
           if (sectionListRef.current) {
             isProgrammaticScroll.current = true;
-            sectionListRef.current.scrollToLocation({
-              sectionIndex: todayIndex,
-              itemIndex: 0,
-              animated: false,
-              viewPosition: 0,
-            });
-            // Second attempt after another delay
+            try {
+              sectionListRef.current.scrollToLocation({
+                sectionIndex: todayIndex,
+                itemIndex: 0,
+                animated: false,
+                viewPosition: 0,
+              });
+            } catch (error) {
+              console.log('Initial scroll failed:', error);
+            }
+            
+            // Second attempt after short delay
             setTimeout(() => {
-              if (sectionListRef.current) {
-                sectionListRef.current.scrollToLocation({
-                  sectionIndex: todayIndex,
-                  itemIndex: 0,
-                  animated: false,
-                  viewPosition: 0,
-                });
+              try {
+                if (sectionListRef.current) {
+                  sectionListRef.current.scrollToLocation({
+                    sectionIndex: todayIndex,
+                    itemIndex: 0,
+                    animated: false,
+                    viewPosition: 0,
+                  });
+                }
+              } catch (error) {
+                console.log('Second scroll attempt failed:', error);
               }
               isProgrammaticScroll.current = false;
-            }, 150);
+            }, 100);
           }
-        }, 200);
+        });
+        
+        return () => handle.cancel();
       }
     }
   }, [loading, sections.length, todayDateKey]);
