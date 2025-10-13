@@ -121,6 +121,7 @@ export const DailyV2: React.FC = () => {
   };
 
   const formatDateKey = (date: Date): string => {
+    // Use local date components to avoid timezone issues
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -129,6 +130,7 @@ export const DailyV2: React.FC = () => {
 
   const getTodayDateKey = (): string => {
     const now = new Date();
+    now.setHours(0, 0, 0, 0); // Normalize to midnight
     return formatDateKey(now);
   };
 
@@ -168,6 +170,8 @@ export const DailyV2: React.FC = () => {
     const sticky: number[] = [];
     let todayIdx = -1;
 
+    console.log('Building flat data, today key:', todayDateKey);
+
     sortedDates.forEach((dateStr, sectionIdx) => {
       const cached = gamesCache.get(dateStr);
       const dateObj = new Date(dateStr + 'T12:00:00');
@@ -187,6 +191,7 @@ export const DailyV2: React.FC = () => {
 
       if (isToday) {
         todayIdx = headerIndex;
+        console.log('Found today at flat index:', headerIndex, 'date:', dateStr);
       }
 
       // Add games
@@ -198,6 +203,8 @@ export const DailyV2: React.FC = () => {
 
     // Add footer
     flat.push({ type: 'footer' });
+
+    console.log('Total items:', flat.length, 'Today index:', todayIdx);
 
     return { 
       flatData: flat, 
@@ -336,11 +343,44 @@ export const DailyV2: React.FC = () => {
         renderItem={renderItem}
         keyExtractor={getItemKey}
         initialScrollIndex={todayIndex >= 0 ? todayIndex : 0}
-        getItemLayout={(data, index) => ({
-          length: 100, // Approximate item height
-          offset: 100 * index,
-          index,
-        })}
+        getItemLayout={(data, index) => {
+          // Calculate accurate layout for sticky headers
+          if (!data || index >= data.length) {
+            return { length: 96, offset: 96 * index, index };
+          }
+          
+          const item = data[index];
+          const HEADER_HEIGHT = 44;
+          const GAME_HEIGHT = 96;
+          
+          let offset = 0;
+          let currentHeight = GAME_HEIGHT;
+          
+          // Calculate offset by iterating through previous items
+          for (let i = 0; i < index; i++) {
+            const prevItem = data[i];
+            if (prevItem.type === 'header') {
+              offset += HEADER_HEIGHT;
+            } else if (prevItem.type === 'game') {
+              offset += GAME_HEIGHT;
+            } else {
+              offset += 60; // footer
+            }
+          }
+          
+          // Determine current item height
+          if (item.type === 'header') {
+            currentHeight = HEADER_HEIGHT;
+          } else if (item.type === 'footer') {
+            currentHeight = 60;
+          }
+          
+          return {
+            length: currentHeight,
+            offset,
+            index,
+          };
+        }}
         stickyHeaderIndices={stickyIndices}
         onScrollToIndexFailed={(info) => {
           setTimeout(() => {
