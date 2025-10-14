@@ -154,7 +154,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
         {/* LEFT TEAM Column (flex) - Away Team */}
         <View style={styles.teamColLeft}>
           <View style={styles.abbrScoreRow}>
-            <Text style={[styles.teamAbbr, styles.leftAlign, { color: colors.text }]}>
+            <Text style={[styles.cityCode, styles.leftAlign, { color: colors.text }]}>
               {game.awayTeam.abbreviation}
             </Text>
             <Text style={[styles.score, { color: colors.text }]}>
@@ -175,11 +175,11 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
 
         {/* RIGHT TEAM Column (flex) - Home Team */}
         <View style={styles.teamColRight}>
-          <View style={styles.abbrScoreRow}>
+          <View style={styles.abbrScoreRowRight}>
             <Text style={[styles.score, { color: colors.text }]}>
               {game.homeTeam.score ?? '-'}
             </Text>
-            <Text style={[styles.teamAbbr, styles.rightAlign, { color: colors.text }]}>
+            <Text style={[styles.cityCode, styles.rightAlign, { color: colors.text }]}>
               {game.homeTeam.abbreviation}
             </Text>
           </View>
@@ -272,18 +272,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginBottom: 2,
   },
-  teamAbbr: {
+  abbrScoreRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'flex-end',
+  },
+  cityCode: {
     fontSize: 16,
-    fontWeight: '700',
-  },
-  score: {
-    fontSize: 20,
     fontWeight: '700',
   },
   teamName: {
     fontSize: 12,
+  },
+  score: {
+    fontSize: 20,
+    fontWeight: '700',
   },
   leftAlign: {
     textAlign: 'left',

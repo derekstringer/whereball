@@ -2,7 +2,7 @@
 
 **Purpose:** Prevent costly architectural mistakes by following proven patterns FIRST.
 
-**Last Updated:** October 12, 2025
+**Last Updated:** October 13, 2025
 
 ---
 
@@ -70,7 +70,7 @@ Before implementing ANY major UI pattern, answer these questions:
 
 ## LESSONS FROM THIS PROJECT
 
-### Mistake: Used FlatList for Sectioned Data
+### Mistake #1: DailyV2 - Used FlatList for Sectioned Data
 **Cost:** 3+ hours, $20+ in API costs, user frustration
 
 **What Went Wrong:**
@@ -86,8 +86,39 @@ Before implementing ANY major UI pattern, answer these questions:
 4. Implemented in 30 minutes
 5. Sticky headers work automatically
 
+### Success #1: DailyV3 - Complete Rebuild with SectionList
+**Achievement:** Rock-solid infinite scroll with zero jitter (October 13, 2025)
+
+**What We Did Right:**
+1. Started from scratch with SectionList (learned from mistake above)
+2. Built incrementally: core scroll → expand/collapse → "Go To Today" → infinite loading
+3. Tested each feature before adding the next
+4. Used proper SectionList APIs instead of fighting the framework
+
+**Implementation Details:**
+- `sections` array with `{title, dateObj, isToday, data}` structure
+- Loads today -30 to +60 days initially (91 days)
+- Dynamic loading: 30 days backward on scroll near top, 30 days forward via `onEndReached`
+- Proper `initialScrollIndex` calculation for opening on today
+- `isScrollingToToday` flag prevents load triggers during "Go To Today" scroll
+- Card expand/collapse maintains scroll position perfectly
+
+**Results:**
+- ✅ Opens on today every time
+- ✅ Zero scroll jitter
+- ✅ Sticky headers work flawlessly
+- ✅ "Go To Today" works from any position on first tap
+- ✅ Infinite scroll in both directions
+- ✅ Smooth with thousands of dynamically loaded items
+
+**Files:**
+- `src/screens/home/DailyV3.tsx` - Main scroll implementation
+- `src/screens/home/TonightScreen.tsx` - Re-exports DailyV3
+- `src/components/daily-v2/VerticalGameCard.tsx` - Scoreboard-style card layout
+- `src/components/daily-v2/DateHeader.tsx` - Sticky date headers
+
 ### Key Insight
-**The framework usually has the right tool already built**
+**The framework usually has the right tool already built. Use it first, fight it never.**
 
 ---
 
