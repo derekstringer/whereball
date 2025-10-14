@@ -33,8 +33,9 @@ export const DateHeader: React.FC<DateHeaderProps> = ({ date, isToday = false })
 
 const styles = StyleSheet.create({
   container: {
+    height: 44,
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    justifyContent: 'center',
   },
   content: {
     flexDirection: 'row',

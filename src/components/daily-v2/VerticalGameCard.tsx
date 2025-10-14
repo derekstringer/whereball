@@ -206,8 +206,9 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 12,
+    height: 96,
     paddingHorizontal: 16,
+    justifyContent: 'center',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
@@ -217,7 +218,6 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
   },
   // TIME Column (fixed)
   timeCol: {
