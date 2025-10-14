@@ -48,20 +48,14 @@ export const DailyV2: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
   const flatListRef = useRef<FlatList>(null);
 
-  const userServiceCodes = subscriptions.map(s => s.service_code);
+  const userServiceCodes = useMemo(() => subscriptions.map(s => s.service_code), [subscriptions]);
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
 
-  // Update current time every 5 minutes for red pill gradient
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 300000); // Update every 5 minutes
-    
-    return () => clearInterval(interval);
-  }, []);
+  // Calculate current time once at mount for red pill intensity
+  // No need for continuous updates - intensity won't change noticeably
+  const currentTime = useRef(new Date()).current;
 
   // Initialize cache with today + forward days
   useEffect(() => {
@@ -220,15 +214,15 @@ export const DailyV2: React.FC = () => {
     };
   }, [gamesCache, todayDateKey]);
 
-  const handleGamePress = (gameId: string) => {
+  const handleGamePress = useCallback((gameId: string) => {
     if (expandedGameId === gameId) {
       setExpandedGameId?.('NHL', null);
     } else {
       setExpandedGameId?.('NHL', gameId);
     }
-  };
+  }, [expandedGameId, setExpandedGameId]);
 
-  const renderItem = ({ item }: { item: FlatItem }) => {
+  const renderItem = useCallback(({ item }: { item: FlatItem }) => {
     if (item.type === 'header') {
       return <DateHeader date={item.dateObj} isToday={item.isToday} />;
     }
@@ -270,9 +264,9 @@ export const DailyV2: React.FC = () => {
         onPress={() => handleGamePress(item.game.id)}
       />
     );
-  };
+  }, [userServiceCodes, currentTime, expandedGameId, handleGamePress, setExpandedGameId, loadingMore, loadMoreGames]);
 
-  const scrollToToday = () => {
+  const scrollToToday = useCallback(() => {
     // Today is always at top, scroll to 0
     if (flatListRef.current) {
       flatListRef.current.scrollToOffset({
@@ -280,13 +274,13 @@ export const DailyV2: React.FC = () => {
         animated: true,
       });
     }
-  };
+  }, []);
 
-  const getItemKey = (item: FlatItem, index: number) => {
+  const getItemKey = useCallback((item: FlatItem, index: number) => {
     if (item.type === 'header') return `header-${item.date}`;
     if (item.type === 'footer') return 'footer';
     return item.game.id;
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -364,9 +358,11 @@ export const DailyV2: React.FC = () => {
             });
           }, 100);
         }}
-        windowSize={10}
-        initialNumToRender={15}
-        maxToRenderPerBatch={10}
+        removeClippedSubviews={true}
+        windowSize={5}
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        updateCellsBatchingPeriod={50}
       />
 
       {/* Filter Bottom Sheet */}
