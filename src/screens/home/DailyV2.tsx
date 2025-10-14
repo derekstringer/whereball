@@ -356,7 +356,6 @@ export const DailyV2: React.FC = () => {
             index,
           };
         }}
-        stickyHeaderIndices={stickyIndices}
         onScrollToIndexFailed={(info) => {
           setTimeout(() => {
             flatListRef.current?.scrollToIndex({
