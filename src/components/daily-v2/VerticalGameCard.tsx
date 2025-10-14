@@ -17,7 +17,7 @@ interface VerticalGameCardProps {
   onPress?: () => void;
 }
 
-export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
+export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   game,
   userServiceCodes,
   currentTime,
@@ -54,34 +54,29 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
     const diffMs = startTime.getTime() - now.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
+    // Calculate red intensity based on time until start
+    let intensity = 0;
     if (diffMins < 0) {
-      // Game should have started
-      return { timeDisplay: 'Starting', redIntensity: 1 };
+      intensity = 1; // Game starting/started
+    } else if (diffMins <= 5) {
+      intensity = 0.9;
+    } else if (diffMins <= 10) {
+      intensity = 0.75;
+    } else if (diffMins <= 30) {
+      intensity = 0.5;
+    } else if (diffMins <= 60) {
+      intensity = 0.25;
+    } else if (diffMins <= 120) {
+      intensity = 0.1;
     }
 
-    if (diffMins <= 5) {
-      return { timeDisplay: 'in 5m', redIntensity: 0.9 };
-    }
-    if (diffMins <= 10) {
-      return { timeDisplay: 'in 10m', redIntensity: 0.75 };
-    }
-    if (diffMins <= 30) {
-      return { timeDisplay: 'in 30m', redIntensity: 0.5 };
-    }
-    if (diffMins <= 60) {
-      return { timeDisplay: 'in 1h', redIntensity: 0.25 };
-    }
-    if (diffMins <= 120) {
-      return { timeDisplay: 'in 2h', redIntensity: 0.1 };
-    }
-
-    // More than 2 hours away - show time
+    // Always show static game time
     const time = startTime.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
     });
-    return { timeDisplay: time, redIntensity: 0 };
+    return { timeDisplay: time, redIntensity: intensity };
   }, [game.startTime, isLive, isFinal, currentTime]);
 
   // Render status icons
@@ -207,7 +202,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

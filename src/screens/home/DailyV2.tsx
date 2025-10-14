@@ -54,11 +54,11 @@ export const DailyV2: React.FC = () => {
   const userServiceCodes = subscriptions.map(s => s.service_code);
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
 
-  // Update current time every 30 seconds for countdown calculations
+  // Update current time every 5 minutes for red pill gradient
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTime(new Date());
-    }, 30000); // Update every 30 seconds
+    }, 300000); // Update every 5 minutes
     
     return () => clearInterval(interval);
   }, []);
