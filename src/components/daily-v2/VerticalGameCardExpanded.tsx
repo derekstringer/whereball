@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
   teamNameInline: {
     fontSize: 12,
     marginTop: 2,
-    alignSelf: 'flex-start',
+    width: '100%',
   },
   centerColInline: {
     minWidth: 50,
