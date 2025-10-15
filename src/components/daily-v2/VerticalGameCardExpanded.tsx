@@ -190,89 +190,92 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.stroke }]}>
-      {/* Header Row - Time Pill + Scoreboard - tappable to collapse */}
-      <TouchableOpacity style={styles.headerRow} onPress={onCollapse} activeOpacity={0.7}>
-        <View
-          style={[
-            styles.timePill,
-            { backgroundColor: timeBackgroundColor },
-          ]}
-        >
-          <Text style={[styles.timeText, { color: redIntensity > 0 ? '#FFFFFF' : colors.textSecondary }]}>
-            {new Date(game.startTime).toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true,
-            })}
-          </Text>
-          
-          {/* Shimmer overlay for live games */}
-          {redIntensity > 0.8 && (
-            <Animated.View
-              style={[
-                styles.shimmerOverlay,
-                {
-                  transform: [
-                    { translateX: shimmerTranslate },
-                    { rotate: '-45deg' },
-                  ],
-                },
-              ]}
-            />
-          )}
+      {/* Header Container - tappable to collapse */}
+      <TouchableOpacity onPress={onCollapse} activeOpacity={0.7}>
+        {/* Time Pill + Scoreboard Row */}
+        <View style={styles.headerRow}>
+          <View
+            style={[
+              styles.timePill,
+              { backgroundColor: timeBackgroundColor },
+            ]}
+          >
+            <Text style={[styles.timeText, { color: redIntensity > 0 ? '#FFFFFF' : colors.textSecondary }]}>
+              {new Date(game.startTime).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              })}
+            </Text>
+            
+            {/* Shimmer overlay for live games */}
+            {redIntensity > 0.8 && (
+              <Animated.View
+                style={[
+                  styles.shimmerOverlay,
+                  {
+                    transform: [
+                      { translateX: shimmerTranslate },
+                      { rotate: '-45deg' },
+                    ],
+                  },
+                ]}
+              />
+            )}
+          </View>
+
+          {/* Scoreboard on same row as time */}
+          <View style={styles.scoreboardInline}>
+            {/* LEFT TEAM - Away */}
+            <View style={styles.teamInlineContainer}>
+              <View style={styles.teamInline}>
+                <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
+                  {game.awayTeam.abbreviation}
+                </Text>
+                <Text style={[styles.scoreInline, { color: colors.text }]}>
+                  {game.awayTeam.score ?? '-'}
+                </Text>
+              </View>
+              <Text style={[styles.teamNameInline, { color: colors.textSecondary }]}>
+                {game.awayTeam.name.split(' ').pop()}
+              </Text>
+            </View>
+
+            {/* CENTER: Live Clock Widget, "Final", or "@" */}
+            {isLive && clockData ? (
+              <View style={styles.centerColInline}>
+                <LiveClockWidget clock={clockData} />
+              </View>
+            ) : isFinal ? (
+              <Text style={[styles.atColInline, { color: colors.textSecondary }]}>Final</Text>
+            ) : (
+              <Text style={[styles.atColInline, { color: colors.textSecondary }]}>@</Text>
+            )}
+
+            {/* RIGHT TEAM - Home */}
+            <View style={[styles.teamInlineContainer, styles.teamInlineContainerRight]}>
+              <View style={styles.teamInline}>
+                <Text style={[styles.scoreInline, { color: colors.text }]}>
+                  {game.homeTeam.score ?? '-'}
+                </Text>
+                <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
+                  {game.homeTeam.abbreviation}
+                </Text>
+              </View>
+              <Text style={[styles.teamNameInline, styles.rightAlign, { color: colors.textSecondary }]}>
+                {game.homeTeam.name.split(' ').pop()}
+              </Text>
+            </View>
+          </View>
         </View>
 
-        {/* Scoreboard on same row as time */}
-        <View style={styles.scoreboardInline}>
-          {/* LEFT TEAM - Away */}
-          <View style={styles.teamInlineContainer}>
-            <View style={styles.teamInline}>
-              <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
-                {game.awayTeam.abbreviation}
-              </Text>
-              <Text style={[styles.scoreInline, { color: colors.text }]}>
-                {game.awayTeam.score ?? '-'}
-              </Text>
-            </View>
-            <Text style={[styles.teamNameInline, { color: colors.textSecondary }]}>
-              {game.awayTeam.name.split(' ').pop()}
-            </Text>
-          </View>
-
-          {/* CENTER: Live Clock Widget, "Final", or "@" */}
-          {isLive && clockData ? (
-            <View style={styles.centerColInline}>
-              <LiveClockWidget clock={clockData} />
-            </View>
-          ) : isFinal ? (
-            <Text style={[styles.atColInline, { color: colors.textSecondary }]}>Final</Text>
-          ) : (
-            <Text style={[styles.atColInline, { color: colors.textSecondary }]}>@</Text>
-          )}
-
-          {/* RIGHT TEAM - Home */}
-          <View style={[styles.teamInlineContainer, styles.teamInlineContainerRight]}>
-            <View style={styles.teamInline}>
-              <Text style={[styles.scoreInline, { color: colors.text }]}>
-                {game.homeTeam.score ?? '-'}
-              </Text>
-              <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
-                {game.homeTeam.abbreviation}
-              </Text>
-            </View>
-            <Text style={[styles.teamNameInline, styles.rightAlign, { color: colors.textSecondary }]}>
-              {game.homeTeam.name.split(' ').pop()}
-            </Text>
-          </View>
+        {/* Venue - aligned with scoreboard width */}
+        <View style={styles.venueRow}>
+          <Text style={[styles.venue, { color: colors.textSecondary }]}>
+            {game.venue}
+          </Text>
         </View>
       </TouchableOpacity>
-
-      {/* Venue - centered, underneath entire header */}
-      <View style={styles.venueRow}>
-        <Text style={[styles.venue, { color: colors.textSecondary }]}>
-          {game.venue}
-        </Text>
-      </View>
 
       {/* Watch On (Subscribed Services) */}
       {hasSubscribed && (
@@ -623,7 +626,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   venueRow: {
-    alignItems: 'center',
+    marginLeft: 12,
     marginBottom: 16,
   },
 });
