@@ -225,12 +225,17 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         {/* Scoreboard on same row as time */}
         <View style={styles.scoreboardInline}>
           {/* LEFT TEAM - Away */}
-          <View style={styles.teamInline}>
-            <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
-              {game.awayTeam.abbreviation}
-            </Text>
-            <Text style={[styles.scoreInline, { color: colors.text }]}>
-              {game.awayTeam.score ?? '-'}
+          <View style={styles.teamInlineContainer}>
+            <View style={styles.teamInline}>
+              <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
+                {game.awayTeam.abbreviation}
+              </Text>
+              <Text style={[styles.scoreInline, { color: colors.text }]}>
+                {game.awayTeam.score ?? '-'}
+              </Text>
+            </View>
+            <Text style={[styles.teamNameInline, { color: colors.textSecondary }]}>
+              {game.awayTeam.name.split(' ').pop()}
             </Text>
           </View>
 
@@ -246,18 +251,23 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           )}
 
           {/* RIGHT TEAM - Home */}
-          <View style={styles.teamInline}>
-            <Text style={[styles.scoreInline, { color: colors.text }]}>
-              {game.homeTeam.score ?? '-'}
-            </Text>
-            <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
-              {game.homeTeam.abbreviation}
+          <View style={styles.teamInlineContainer}>
+            <View style={styles.teamInline}>
+              <Text style={[styles.scoreInline, { color: colors.text }]}>
+                {game.homeTeam.score ?? '-'}
+              </Text>
+              <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
+                {game.homeTeam.abbreviation}
+              </Text>
+            </View>
+            <Text style={[styles.teamNameInline, styles.rightAlign, { color: colors.textSecondary }]}>
+              {game.homeTeam.name.split(' ').pop()}
             </Text>
           </View>
         </View>
       </TouchableOpacity>
 
-      {/* Venue - centered, underneath */}
+      {/* Venue - centered, underneath entire header */}
       <View style={styles.venueRow}>
         <Text style={[styles.venue, { color: colors.textSecondary }]}>
           {game.venue}
@@ -573,9 +583,12 @@ const styles = StyleSheet.create({
   scoreboardInline: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-around',
     marginLeft: 12,
+  },
+  teamInlineContainer: {
+    alignItems: 'center',
   },
   teamInline: {
     flexDirection: 'row',
@@ -587,8 +600,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   scoreInline: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
+  },
+  teamNameInline: {
+    fontSize: 12,
+    marginTop: 2,
   },
   centerColInline: {
     minWidth: 50,
