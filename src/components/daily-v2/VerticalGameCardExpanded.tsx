@@ -251,7 +251,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           )}
 
           {/* RIGHT TEAM - Home */}
-          <View style={styles.teamInlineContainer}>
+          <View style={[styles.teamInlineContainer, styles.teamInlineContainerRight]}>
             <View style={styles.teamInline}>
               <Text style={[styles.scoreInline, { color: colors.text }]}>
                 {game.homeTeam.score ?? '-'}
@@ -589,6 +589,9 @@ const styles = StyleSheet.create({
   },
   teamInlineContainer: {
     alignItems: 'flex-start',
+  },
+  teamInlineContainerRight: {
+    alignItems: 'flex-end',
   },
   teamInline: {
     flexDirection: 'row',
