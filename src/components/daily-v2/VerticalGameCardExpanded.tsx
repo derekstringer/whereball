@@ -190,8 +190,8 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.stroke }]}>
-      {/* Header with time pill, status icons, and collapse */}
-      <View style={styles.headerRow}>
+      {/* Header with time pill - tappable to collapse */}
+      <TouchableOpacity style={styles.headerRow} onPress={onCollapse} activeOpacity={0.7}>
         <View
           style={[
             styles.timePill,
@@ -222,15 +222,15 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           )}
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View style={{ flexDirection: 'row', gap: 0 }}>
-            {renderStatusIcons()}
-          </View>
-          <TouchableOpacity onPress={onCollapse} activeOpacity={0.7}>
-            <Text style={[styles.collapseIcon, { color: colors.textSecondary }]}>▲</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+        {/* National broadcast icon only */}
+        {game.broadcasts.some(b => b.type === 'national') && (
+          <Image
+            source={require('../../../assets/icons/national.png')}
+            style={styles.statusIcon}
+            resizeMode="contain"
+          />
+        )}
+      </TouchableOpacity>
 
       {/* Scoreboard - Explicit Column Grid */}
       <View style={styles.scoreboardSection}>
@@ -294,9 +294,16 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       {/* Watch On (Subscribed Services) */}
       {hasSubscribed && (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            WATCH ON:
-          </Text>
+          <View style={styles.sectionTitleRow}>
+            <Image
+              source={require('../../../assets/icons/available.png')}
+              style={styles.sectionIcon}
+              resizeMode="contain"
+            />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              WATCH ON:
+            </Text>
+          </View>
           <View style={styles.servicePills}>
             {subscribed.map((service) => (
               <TouchableOpacity
@@ -315,9 +322,16 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       {/* Also Available On (Unsubscribed) - Rectangles for differentiation */}
       {showDiscovery && hasUnsubscribed && (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-            ALSO AVAILABLE ON:
-          </Text>
+          <View style={styles.sectionTitleRow}>
+            <Image
+              source={require('../../../assets/icons/elsewhere.png')}
+              style={styles.sectionIcon}
+              resizeMode="contain"
+            />
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+              ALSO AVAILABLE ON:
+            </Text>
+          </View>
           <View style={styles.servicePills}>
             {unsubscribed.map((service) => (
               <TouchableOpacity
@@ -443,10 +457,19 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 16,
   },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
+  },
+  sectionIcon: {
+    width: 20,
+    height: 20,
+  },
   sectionTitle: {
     fontSize: 11,
     fontWeight: '700',
-    marginBottom: 8,
     letterSpacing: 0.5,
   },
   servicePills: {
