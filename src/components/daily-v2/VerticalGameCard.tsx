@@ -298,8 +298,8 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
           </Text>
         </View>
 
-        {/* Gutter before ACTIONS */}
-        <View style={styles.gutter} />
+        {/* Larger gutter before ACTIONS for breathing room */}
+        <View style={styles.actionsGutter} />
 
         {/* ACTIONS Column (fixed 72px) */}
         <View style={styles.actionsCol}>
@@ -360,6 +360,10 @@ const styles = StyleSheet.create({
   gutter: {
     width: 12,
   },
+  // Larger gutter before actions for breathing room
+  actionsGutter: {
+    width: 16,
+  },
   // LEFT TEAM Column (flex)
   teamColLeft: {
     flex: 1,
@@ -390,7 +394,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 2,
+    gap: 0,
   },
   // Team elements
   abbrScoreRow: {
