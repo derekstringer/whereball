@@ -104,7 +104,10 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({ navigation }) => {
         >
           <View style={styles.content}>
             <Text style={styles.emoji}>🏒</Text>
-            <Text style={[styles.title, { color: colors.text }]}>Welcome to WhereBall</Text>
+            <Text style={[styles.title, { color: colors.text }]}>Welcome to SportStream</Text>
+            <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+              Find Your Game
+            </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
               We route you to the legal option for YOUR ZIP and services.
             </Text>

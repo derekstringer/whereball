@@ -3,11 +3,12 @@
  * Time on left, centered scoreboard, status icons on right
  */
 
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { NHLGame } from '../../lib/nhl-api';
 import { getServicesForGameSplit } from '../../lib/service-helpers';
+import { LiveClockWidget } from './LiveClockWidget';
 
 interface VerticalGameCardProps {
   game: NHLGame;
@@ -25,18 +26,58 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   onPress,
 }) => {
   const { colors } = useTheme();
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
   
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   
-  // Determine game state
-  const isLive = game.gameState === 'LIVE';
+  // Determine game state with robust detection
   const isFinal = game.gameState === 'FINAL' || game.gameState === 'OFF';
+  
+  // Detect if game is live using multiple signals
+  const hasScores = game.homeTeam.score !== undefined || game.awayTeam.score !== undefined;
+  const startTime = new Date(game.startTime);
+  const now = currentTime || new Date();
+  const minutesSinceStart = (now.getTime() - startTime.getTime()) / 60000;
+  const startTimePassed = minutesSinceStart > 5; // 5 min grace period
+  
+  // Game is live if: API says so, OR has scores, OR start time passed (and not final)
+  const isLive = !isFinal && (
+    game.gameState === 'LIVE' || 
+    hasScores || 
+    startTimePassed
+  );
+  
   const isUpcoming = !isLive && !isFinal;
+  
+  // Create clock data for live games (use API data if available, otherwise create fallback)
+  const clockData = useMemo(() => {
+    if (!isLive) return null;
+    
+    // If we have real clock data from API, use it
+    if (game.clock) {
+      return game.clock;
+    }
+    
+    // Otherwise create fallback clock for detected live games
+    return {
+      timeRemaining: 'LIVE',
+      period: 1,
+      periodType: 'REG' as const,
+      inIntermission: false,
+      periodOrdinal: '1st',
+    };
+  }, [isLive, game.clock]);
 
   // Calculate time display and red intensity
   const { timeDisplay, redIntensity } = useMemo(() => {
     if (isFinal) {
-      return { timeDisplay: 'Final', redIntensity: 0 };
+      // Show game start time for final games, not "Final"
+      const time = new Date(game.startTime).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+      });
+      return { timeDisplay: time, redIntensity: 0 };
     }
     
     if (isLive) {
@@ -126,6 +167,31 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
     return `#FF3B30${alpha}`;
   }, [redIntensity]);
 
+  // Shimmer animation for live games
+  useEffect(() => {
+    if (redIntensity > 0.8) {
+      // Game is live - start continuous shimmer
+      shimmerAnim.setValue(0);
+      Animated.loop(
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      // Not live - stop animation
+      shimmerAnim.stopAnimation();
+      shimmerAnim.setValue(0);
+    }
+  }, [redIntensity, shimmerAnim]);
+
+  // Calculate shimmer position (moves from left to right across pill)
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-150, 150],
+  });
+
   return (
     <TouchableOpacity
       style={[styles.container, isFinal && styles.dimmed]}
@@ -139,12 +205,26 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
             style={[
               styles.timePill,
               { backgroundColor: timeBackgroundColor },
-              redIntensity > 0.8 && styles.timePillPulsing,
             ]}
           >
             <Text style={[styles.timeText, { color: redIntensity > 0 ? '#FFFFFF' : colors.textSecondary }]}>
               {timeDisplay}
             </Text>
+            
+            {/* Shimmer overlay for live games */}
+            {redIntensity > 0.8 && (
+              <Animated.View
+                style={[
+                  styles.shimmerOverlay,
+                  {
+                    transform: [
+                      { translateX: shimmerTranslate },
+                      { rotate: '-45deg' },
+                    ],
+                  },
+                ]}
+              />
+            )}
           </View>
         </View>
 
@@ -158,7 +238,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
               {game.awayTeam.abbreviation}
             </Text>
             <Text style={[styles.score, { color: colors.text }]}>
-              {game.awayTeam.score ?? '-'}
+              {game.awayTeam.score !== undefined ? game.awayTeam.score : (isLive ? '0' : '-')}
             </Text>
           </View>
           <Text
@@ -170,14 +250,22 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
           </Text>
         </View>
 
-        {/* AT Column (fixed 24px) */}
-        <Text style={[styles.atCol, { color: colors.textSecondary }]}>@</Text>
+        {/* CENTER: Live Clock Widget, "Final", or "@" */}
+        {isLive && clockData ? (
+          <View style={styles.centerCol}>
+            <LiveClockWidget clock={clockData} />
+          </View>
+        ) : isFinal ? (
+          <Text style={[styles.atCol, { color: colors.textSecondary }]}>Final</Text>
+        ) : (
+          <Text style={[styles.atCol, { color: colors.textSecondary }]}>@</Text>
+        )}
 
         {/* RIGHT TEAM Column (flex) - Home Team */}
         <View style={styles.teamColRight}>
           <View style={styles.abbrScoreRowRight}>
             <Text style={[styles.score, { color: colors.text }]}>
-              {game.homeTeam.score ?? '-'}
+              {game.homeTeam.score !== undefined ? game.homeTeam.score : (isLive ? '0' : '-')}
             </Text>
             <Text style={[styles.cityCode, styles.rightAlign, { color: colors.text }]}>
               {game.homeTeam.abbreviation}
@@ -229,9 +317,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  timePillPulsing: {
-    // Animation added via Animated API in parent
+  shimmerOverlay: {
+    position: 'absolute',
+    top: -20,
+    left: 0,
+    right: 0,
+    bottom: -20,
+    width: 30,
+    height: 80,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
   },
   timeText: {
     fontSize: 13,
@@ -246,9 +347,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  // AT Column (fixed)
+  // CENTER Column (live clock or @)
+  centerCol: {
+    minWidth: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // AT Column (fixed) - increased width for "Final"
   atCol: {
-    width: 24,
+    minWidth: 45,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '400',
@@ -271,24 +378,26 @@ const styles = StyleSheet.create({
   abbrScoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   abbrScoreRowRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     justifyContent: 'flex-end',
   },
   cityCode: {
     fontSize: 16,
     fontWeight: '700',
+    lineHeight: 18,
   },
   teamName: {
     fontSize: 12,
   },
   score: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
+    lineHeight: 18,
   },
   leftAlign: {
     textAlign: 'left',

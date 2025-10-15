@@ -306,7 +306,7 @@ export const DailyV2: React.FC = () => {
         </TouchableOpacity>
         
         <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>WhereBall</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>SportStream</Text>
           <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7}>
             <Text style={styles.goToToday}>Go To Today</Text>
           </TouchableOpacity>

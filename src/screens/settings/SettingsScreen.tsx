@@ -439,7 +439,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
         {/* About */}
         <View style={[styles.section, { backgroundColor: colors.card }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>ℹ️ About</Text>
-          <Text style={[styles.aboutText, { color: colors.textSecondary }]}>WhereBall v1.0.0</Text>
+          <Text style={[styles.aboutText, { color: colors.textSecondary }]}>SportStream v1.0.0</Text>
           <TouchableOpacity>
             <Text style={[styles.linkText, { color: colors.primary }]}>Privacy Policy</Text>
           </TouchableOpacity>

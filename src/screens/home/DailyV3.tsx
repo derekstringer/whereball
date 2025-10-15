@@ -17,10 +17,11 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Modal,
+  AppState,
 } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
-import { getGamesForDate, type NHLGame } from '../../lib/nhl-api';
+import { getGamesForDate, getLiveGameClock, type NHLGame } from '../../lib/nhl-api';
 import { DateHeader } from '../../components/daily-v2/DateHeader';
 import { VerticalGameCard } from '../../components/daily-v2/VerticalGameCard';
 import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGameCardExpanded';
@@ -64,6 +65,93 @@ export const DailyV3: React.FC = () => {
   useEffect(() => {
     loadInitialData();
   }, []);
+
+  // Live polling: Refresh games every 15 seconds when app is active
+  useEffect(() => {
+    let pollInterval: NodeJS.Timeout | null = null;
+    
+    const startPolling = () => {
+      // Poll immediately
+      refreshLiveGames();
+      
+      // Then poll every 15 seconds
+      pollInterval = setInterval(() => {
+        refreshLiveGames();
+      }, 15000);
+    };
+    
+    const stopPolling = () => {
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    };
+    
+    // Listen to app state changes
+    const subscription = AppState.addEventListener('change', (nextAppState) => {
+      if (nextAppState === 'active') {
+        startPolling();
+      } else {
+        stopPolling();
+      }
+    });
+    
+    // Start polling if app is currently active
+    if (AppState.currentState === 'active') {
+      startPolling();
+    }
+    
+    // Cleanup
+    return () => {
+      stopPolling();
+      subscription.remove();
+    };
+  }, []); // Remove sections dependency to prevent infinite loop
+
+  // Refresh games for today and nearby dates (where live games might be)
+  const refreshLiveGames = async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Refresh today and yesterday (in case games started late)
+    const datesToRefresh = [0, -1];
+    
+    for (const dayOffset of datesToRefresh) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + dayOffset);
+      const dateStr = formatDateKey(date);
+      
+      try {
+        const games = await getGamesForDate(date);
+        
+        // Fetch real-time clock data for live games
+        const gamesWithClock = await Promise.all(
+          games.map(async (game) => {
+            // Only fetch clock for games that appear to be live
+            if (game.gameState === 'LIVE' || 
+                (game.homeTeam.score !== undefined || game.awayTeam.score !== undefined)) {
+              const clock = await getLiveGameClock(game.id);
+              if (clock) {
+                return { ...game, clock };
+              }
+            }
+            return game;
+          })
+        );
+        
+        // Update the section for this date
+        setSections(prev => 
+          prev.map(section => 
+            section.title === dateStr
+              ? { ...section, data: gamesWithClock }
+              : section
+          )
+        );
+      } catch (error) {
+        console.error(`Error refreshing games for ${dateStr}:`, error);
+      }
+    }
+  };
 
   const loadInitialData = async () => {
     const today = new Date();
@@ -340,7 +428,7 @@ export const DailyV3: React.FC = () => {
         </TouchableOpacity>
         
         <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>WhereBall</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>SportStream</Text>
           <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7}>
             <Text style={styles.goToToday}>Go To Today</Text>
           </TouchableOpacity>

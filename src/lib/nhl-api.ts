@@ -25,6 +25,13 @@ export interface NHLGame {
     network: string;
     type: 'national' | 'home' | 'away';
   }>;
+  clock?: {
+    timeRemaining: string;  // "12:34" format
+    period: number;         // 1, 2, 3, 4+ (OT periods)
+    periodType: 'REG' | 'OT' | 'SO';
+    inIntermission: boolean;
+    periodOrdinal: string;  // "1st", "2nd", "3rd", "OT", "2OT", "SO"
+  };
 }
 
 /**
@@ -70,6 +77,47 @@ export const getGamesForDate = async (date?: Date | string): Promise<NHLGame[]> 
               continue; // Skip games from other days
             }
             
+            // Parse scores for live/final games
+            const homeScore = game.homeTeam.score;
+            const awayScore = game.awayTeam.score;
+            
+            // Parse clock data for live games
+            let clock: NHLGame['clock'] = undefined;
+            if (game.gameState === 'LIVE') {
+              // NHL API may have clock data in different places
+              const period = game.period || game.periodDescriptor?.number || 0;
+              const periodType = game.periodDescriptor?.periodType || 'REG';
+              const isShootout = periodType === 'SO';
+              const isOT = periodType === 'OT';
+              
+              // Determine period ordinal
+              let periodOrdinal = '';
+              if (isShootout) {
+                periodOrdinal = 'SO';
+              } else if (isOT) {
+                const otNum = period - 3;
+                periodOrdinal = otNum === 1 ? 'OT' : `${otNum}OT`;
+              } else {
+                periodOrdinal = ['1st', '2nd', '3rd'][period - 1] || `${period}th`;
+              }
+              
+              // Extract time remaining (may be in different formats)
+              let timeRemaining = '20:00';
+              if (game.clock?.timeRemaining) {
+                timeRemaining = game.clock.timeRemaining;
+              } else if (game.periodDescriptor?.periodTime) {
+                timeRemaining = game.periodDescriptor.periodTime;
+              }
+              
+              clock = {
+                timeRemaining: timeRemaining,
+                period: period,
+                periodType: isShootout ? 'SO' : isOT ? 'OT' : 'REG',
+                inIntermission: game.clock?.inIntermission || game.periodDescriptor?.inIntermission || false,
+                periodOrdinal: periodOrdinal,
+              };
+            }
+            
             games.push({
               id: game.id.toString(),
               gameDate: gameDateStr,
@@ -78,11 +126,13 @@ export const getGamesForDate = async (date?: Date | string): Promise<NHLGame[]> 
                 id: game.homeTeam.id,
                 name: game.homeTeam.placeName.default + ' ' + game.homeTeam.commonName.default,
                 abbreviation: game.homeTeam.abbrev,
+                score: homeScore,
               },
               awayTeam: {
                 id: game.awayTeam.id,
                 name: game.awayTeam.placeName.default + ' ' + game.awayTeam.commonName.default,
                 abbreviation: game.awayTeam.abbrev,
+                score: awayScore,
               },
               venue: game.venue?.default || 'TBD',
               gameState: game.gameState,
@@ -90,6 +140,7 @@ export const getGamesForDate = async (date?: Date | string): Promise<NHLGame[]> 
                 network: b.network,
                 type: b.market === 'N' ? 'national' : 'home',
               })) || [],
+              clock: clock,
             });
           }
         }
@@ -210,6 +261,54 @@ export const getGamesGroupedByDate = async (
   });
   
   return grouped;
+};
+
+/**
+ * Fetch live clock data for a specific game
+ */
+export const getLiveGameClock = async (gameId: string): Promise<NHLGame['clock'] | null> => {
+  try {
+    const response = await fetch(
+      `https://api-web.nhle.com/v1/gamecenter/${gameId}/play-by-play`
+    );
+    
+    if (!response.ok) {
+      return null;
+    }
+    
+    const data = await response.json();
+    
+    if (!data.clock || !data.periodDescriptor) {
+      return null;
+    }
+    
+    const period = data.periodDescriptor.number || 1;
+    const periodType = data.periodDescriptor.periodType || 'REG';
+    const isShootout = periodType === 'SO';
+    const isOT = periodType === 'OT';
+    
+    // Determine period ordinal
+    let periodOrdinal = '';
+    if (isShootout) {
+      periodOrdinal = 'SO';
+    } else if (isOT) {
+      const otNum = period - 3;
+      periodOrdinal = otNum === 1 ? 'OT' : `${otNum}OT`;
+    } else {
+      periodOrdinal = ['1st', '2nd', '3rd'][period - 1] || `${period}th`;
+    }
+    
+    return {
+      timeRemaining: data.clock.timeRemaining || '20:00',
+      period: period,
+      periodType: isShootout ? 'SO' : isOT ? 'OT' : 'REG',
+      inIntermission: data.clock.inIntermission || false,
+      periodOrdinal: periodOrdinal,
+    };
+  } catch (error) {
+    console.error(`Error fetching clock for game ${gameId}:`, error);
+    return null;
+  }
 };
 
 /**
