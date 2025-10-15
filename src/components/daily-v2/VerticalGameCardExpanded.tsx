@@ -628,5 +628,6 @@ const styles = StyleSheet.create({
   venueRow: {
     alignItems: 'center',
     marginBottom: 16,
+    marginLeft: 96, // Time pill (84px) + gutter (12px) to align with scoreboard
   },
 });
