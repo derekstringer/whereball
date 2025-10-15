@@ -2,13 +2,14 @@
  * Vertical Game Card Expanded - Inline expansion maintaining layout
  */
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useMemo, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { NHLGame } from '../../lib/nhl-api';
 import { getServicesForGameSplit, deepLinkToService, affiliateCTA } from '../../lib/service-helpers';
 import { useAppStore } from '../../store/appStore';
 import { STREAMING_SERVICES } from '../../constants/services';
+import { LiveClockWidget } from './LiveClockWidget';
 
 interface VerticalGameCardExpandedProps {
   game: NHLGame;
@@ -24,10 +25,93 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   const { colors } = useTheme();
   const { filters } = useAppStore();
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
 
   const showDiscovery = filters.showAllServices;
   const hasSubscribed = subscribed.length > 0;
   const hasUnsubscribed = unsubscribed.length > 0;
+
+  // Determine game state with robust detection
+  const isFinal = game.gameState === 'FINAL' || game.gameState === 'OFF';
+  
+  // Detect if game is live using multiple signals
+  const hasScores = game.homeTeam.score !== undefined || game.awayTeam.score !== undefined;
+  const startTime = new Date(game.startTime);
+  const now = new Date();
+  const minutesSinceStart = (now.getTime() - startTime.getTime()) / 60000;
+  const startTimePassed = minutesSinceStart > 5; // 5 min grace period
+  
+  // Game is live if: API says so, OR has scores, OR start time passed (and not final)
+  const isLive = !isFinal && (
+    game.gameState === 'LIVE' || 
+    hasScores || 
+    startTimePassed
+  );
+  
+  // Create clock data for live games
+  const clockData = useMemo(() => {
+    if (!isLive) return null;
+    
+    // If we have real clock data from API, use it
+    if (game.clock) {
+      return game.clock;
+    }
+    
+    // Otherwise create fallback clock for detected live games
+    return {
+      timeRemaining: 'LIVE',
+      period: 1,
+      periodType: 'REG' as const,
+      inIntermission: false,
+      periodOrdinal: '1st',
+    };
+  }, [isLive, game.clock]);
+
+  // Calculate red intensity for time pill
+  const redIntensity = useMemo(() => {
+    if (isFinal) return 0;
+    if (isLive) return 1;
+    
+    const diffMs = startTime.getTime() - now.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 0) return 1;
+    if (diffMins <= 5) return 0.9;
+    if (diffMins <= 10) return 0.75;
+    if (diffMins <= 30) return 0.5;
+    if (diffMins <= 60) return 0.25;
+    if (diffMins <= 120) return 0.1;
+    return 0;
+  }, [isFinal, isLive, startTime, now]);
+
+  // Time background color with red intensity
+  const timeBackgroundColor = useMemo(() => {
+    if (redIntensity === 0) return 'transparent';
+    const alpha = Math.floor(redIntensity * 255).toString(16).padStart(2, '0');
+    return `#FF3B30${alpha}`;
+  }, [redIntensity]);
+
+  // Shimmer animation for live games
+  useEffect(() => {
+    if (redIntensity > 0.8) {
+      shimmerAnim.setValue(0);
+      Animated.loop(
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        })
+      ).start();
+    } else {
+      shimmerAnim.stopAnimation();
+      shimmerAnim.setValue(0);
+    }
+  }, [redIntensity, shimmerAnim]);
+
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-150, 150],
+  });
 
   const handleWatchNow = () => {
     if (subscribed.length > 0) {
@@ -63,26 +147,90 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
     return colorMap[code] || colors.primary;
   };
 
-  const isLive = game.gameState === 'LIVE';
-  const isFinal = game.gameState === 'FINAL' || game.gameState === 'OFF';
+  // Render status icons
+  const renderStatusIcons = () => {
+    const icons = [];
+    
+    if (subscribed.length > 0) {
+      icons.push(
+        <Image
+          key="available"
+          source={require('../../../assets/icons/available.png')}
+          style={styles.statusIcon}
+          resizeMode="contain"
+        />
+      );
+    }
+    
+    if (unsubscribed.length > 0) {
+      icons.push(
+        <Image
+          key="elsewhere"
+          source={require('../../../assets/icons/elsewhere.png')}
+          style={styles.statusIcon}
+          resizeMode="contain"
+        />
+      );
+    }
+    
+    const hasNational = game.broadcasts.some(b => b.type === 'national');
+    if (hasNational) {
+      icons.push(
+        <Image
+          key="national"
+          source={require('../../../assets/icons/national.png')}
+          style={styles.statusIcon}
+          resizeMode="contain"
+        />
+      );
+    }
+
+    return icons;
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.stroke }]}>
-      {/* Header with time and collapse */}
-      <TouchableOpacity
-        style={styles.headerRow}
-        onPress={onCollapse}
-        activeOpacity={0.7}
-      >
-        <Text style={[styles.timeText, { color: colors.textSecondary }]}>
-          {new Date(game.startTime).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })}
-        </Text>
-        <Text style={[styles.collapseIcon, { color: colors.textSecondary }]}>▲</Text>
-      </TouchableOpacity>
+      {/* Header with time pill, status icons, and collapse */}
+      <View style={styles.headerRow}>
+        <View
+          style={[
+            styles.timePill,
+            { backgroundColor: timeBackgroundColor },
+          ]}
+        >
+          <Text style={[styles.timeText, { color: redIntensity > 0 ? '#FFFFFF' : colors.textSecondary }]}>
+            {new Date(game.startTime).toLocaleTimeString('en-US', {
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })}
+          </Text>
+          
+          {/* Shimmer overlay for live games */}
+          {redIntensity > 0.8 && (
+            <Animated.View
+              style={[
+                styles.shimmerOverlay,
+                {
+                  transform: [
+                    { translateX: shimmerTranslate },
+                    { rotate: '-45deg' },
+                  ],
+                },
+              ]}
+            />
+          )}
+        </View>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: 0 }}>
+            {renderStatusIcons()}
+          </View>
+          <TouchableOpacity onPress={onCollapse} activeOpacity={0.7}>
+            <Text style={[styles.collapseIcon, { color: colors.textSecondary }]}>▲</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* Scoreboard - Explicit Column Grid */}
       <View style={styles.scoreboardSection}>
@@ -105,8 +253,16 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           </Text>
         </View>
 
-        {/* AT Column (fixed 24px) */}
-        <Text style={[styles.atCol, { color: colors.textSecondary }]}>@</Text>
+        {/* CENTER: Live Clock Widget, "Final", or "@" */}
+        {isLive && clockData ? (
+          <View style={styles.centerCol}>
+            <LiveClockWidget clock={clockData} />
+          </View>
+        ) : isFinal ? (
+          <Text style={[styles.atCol, { color: colors.textSecondary }]}>Final</Text>
+        ) : (
+          <Text style={[styles.atCol, { color: colors.textSecondary }]}>@</Text>
+        )}
 
         {/* RIGHT TEAM Column (flex) - Home Team */}
         <View style={styles.teamColRight}>
@@ -128,14 +284,8 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         </View>
       </View>
 
-      {/* Game Details */}
+      {/* Venue */}
       <View style={styles.details}>
-        {isLive && (
-          <Text style={[styles.gameState, { color: colors.danger }]}>
-            2nd Period • 12:34
-          </Text>
-        )}
-        
         <Text style={[styles.venue, { color: colors.textSecondary }]}>
           {game.venue}
         </Text>
@@ -234,9 +384,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
+  // CENTER Column (live clock or @)
+  centerCol: {
+    minWidth: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   // AT Column (fixed)
   atCol: {
-    width: 24,
+    minWidth: 45,
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '400',
@@ -336,5 +492,30 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  statusIcon: {
+    width: 28,
+    height: 28,
+  },
+  timePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  shimmerOverlay: {
+    position: 'absolute',
+    top: -20,
+    left: 0,
+    right: 0,
+    bottom: -20,
+    width: 30,
+    height: 80,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    shadowColor: '#FFFFFF',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
   },
 });
