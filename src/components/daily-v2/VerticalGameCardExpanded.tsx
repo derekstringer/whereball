@@ -308,19 +308,11 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             {subscribed.map((service) => (
               <TouchableOpacity
                 key={service.code}
-                style={[
-                  styles.rectangleButton,
-                  {
-                    backgroundColor: 'rgba(128, 128, 128, 0.2)',
-                    borderColor: 'rgba(128, 128, 128, 0.5)',
-                  },
-                ]}
+                style={[styles.pill, { backgroundColor: getServiceColor(service.code) }]}
                 onPress={() => handleServicePress(service.code, true)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.rectangleButtonText, { color: colors.text }]}>
-                  {service.name}
-                </Text>
+                <Text style={styles.pillText}>{service.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -380,11 +372,21 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             {game.broadcasts
               .filter(b => b.type === 'national')
               .map((broadcast, index) => (
-                <View key={index} style={[styles.networkBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <Text style={[styles.networkText, { color: colors.text }]}>
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.rectangleButton,
+                    {
+                      backgroundColor: 'rgba(128, 128, 128, 0.2)',
+                      borderColor: 'rgba(128, 128, 128, 0.5)',
+                    },
+                  ]}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.rectangleButtonText, { color: colors.textSecondary }]}>
                     {broadcast.network}
                   </Text>
-                </View>
+                </TouchableOpacity>
               ))}
           </View>
         </View>
