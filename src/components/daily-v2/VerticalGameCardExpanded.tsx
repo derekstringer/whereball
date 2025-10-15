@@ -328,7 +328,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
               style={styles.sectionIcon}
               resizeMode="contain"
             />
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
               ALSO STREAMING ON:
             </Text>
           </View>
