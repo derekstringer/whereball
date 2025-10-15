@@ -4,7 +4,7 @@
  */
 
 import React, { useMemo, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { NHLGame } from '../../lib/nhl-api';
 import { getServicesForGameSplit } from '../../lib/service-helpers';
@@ -127,14 +127,24 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
     // Green: on your services
     if (subscribed.length > 0) {
       icons.push(
-        <View key="available" style={[styles.statusIcon, { backgroundColor: '#4CAF50' }]} />
+        <Image
+          key="available"
+          source={require('../../../assets/icons/available.png')}
+          style={styles.statusIcon}
+          resizeMode="contain"
+        />
       );
     }
     
     // Yellow: available but not yours
     if (unsubscribed.length > 0) {
       icons.push(
-        <View key="elsewhere" style={[styles.statusIcon, { backgroundColor: '#FFC107' }]} />
+        <Image
+          key="elsewhere"
+          source={require('../../../assets/icons/elsewhere.png')}
+          style={styles.statusIcon}
+          resizeMode="contain"
+        />
       );
     }
     
@@ -142,18 +152,26 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
     const hasNational = game.broadcasts.some(b => b.type === 'national');
     if (hasNational) {
       icons.push(
-        <View key="national" style={[styles.statusIcon, { backgroundColor: '#2196F3' }]} />
+        <Image
+          key="national"
+          source={require('../../../assets/icons/national.png')}
+          style={styles.statusIcon}
+          resizeMode="contain"
+        />
       );
     }
     
-    // Pink with red slash: blackout (placeholder logic)
+    // Red: blackout (placeholder logic)
     // TODO: Implement actual blackout detection
     const isBlackedOut = false;
     if (isBlackedOut) {
       icons.push(
-        <View key="blackout" style={[styles.statusIcon, styles.blackoutIcon]}>
-          <View style={styles.blackoutSlash} />
-        </View>
+        <Image
+          key="blackout"
+          source={require('../../../assets/icons/blackout.png')}
+          style={styles.statusIcon}
+          resizeMode="contain"
+        />
       );
     }
 
@@ -406,23 +424,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   statusIcon: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  blackoutIcon: {
-    backgroundColor: '#FFB6C1',
-    borderWidth: 1,
-    borderColor: '#FF3B30',
-    position: 'relative',
-  },
-  blackoutSlash: {
-    position: 'absolute',
-    width: 14,
-    height: 2,
-    backgroundColor: '#FF3B30',
-    transform: [{ rotate: '45deg' }],
-    top: 5,
-    left: -1,
+    width: 20,
+    height: 20,
   },
 });
