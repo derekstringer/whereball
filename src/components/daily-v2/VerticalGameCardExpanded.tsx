@@ -319,6 +319,42 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         </View>
       )}
 
+      {/* Also Streaming On (Unsubscribed) - Rectangles for differentiation */}
+      {showDiscovery && hasUnsubscribed && (
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Image
+              source={require('../../../assets/icons/elsewhere.png')}
+              style={styles.sectionIcon}
+              resizeMode="contain"
+            />
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+              ALSO STREAMING ON:
+            </Text>
+          </View>
+          <View style={styles.servicePills}>
+            {unsubscribed.map((service) => (
+              <TouchableOpacity
+                key={service.code}
+                style={[
+                  styles.rectangleButton,
+                  {
+                    backgroundColor: 'rgba(128, 128, 128, 0.2)',
+                    borderColor: 'rgba(128, 128, 128, 0.5)',
+                  },
+                ]}
+                onPress={() => handleServicePress(service.code, false)}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.rectangleButtonText, { color: colors.textSecondary }]}>
+                  {service.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      )}
+
       {/* Nationally Televised On */}
       {game.broadcasts.some(b => b.type === 'national') && (
         <View style={styles.section}>
@@ -342,42 +378,6 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
                   </Text>
                 </View>
               ))}
-          </View>
-        </View>
-      )}
-
-      {/* Also Available On (Unsubscribed) - Rectangles for differentiation */}
-      {showDiscovery && hasUnsubscribed && (
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Image
-              source={require('../../../assets/icons/elsewhere.png')}
-              style={styles.sectionIcon}
-              resizeMode="contain"
-            />
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
-              ALSO AVAILABLE ON:
-            </Text>
-          </View>
-          <View style={styles.servicePills}>
-            {unsubscribed.map((service) => (
-              <TouchableOpacity
-                key={service.code}
-                style={[
-                  styles.rectangleButton,
-                  {
-                    backgroundColor: 'rgba(128, 128, 128, 0.2)',
-                    borderColor: 'rgba(128, 128, 128, 0.5)',
-                  },
-                ]}
-                onPress={() => handleServicePress(service.code, false)}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.rectangleButtonText, { color: colors.textSecondary }]}>
-                  {service.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
           </View>
         </View>
       )}
