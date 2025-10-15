@@ -319,6 +319,33 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         </View>
       )}
 
+      {/* Nationally Televised On */}
+      {game.broadcasts.some(b => b.type === 'national') && (
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Image
+              source={require('../../../assets/icons/national.png')}
+              style={styles.sectionIcon}
+              resizeMode="contain"
+            />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+              NATIONALLY TELEVISED ON:
+            </Text>
+          </View>
+          <View style={styles.nationalNetworks}>
+            {game.broadcasts
+              .filter(b => b.type === 'national')
+              .map((broadcast, index) => (
+                <View key={index} style={[styles.networkBadge, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Text style={[styles.networkText, { color: colors.text }]}>
+                    {broadcast.network}
+                  </Text>
+                </View>
+              ))}
+          </View>
+        </View>
+      )}
+
       {/* Also Available On (Unsubscribed) - Rectangles for differentiation */}
       {showDiscovery && hasUnsubscribed && (
         <View style={styles.section}>
@@ -540,5 +567,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 8,
+  },
+  nationalNetworks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  networkBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  networkText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
