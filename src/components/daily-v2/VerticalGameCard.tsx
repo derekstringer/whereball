@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 4,
+    gap: 2,
   },
   // Team elements
   abbrScoreRow: {
@@ -424,7 +424,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   statusIcon: {
-    width: 20,
-    height: 20,
+    width: 28,
+    height: 28,
   },
 });
