@@ -626,7 +626,7 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   venueRow: {
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 16,
   },
 });
