@@ -221,15 +221,6 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             />
           )}
         </View>
-
-        {/* National broadcast icon only */}
-        {game.broadcasts.some(b => b.type === 'national') && (
-          <Image
-            source={require('../../../assets/icons/national.png')}
-            style={styles.statusIcon}
-            resizeMode="contain"
-          />
-        )}
       </TouchableOpacity>
 
       {/* Scoreboard - Explicit Column Grid */}
