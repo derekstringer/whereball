@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
   scoreboardInline: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-around',
     marginLeft: 12,
   },
