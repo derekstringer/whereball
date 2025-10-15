@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   networkChipText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
   },
 });
