@@ -588,7 +588,7 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   teamInlineContainer: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   teamInline: {
     flexDirection: 'row',
@@ -606,6 +606,7 @@ const styles = StyleSheet.create({
   teamNameInline: {
     fontSize: 12,
     marginTop: 2,
+    alignSelf: 'flex-start',
   },
   centerColInline: {
     minWidth: 50,
