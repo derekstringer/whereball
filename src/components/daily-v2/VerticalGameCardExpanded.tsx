@@ -372,21 +372,14 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             {game.broadcasts
               .filter(b => b.type === 'national')
               .map((broadcast, index) => (
-                <TouchableOpacity
+                <View
                   key={index}
-                  style={[
-                    styles.rectangleButton,
-                    {
-                      backgroundColor: 'rgba(128, 128, 128, 0.2)',
-                      borderColor: 'rgba(128, 128, 128, 0.5)',
-                    },
-                  ]}
-                  activeOpacity={0.7}
+                  style={[styles.networkChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 >
-                  <Text style={[styles.rectangleButtonText, { color: colors.textSecondary }]}>
+                  <Text style={[styles.networkChipText, { color: colors.text }]}>
                     {broadcast.network}
                   </Text>
-                </TouchableOpacity>
+                </View>
               ))}
           </View>
         </View>
@@ -591,6 +584,16 @@ const styles = StyleSheet.create({
   },
   networkText: {
     fontSize: 14,
+    fontWeight: '600',
+  },
+  networkChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  networkChipText: {
+    fontSize: 13,
     fontWeight: '600',
   },
 });
