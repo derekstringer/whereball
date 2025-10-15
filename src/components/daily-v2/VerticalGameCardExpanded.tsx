@@ -190,7 +190,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.stroke }]}>
-      {/* Header with time pill - tappable to collapse */}
+      {/* Header Row - Time Pill + Scoreboard - tappable to collapse */}
       <TouchableOpacity style={styles.headerRow} onPress={onCollapse} activeOpacity={0.7}>
         <View
           style={[
@@ -221,62 +221,44 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             />
           )}
         </View>
-      </TouchableOpacity>
 
-      {/* Scoreboard - Explicit Column Grid */}
-      <View style={styles.scoreboardSection}>
-        {/* LEFT TEAM Column (flex) - Away Team */}
-        <View style={styles.teamColLeft}>
-          <View style={styles.abbrScoreRow}>
-            <Text style={[styles.teamAbbr, styles.leftAlign, { color: colors.text }]}>
+        {/* Scoreboard on same row as time */}
+        <View style={styles.scoreboardInline}>
+          {/* LEFT TEAM - Away */}
+          <View style={styles.teamInline}>
+            <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
               {game.awayTeam.abbreviation}
             </Text>
-            <Text style={[styles.score, { color: colors.text }]}>
+            <Text style={[styles.scoreInline, { color: colors.text }]}>
               {game.awayTeam.score ?? '-'}
             </Text>
           </View>
-          <Text
-            style={[styles.teamName, styles.leftAlign, { color: colors.textSecondary }]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {game.awayTeam.name.split(' ').pop()}
-          </Text>
-        </View>
 
-        {/* CENTER: Live Clock Widget, "Final", or "@" */}
-        {isLive && clockData ? (
-          <View style={styles.centerCol}>
-            <LiveClockWidget clock={clockData} />
-          </View>
-        ) : isFinal ? (
-          <Text style={[styles.atCol, { color: colors.textSecondary }]}>Final</Text>
-        ) : (
-          <Text style={[styles.atCol, { color: colors.textSecondary }]}>@</Text>
-        )}
+          {/* CENTER: Live Clock Widget, "Final", or "@" */}
+          {isLive && clockData ? (
+            <View style={styles.centerColInline}>
+              <LiveClockWidget clock={clockData} />
+            </View>
+          ) : isFinal ? (
+            <Text style={[styles.atColInline, { color: colors.textSecondary }]}>Final</Text>
+          ) : (
+            <Text style={[styles.atColInline, { color: colors.textSecondary }]}>@</Text>
+          )}
 
-        {/* RIGHT TEAM Column (flex) - Home Team */}
-        <View style={styles.teamColRight}>
-          <View style={styles.abbrScoreRow}>
-            <Text style={[styles.score, { color: colors.text }]}>
+          {/* RIGHT TEAM - Home */}
+          <View style={styles.teamInline}>
+            <Text style={[styles.scoreInline, { color: colors.text }]}>
               {game.homeTeam.score ?? '-'}
             </Text>
-            <Text style={[styles.teamAbbr, styles.rightAlign, { color: colors.text }]}>
+            <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
               {game.homeTeam.abbreviation}
             </Text>
           </View>
-          <Text
-            style={[styles.teamName, styles.rightAlign, { color: colors.textSecondary }]}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >
-            {game.homeTeam.name.split(' ').pop()}
-          </Text>
         </View>
-      </View>
+      </TouchableOpacity>
 
-      {/* Venue */}
-      <View style={styles.details}>
+      {/* Venue - centered, underneath */}
+      <View style={styles.venueRow}>
         <Text style={[styles.venue, { color: colors.textSecondary }]}>
           {game.venue}
         </Text>
@@ -586,5 +568,41 @@ const styles = StyleSheet.create({
   networkChipText: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  // Inline scoreboard styles
+  scoreboardInline: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    marginLeft: 12,
+  },
+  teamInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  teamAbbrInline: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  scoreInline: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  centerColInline: {
+    minWidth: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  atColInline: {
+    minWidth: 45,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  venueRow: {
+    alignItems: 'center',
+    marginBottom: 16,
   },
 });
