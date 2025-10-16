@@ -26,7 +26,9 @@ import { DateHeader } from '../../components/daily-v2/DateHeader';
 import { VerticalGameCard } from '../../components/daily-v2/VerticalGameCard';
 import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGameCardExpanded';
 import { SettingsScreen } from '../settings/SettingsScreen';
-import { FiltersSheet } from '../../components/ui/FiltersSheet';
+import { FiltersSheetV2 } from '../../components/ui/filters-v2/FiltersSheetV2';
+import { FEATURES } from '../../config/features';
+import { applyFiltersV2 } from '../../lib/filters-v2-engine';
 
 interface GameSection {
   title: string; // YYYY-MM-DD
@@ -37,7 +39,13 @@ interface GameSection {
 
 export const DailyV3: React.FC = () => {
   const { colors } = useTheme();
-  const { subscriptions, expandedGameIdBySport, setExpandedGameId } = useAppStore();
+  const { 
+    subscriptions, 
+    follows,
+    filtersV2,
+    expandedGameIdBySport, 
+    setExpandedGameId 
+  } = useAppStore();
   
   const [sections, setSections] = useState<GameSection[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,8 +57,25 @@ export const DailyV3: React.FC = () => {
   const isScrollingToToday = useRef(false);
   
   const userServiceCodes = useMemo(() => subscriptions.map(s => s.service_code), [subscriptions]);
+  const userFollows = useMemo(() => follows.map(f => f.team_id), [follows]);
   const currentTime = useRef(new Date()).current;
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
+
+  // Apply filters to sections
+  const filteredSections = useMemo(() => {
+    if (!FEATURES.USE_FILTERS_V2) {
+      return sections;
+    }
+
+    return sections.map(section => ({
+      ...section,
+      data: applyFiltersV2(section.data, {
+        filters: filtersV2,
+        userFollows,
+        userServices: userServiceCodes,
+      }),
+    }));
+  }, [sections, filtersV2, userFollows, userServiceCodes]);
 
   // Get today's date key
   const getTodayDateKey = (): string => {
@@ -447,7 +472,7 @@ export const DailyV3: React.FC = () => {
 
       <SectionList<NHLGame, GameSection>
         ref={sectionListRef}
-        sections={sections}
+        sections={filteredSections}
         renderSectionHeader={renderSectionHeader}
         renderItem={renderItem}
         renderSectionFooter={renderSectionFooter}
@@ -514,10 +539,26 @@ export const DailyV3: React.FC = () => {
       </Modal>
 
       {/* Filters Modal */}
-      <FiltersSheet 
-        visible={showFilters}
-        onClose={() => setShowFilters(false)}
-      />
+      {FEATURES.USE_FILTERS_V2 ? (
+        <FiltersSheetV2 
+          visible={showFilters}
+          onClose={() => setShowFilters(false)}
+        />
+      ) : (
+        <Modal
+          visible={showFilters}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowFilters(false)}
+        >
+          <View style={[styles.container, { backgroundColor: colors.bg }]}>
+            <Text style={{ color: colors.text, padding: 20 }}>Filters (Old) - Not implemented</Text>
+            <TouchableOpacity onPress={() => setShowFilters(false)}>
+              <Text style={{ color: colors.primary, padding: 20 }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 };
