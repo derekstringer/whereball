@@ -154,8 +154,43 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     onClose();
   };
 
-  // Cancel (discard changes)
+  // Clear all selections (reset to preset1)
+  const handleClear = () => {
+    const presetState = buildStateFromPreset('preset1', follows, subscriptions);
+    setWorkingState({
+      quickView: 'preset1',
+      lastPreset: 'preset1',
+      ...presetState,
+    });
+  };
+
+  // Check if state has changed (dirty state)
+  const isDirty = () => {
+    if (filtersV2.quickView !== workingState.quickView) return true;
+    if (filtersV2.includeElsewhereInListings !== workingState.includeElsewhereInListings) return true;
+    if (filtersV2.showElsewhereBadges !== workingState.showElsewhereBadges) return true;
+    if (filtersV2.showNationalBadges !== workingState.showNationalBadges) return true;
+    
+    // Check custom selections if in custom mode
+    if (workingState.quickView === 'custom' && filtersV2.customSelections) {
+      const currentSports = filtersV2.customSelections.sports || [];
+      const currentTeams = filtersV2.customSelections.teams || [];
+      const currentServices = filtersV2.customSelections.services || [];
+      
+      if (JSON.stringify(currentSports.sort()) !== JSON.stringify(workingState.selectedSports.sort())) return true;
+      if (JSON.stringify(currentTeams.sort()) !== JSON.stringify(workingState.selectedTeams.sort())) return true;
+      if (JSON.stringify(currentServices.sort()) !== JSON.stringify(workingState.selectedServices.sort())) return true;
+    }
+    
+    return false;
+  };
+
+  // Cancel (discard changes with confirmation if dirty)
   const handleCancel = () => {
+    if (isDirty()) {
+      // TODO: Show confirmation dialog in Phase 5
+      // For now, just close
+    }
     onClose();
   };
 
@@ -244,6 +279,19 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
           {/* Footer */}
           <View style={[styles.footer, { borderTopColor: colors.border }]}>
+            {/* Clear button (shown if not on preset1) */}
+            {workingState.quickView !== 'preset1' && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={handleClear}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>
+                  Clear all filters
+                </Text>
+              </TouchableOpacity>
+            )}
+
             <View style={styles.footerButtons}>
               <TouchableOpacity
                 style={[styles.cancelButton, { borderColor: colors.border }]}
@@ -346,6 +394,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     borderTopWidth: 1,
+  },
+  clearButton: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  clearButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   footerButtons: {
     flexDirection: 'row',
