@@ -209,6 +209,11 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           onPress={handleCancel}
         />
         <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+          {/* Drag Handle */}
+          <View style={styles.dragHandleContainer}>
+            <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
+          </View>
+
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -331,14 +336,23 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 20,
+    paddingTop: 8,
     paddingBottom: 40,
-    maxHeight: '85%',
+    maxHeight: '95%', // Increased from 85% for better content visibility
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 24,
+  },
+  dragHandleContainer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
   },
   header: {
     flexDirection: 'row',
