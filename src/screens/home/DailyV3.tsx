@@ -26,6 +26,7 @@ import { DateHeader } from '../../components/daily-v2/DateHeader';
 import { VerticalGameCard } from '../../components/daily-v2/VerticalGameCard';
 import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGameCardExpanded';
 import { SettingsScreen } from '../settings/SettingsScreen';
+import { FiltersSheet } from '../../components/ui/FiltersSheet';
 
 interface GameSection {
   title: string; // YYYY-MM-DD
@@ -42,6 +43,7 @@ export const DailyV3: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
   const [dateRange, setDateRange] = useState({ start: -30, end: 60 });
   const isScrollingToToday = useRef(false);
@@ -434,7 +436,13 @@ export const DailyV3: React.FC = () => {
           </TouchableOpacity>
         </View>
         
-        <View style={styles.menuButton} />
+        <TouchableOpacity
+          style={styles.menuButton}
+          onPress={() => setShowFilters(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.menuIcon, { color: colors.primary }]}>🔍</Text>
+        </TouchableOpacity>
       </View>
 
       <SectionList<NHLGame, GameSection>
@@ -504,6 +512,12 @@ export const DailyV3: React.FC = () => {
       >
         <SettingsScreen onClose={() => setShowSettings(false)} />
       </Modal>
+
+      {/* Filters Modal */}
+      <FiltersSheet 
+        visible={showFilters}
+        onClose={() => setShowFilters(false)}
+      />
     </SafeAreaView>
   );
 };
