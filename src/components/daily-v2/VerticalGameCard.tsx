@@ -215,7 +215,6 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       style={[styles.container, isFinal && styles.dimmed]}
       onPress={onPress}
       activeOpacity={0.7}
-      delayPressIn={50}
     >
       <View style={styles.row}>
         {/* TIME Column (fixed 84px) */}

@@ -141,16 +141,13 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
       onRequestClose={handleCancel}
     >
       {/* Backdrop */}
-      <TouchableOpacity
-        style={styles.backdrop}
-        activeOpacity={1}
-        onPress={handleCancel}
-      >
+      <View style={styles.backdrop}>
         <TouchableOpacity
+          style={styles.backdropTouchable}
           activeOpacity={1}
-          onPress={(e) => e.stopPropagation()}
-          style={[styles.sheet, { backgroundColor: colors.card }]}
-        >
+          onPress={handleCancel}
+        />
+        <View style={[styles.sheet, { backgroundColor: colors.card }]}>
           {/* Header */}
           <View style={styles.header}>
             <View style={styles.headerLeft}>
@@ -226,8 +223,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               </TouchableOpacity>
             </View>
           </View>
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 };
@@ -235,8 +232,15 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+  },
+  backdropTouchable: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   sheet: {
     borderTopLeftRadius: 24,
