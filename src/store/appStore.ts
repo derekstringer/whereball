@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { AppState, User, UserSubscription, Follow, ThemeState } from '../types';
 import { ColorMode } from '../styles/tokens';
+import { FiltersV2State, ElsewhereNudgeState } from '../components/ui/filters-v2/types';
 
 export interface GameFilters {
   // Sport filtering
@@ -34,7 +35,7 @@ interface AppStore extends AppState {
   setColorMode: (mode: ColorMode) => void;
   triggerSystemThemeUpdate: () => void;
   
-  // Filters
+  // Filters (Legacy)
   filters: GameFilters;
   setFilters: (filters: GameFilters) => void;
   toggleFilter: (filterKey: keyof GameFilters) => void;
@@ -42,6 +43,13 @@ interface AppStore extends AppState {
   toggleTeamFilter: (teamId: string) => void;
   toggleServiceFilter: (serviceCode: string) => void;
   resetFilters: () => void;
+  
+  // FiltersV2 (New - Backward Compatible)
+  filtersV2: FiltersV2State;
+  setFiltersV2: (state: FiltersV2State) => void;
+  elsewhereNudge: ElsewhereNudgeState;
+  setElsewhereNudge: (state: Partial<ElsewhereNudgeState>) => void;
+  incrementNoOptionsGamesSeen: () => void;
   
   // DailyV2 Expansion State
   expandedGameIdBySport: Record<string, string | null>;
@@ -76,7 +84,7 @@ const DEFAULT_THEME: ThemeState = {
   currentContext: null,
 };
 
-// Default filters
+// Default filters (Legacy)
 const DEFAULT_FILTERS: GameFilters = {
   sports: ['nhl'], // Default to NHL only
   myTeamsOnly: true, // Default ON: Show followed teams' games (that's why they followed them!)
@@ -87,6 +95,22 @@ const DEFAULT_FILTERS: GameFilters = {
   liveOnly: false,
   nationalOnly: false,
   showAll: false,
+};
+
+// Default FiltersV2 state
+const DEFAULT_FILTERS_V2: FiltersV2State = {
+  quickView: 'preset1',
+  lastPreset: 'preset1',
+  includeElsewhereInListings: false,
+  showElsewhereBadges: true,
+  showNationalBadges: true,
+};
+
+// Default Elsewhere Nudge state
+const DEFAULT_ELSEWHERE_NUDGE: ElsewhereNudgeState = {
+  dismissed: false,
+  noOptionsGamesSeen: 0,
+  lastNoOptionsDate: null,
 };
 
 // Initial state
@@ -103,6 +127,8 @@ const initialState: AppState = {
 export const useAppStore = create<AppStore>((set) => ({
   ...initialState,
   filters: DEFAULT_FILTERS,
+  filtersV2: DEFAULT_FILTERS_V2,
+  elsewhereNudge: DEFAULT_ELSEWHERE_NUDGE,
   colorMode: 'dark', // Default to dark mode
   systemThemeUpdateTrigger: 0,
   expandedGameIdBySport: {},
@@ -121,6 +147,23 @@ export const useAppStore = create<AppStore>((set) => ({
     })),
 
   setFilters: (filters) => set({ filters }),
+  
+  // FiltersV2 actions
+  setFiltersV2: (filtersV2) => set({ filtersV2 }),
+  
+  setElsewhereNudge: (nudge) =>
+    set((state) => ({
+      elsewhereNudge: { ...state.elsewhereNudge, ...nudge },
+    })),
+  
+  incrementNoOptionsGamesSeen: () =>
+    set((state) => ({
+      elsewhereNudge: {
+        ...state.elsewhereNudge,
+        noOptionsGamesSeen: state.elsewhereNudge.noOptionsGamesSeen + 1,
+        lastNoOptionsDate: new Date().toISOString().split('T')[0],
+      },
+    })),
 
   toggleFilter: (filterKey) =>
     set((state) => {
