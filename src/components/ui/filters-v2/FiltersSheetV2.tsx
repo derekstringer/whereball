@@ -12,6 +12,9 @@ import { buildStateFromPreset, detectPresetFromState } from './presets';
 import { QuickViewsRadio } from './QuickViewsRadio';
 import { GlobalToggles } from './GlobalToggles';
 import { SportsChips } from './SportsChips';
+import { ServicesSection } from './ServicesSection';
+import { TeamsSearch } from './TeamsSearch';
+import { TeamsGrid } from './TeamsGrid';
 
 interface FiltersSheetV2Props {
   visible: boolean;
@@ -24,6 +27,9 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 }) => {
   const { colors } = useTheme();
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
+
+  // Team search state
+  const [teamSearchQuery, setTeamSearchQuery] = useState('');
 
   // Working state (changes only on Apply)
   const [workingState, setWorkingState] = useState<FiltersWorkingState>({
@@ -108,6 +114,26 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     setWorkingState(prev => ({
       ...prev,
       showNationalBadges: !prev.showNationalBadges,
+    }));
+  };
+
+  const handleToggleService = (serviceCode: string) => {
+    markAsCustom();
+    setWorkingState(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.includes(serviceCode)
+        ? prev.selectedServices.filter(s => s !== serviceCode)
+        : [...prev.selectedServices, serviceCode],
+    }));
+  };
+
+  const handleToggleTeam = (teamId: string) => {
+    markAsCustom();
+    setWorkingState(prev => ({
+      ...prev,
+      selectedTeams: prev.selectedTeams.includes(teamId)
+        ? prev.selectedTeams.filter(t => t !== teamId)
+        : [...prev.selectedTeams, teamId],
     }));
   };
 
@@ -196,12 +222,24 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               onToggleSport={handleToggleSport}
             />
 
-            {/* Placeholder for Teams & Services (Phase 3) */}
-            <View style={[styles.placeholder, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-              <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>
-                🚧 Teams & Services sections coming in Phase 3
-              </Text>
-            </View>
+            {/* Services */}
+            <ServicesSection
+              selectedServices={workingState.selectedServices}
+              ownedServices={subscriptions.map(s => s.service_code)}
+              onToggleService={handleToggleService}
+            />
+
+            {/* Teams */}
+            <TeamsSearch
+              value={teamSearchQuery}
+              onChangeText={setTeamSearchQuery}
+            />
+            <TeamsGrid
+              selectedTeams={workingState.selectedTeams}
+              followedTeams={follows.map(f => f.team_id)}
+              searchQuery={teamSearchQuery}
+              onToggleTeam={handleToggleTeam}
+            />
           </ScrollView>
 
           {/* Footer */}
