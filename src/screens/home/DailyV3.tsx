@@ -62,7 +62,7 @@ export const DailyV3: React.FC = () => {
   const currentTime = useRef(new Date()).current;
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
 
-  // Apply filters to sections
+  // Apply filters to sections AND skip empty dates
   const filteredSections = useMemo(() => {
     if (!FEATURES.USE_FILTERS_V2) {
       return sections;
@@ -73,10 +73,12 @@ export const DailyV3: React.FC = () => {
       subscriptions,
     };
     
-    return sections.map(section => ({
-      ...section,
-      data: applyFilters(section.data as any[], filtersV2, filterContext) as unknown as NHLGame[],
-    }));
+    return sections
+      .map(section => ({
+        ...section,
+        data: applyFilters(section.data as any[], filtersV2, filterContext) as unknown as NHLGame[],
+      }))
+      .filter(section => section.data.length > 0); // SKIP EMPTY DATES
   }, [sections, filtersV2, userFollows, userServiceCodes, follows, subscriptions]);
 
   // Detect empty state scenarios
@@ -479,7 +481,35 @@ export const DailyV3: React.FC = () => {
   };
 
   const scrollToToday = () => {
-    const todaySectionIndex = filteredSections.findIndex(s => s.isToday);
+    let todaySectionIndex = filteredSections.findIndex(s => s.isToday);
+    let targetSection = null;
+    let fallbackMessage = null;
+    
+    if (todaySectionIndex === -1) {
+      // Today has no games, find nearest date with games
+      const todayDate = new Date(todayDateKey);
+      todayDate.setHours(0, 0, 0, 0);
+      
+      // Find first FUTURE section
+      const futureSection = filteredSections.find(s => s.dateObj > todayDate);
+      
+      if (futureSection) {
+        todaySectionIndex = filteredSections.indexOf(futureSection);
+        targetSection = futureSection;
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        fallbackMessage = `No games today — jumped to ${monthNames[futureSection.dateObj.getMonth()]} ${futureSection.dateObj.getDate()}`;
+      } else {
+        // No future sections, find most recent PAST section
+        const pastSections = filteredSections.filter(s => s.dateObj < todayDate);
+        if (pastSections.length > 0) {
+          targetSection = pastSections[pastSections.length - 1];
+          todaySectionIndex = filteredSections.indexOf(targetSection);
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          fallbackMessage = `No games today — jumped to ${monthNames[targetSection.dateObj.getMonth()]} ${targetSection.dateObj.getDate()}`;
+        }
+      }
+    }
+    
     if (todaySectionIndex !== -1 && sectionListRef.current) {
       // Set flag to prevent handleScroll from triggering loads
       isScrollingToToday.current = true;
@@ -493,12 +523,17 @@ export const DailyV3: React.FC = () => {
         viewOffset: 0,
       });
       
+      // Show toast if we fell back to a different date
+      if (fallbackMessage) {
+        // TODO: Show toast notification (requires toast library)
+        console.log(fallbackMessage);
+      }
+      
       // Fallback: If still not visible after animation, try again
       setTimeout(() => {
-        const checkIndex = filteredSections.findIndex(s => s.isToday);
-        if (checkIndex !== -1 && sectionListRef.current) {
+        if (sectionListRef.current) {
           sectionListRef.current.scrollToLocation({
-            sectionIndex: checkIndex,
+            sectionIndex: todaySectionIndex,
             itemIndex: 0,
             animated: false,
             viewPosition: 0,
