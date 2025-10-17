@@ -158,6 +158,10 @@ export function buildMatchPredicate(
     // 3. SERVICES FILTER (Watchability)
     if (serviceScope === 'MY') {
       // MY SERVICES mode - must be watchable on at least one owned service
+      if (!game.broadcastProviders || game.broadcastProviders.length === 0) {
+        return false; // No broadcast info, can't be watchable
+      }
+      
       const isWatchable = game.broadcastProviders.some(provider => {
         // Check if we own this service AND it's not blacked out
         return ownedServices.has(provider.serviceCode) && 
