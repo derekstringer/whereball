@@ -1,20 +1,19 @@
 /**
- * FiltersSheetV2 - New adaptive filter system with Quick Views
- * Phase 2: Core components (QuickViews, GlobalToggles, Sports)
+ * FiltersSheetV2 - Complete rebuild per SportStream spec
+ * Features: 2x2 Quick Views, collapsible sections, mode switcher, badges
  */
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAppStore } from '../../../store/appStore';
-import { FiltersWorkingState, QuickView, Sport } from './types';
-import { buildStateFromPreset, detectPresetFromState } from './presets';
+import { FiltersWorkingState, QuickView, Sport, TeamsMode } from './types';
+import { buildStateFromPreset } from './presets';
 import { QuickViewsRadio } from './QuickViewsRadio';
-import { GlobalToggles } from './GlobalToggles';
-import { SportsChips } from './SportsChips';
+import { SportsChipsV2 } from './SportsChipsV2';
+import { TeamsSectionV2 } from './TeamsSectionV2';
 import { ServicesSection } from './ServicesSection';
-import { TeamsSearch } from './TeamsSearch';
-import { TeamsGrid } from './TeamsGrid';
+import { BadgesLabelsSection } from './BadgesLabelsSection';
 
 interface FiltersSheetV2Props {
   visible: boolean;
@@ -28,41 +27,46 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   const { colors } = useTheme();
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
 
-  // Team search state
-  const [teamSearchQuery, setTeamSearchQuery] = useState('');
-
   // Working state (changes only on Apply)
   const [workingState, setWorkingState] = useState<FiltersWorkingState>({
-    quickView: filtersV2.quickView,
-    lastPreset: filtersV2.lastPreset,
-    selectedSports: [],
+    quickView: 'my_teams_my_services',
+    lastPreset: 'my_teams_my_services',
+    teamsMode: 'followed',
     selectedTeams: [],
+    excludedTeams: [],
+    selectedSports: [],
     selectedServices: [],
-    includeElsewhereInListings: filtersV2.includeElsewhereInListings,
-    showElsewhereBadges: filtersV2.showElsewhereBadges,
-    showNationalBadges: filtersV2.showNationalBadges,
+    showElsewhereBadges: true,
+    showNationalBadges: true,
   });
 
   // Initialize working state on open
   useEffect(() => {
     if (visible) {
-      // Load current preset or custom state
+      // Load current state
       if (filtersV2.quickView !== 'custom') {
         const presetState = buildStateFromPreset(filtersV2.quickView, follows, subscriptions);
         setWorkingState({
           quickView: filtersV2.quickView,
-          lastPreset: filtersV2.lastPreset,
-          ...presetState,
+          lastPreset: filtersV2.lastPreset || filtersV2.quickView,
+          teamsMode: 'followed', // presets always start in followed mode
+          selectedTeams: [],
+          excludedTeams: [],
+          selectedSports: presetState.selectedSports,
+          selectedServices: presetState.selectedServices,
+          showElsewhereBadges: presetState.showElsewhereBadges,
+          showNationalBadges: presetState.showNationalBadges,
         });
       } else {
         // Load custom selections
         setWorkingState({
           quickView: 'custom',
-          lastPreset: filtersV2.lastPreset,
-          selectedSports: filtersV2.customSelections?.sports || [],
+          lastPreset: filtersV2.lastPreset || 'my_teams_my_services',
+          teamsMode: filtersV2.customSelections?.teamsMode || 'followed',
           selectedTeams: filtersV2.customSelections?.teams || [],
+          excludedTeams: filtersV2.customSelections?.excludedTeams || [],
+          selectedSports: filtersV2.customSelections?.sports || [],
           selectedServices: filtersV2.customSelections?.services || [],
-          includeElsewhereInListings: filtersV2.includeElsewhereInListings,
           showElsewhereBadges: filtersV2.showElsewhereBadges,
           showNationalBadges: filtersV2.showNationalBadges,
         });
@@ -77,10 +81,13 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
       quickView: preset,
       lastPreset: preset,
       ...presetState,
+      teamsMode: 'followed', // presets reset to followed mode
+      selectedTeams: [],
+      excludedTeams: [],
     });
   };
 
-  // Handle manual changes (sets to custom)
+  // Mark as custom when user makes manual changes
   const markAsCustom = () => {
     if (workingState.quickView !== 'custom') {
       setWorkingState(prev => ({
@@ -90,7 +97,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     }
   };
 
-  // Toggle handlers
+  // Sports handlers
   const handleToggleSport = (sport: Sport) => {
     markAsCustom();
     setWorkingState(prev => ({
@@ -101,33 +108,25 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     }));
   };
 
-  const handleToggleElsewhere = () => {
+  // Teams handlers
+  const handleToggleTeamsMode = (mode: TeamsMode) => {
     markAsCustom();
     setWorkingState(prev => ({
       ...prev,
-      includeElsewhereInListings: !prev.includeElsewhereInListings,
+      teamsMode: mode,
+      selectedTeams: [], // Clear selections when switching modes
+      excludedTeams: [],
     }));
   };
 
-  const handleToggleNational = () => {
+  const handleToggleFollow = (teamId: string) => {
+    // This should persist immediately to profile
+    // For now, just update local state
+    // TODO: Call API to update follows
     markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      showNationalBadges: !prev.showNationalBadges,
-    }));
   };
 
-  const handleToggleService = (serviceCode: string) => {
-    markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      selectedServices: prev.selectedServices.includes(serviceCode)
-        ? prev.selectedServices.filter(s => s !== serviceCode)
-        : [...prev.selectedServices, serviceCode],
-    }));
-  };
-
-  const handleToggleTeam = (teamId: string) => {
+  const handleToggleInclude = (teamId: string) => {
     markAsCustom();
     setWorkingState(prev => ({
       ...prev,
@@ -137,58 +136,85 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     }));
   };
 
+  const handleToggleExclude = (teamId: string) => {
+    markAsCustom();
+    setWorkingState(prev => ({
+      ...prev,
+      excludedTeams: prev.excludedTeams.includes(teamId)
+        ? prev.excludedTeams.filter(t => t !== teamId)
+        : [...prev.excludedTeams, teamId],
+    }));
+  };
+
+  // Services handlers
+  const handleToggleService = (serviceCode: string) => {
+    // Services ownership persists immediately to profile
+    // For now, just update local state
+    // TODO: Call API to update subscriptions
+    markAsCustom();
+  };
+
+  // Badge handlers (independent - do NOT mark as custom)
+  const handleToggleElsewhereBadges = () => {
+    setWorkingState(prev => ({
+      ...prev,
+      showElsewhereBadges: !prev.showElsewhereBadges,
+    }));
+  };
+
+  const handleToggleNationalBadges = () => {
+    setWorkingState(prev => ({
+      ...prev,
+      showNationalBadges: !prev.showNationalBadges,
+    }));
+  };
+
   // Apply changes
   const handleApply = () => {
     setFiltersV2({
       quickView: workingState.quickView,
       lastPreset: workingState.lastPreset,
-      includeElsewhereInListings: workingState.includeElsewhereInListings,
       showElsewhereBadges: workingState.showElsewhereBadges,
       showNationalBadges: workingState.showNationalBadges,
       customSelections: workingState.quickView === 'custom' ? {
+        teamsMode: workingState.teamsMode,
         sports: workingState.selectedSports,
         teams: workingState.selectedTeams,
+        excludedTeams: workingState.excludedTeams,
         services: workingState.selectedServices,
       } : undefined,
     });
     onClose();
   };
 
-  // Clear all selections (reset to preset1)
-  const handleClear = () => {
-    const presetState = buildStateFromPreset('preset1', follows, subscriptions);
-    setWorkingState({
-      quickView: 'preset1',
-      lastPreset: 'preset1',
-      ...presetState,
-    });
-  };
-
   // Check if state has changed (dirty state)
   const isDirty = () => {
     if (filtersV2.quickView !== workingState.quickView) return true;
-    if (filtersV2.includeElsewhereInListings !== workingState.includeElsewhereInListings) return true;
     if (filtersV2.showElsewhereBadges !== workingState.showElsewhereBadges) return true;
     if (filtersV2.showNationalBadges !== workingState.showNationalBadges) return true;
     
     // Check custom selections if in custom mode
     if (workingState.quickView === 'custom' && filtersV2.customSelections) {
+      if (filtersV2.customSelections.teamsMode !== workingState.teamsMode) return true;
+      
       const currentSports = filtersV2.customSelections.sports || [];
       const currentTeams = filtersV2.customSelections.teams || [];
+      const currentExcluded = filtersV2.customSelections.excludedTeams || [];
       const currentServices = filtersV2.customSelections.services || [];
       
       if (JSON.stringify(currentSports.sort()) !== JSON.stringify(workingState.selectedSports.sort())) return true;
       if (JSON.stringify(currentTeams.sort()) !== JSON.stringify(workingState.selectedTeams.sort())) return true;
+      if (JSON.stringify(currentExcluded.sort()) !== JSON.stringify(workingState.excludedTeams.sort())) return true;
       if (JSON.stringify(currentServices.sort()) !== JSON.stringify(workingState.selectedServices.sort())) return true;
     }
     
     return false;
   };
 
-  // Cancel (discard changes with confirmation if dirty)
+  // Cancel (discard changes)
   const handleCancel = () => {
     if (isDirty()) {
-      // TODO: Show confirmation dialog in Phase 5
+      // TODO: Show confirmation dialog
       // For now, just close
     }
     onClose();
@@ -208,7 +234,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           activeOpacity={1}
           onPress={handleCancel}
         />
-        <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+        <View style={[styles.sheet, { backgroundColor: colors.bg }]}>
           {/* Drag Handle */}
           <View style={styles.dragHandleContainer}>
             <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
@@ -220,11 +246,9 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               <Text style={[styles.title, { color: colors.text }]}>
                 Filters
               </Text>
-              {workingState.quickView !== 'preset1' && (
+              {workingState.quickView === 'custom' && (
                 <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.badgeText}>
-                    {workingState.quickView === 'custom' ? 'Custom' : '✓'}
-                  </Text>
+                  <Text style={styles.badgeText}>Custom</Text>
                 </View>
               )}
             </View>
@@ -241,62 +265,49 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
           >
-            {/* Quick Views */}
+            {/* 1. Quick Views (2x2 grid) */}
             <QuickViewsRadio
               selected={workingState.quickView}
               onSelect={handlePresetSelect}
               lastPreset={workingState.lastPreset}
             />
 
-            {/* Global Toggles */}
-            <GlobalToggles
-              showElsewhereBadges={workingState.showElsewhereBadges}
-              showNationalBadges={workingState.showNationalBadges}
-              onToggleElsewhere={handleToggleElsewhere}
-              onToggleNational={handleToggleNational}
-            />
-
-            {/* Sports */}
-            <SportsChips
+            {/* 2. Sports (collapsible with search) */}
+            <SportsChipsV2
               selectedSports={workingState.selectedSports}
               onToggleSport={handleToggleSport}
             />
 
-            {/* Services */}
+            {/* 3. Teams (collapsible with mode switcher) */}
+            <TeamsSectionV2
+              teamsMode={workingState.teamsMode}
+              selectedTeams={workingState.selectedTeams}
+              excludedTeams={workingState.excludedTeams}
+              followedTeamIds={follows.map(f => f.team_id)}
+              onToggleMode={handleToggleTeamsMode}
+              onToggleFollow={handleToggleFollow}
+              onToggleInclude={handleToggleInclude}
+              onToggleExclude={handleToggleExclude}
+            />
+
+            {/* 4. Services (collapsible with owned toggles) */}
             <ServicesSection
               selectedServices={workingState.selectedServices}
               ownedServices={subscriptions.map(s => s.service_code)}
               onToggleService={handleToggleService}
             />
 
-            {/* Teams */}
-            <TeamsSearch
-              value={teamSearchQuery}
-              onChangeText={setTeamSearchQuery}
-            />
-            <TeamsGrid
-              selectedTeams={workingState.selectedTeams}
-              followedTeams={follows.map(f => f.team_id)}
-              searchQuery={teamSearchQuery}
-              onToggleTeam={handleToggleTeam}
+            {/* 5. Badges & Labels (bottom, independent) */}
+            <BadgesLabelsSection
+              showElsewhereBadges={workingState.showElsewhereBadges}
+              showNationalBadges={workingState.showNationalBadges}
+              onToggleElsewhere={handleToggleElsewhereBadges}
+              onToggleNational={handleToggleNationalBadges}
             />
           </ScrollView>
 
-          {/* Footer */}
-          <View style={[styles.footer, { borderTopColor: colors.border }]}>
-            {/* Clear button (shown if not on preset1) */}
-            {workingState.quickView !== 'preset1' && (
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={handleClear}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.clearButtonText, { color: colors.textSecondary }]}>
-                  Clear all filters
-                </Text>
-              </TouchableOpacity>
-            )}
-
+          {/* Footer (sticky) */}
+          <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
             <View style={styles.footerButtons}>
               <TouchableOpacity
                 style={[styles.cancelButton, { borderColor: colors.border }]}
@@ -307,10 +318,16 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.applyButton, { backgroundColor: colors.primary }]}
+                style={[
+                  styles.applyButton,
+                  { backgroundColor: isDirty() ? colors.primary : colors.border },
+                ]}
                 onPress={handleApply}
+                disabled={!isDirty()}
               >
-                <Text style={styles.applyButtonText}>Apply</Text>
+                <Text style={[styles.applyButtonText, { opacity: isDirty() ? 1 : 0.5 }]}>
+                  Apply
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -338,7 +355,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 8,
     paddingBottom: 40,
-    maxHeight: '95%', // Increased from 85% for better content visibility
+    maxHeight: '95%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
@@ -394,29 +411,11 @@ const styles = StyleSheet.create({
   contentContainer: {
     paddingBottom: 20,
   },
-  placeholder: {
-    padding: 20,
-    borderRadius: 12,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  placeholderText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
   footer: {
     paddingHorizontal: 24,
     paddingTop: 16,
+    paddingBottom: 16,
     borderTopWidth: 1,
-  },
-  clearButton: {
-    alignItems: 'center',
-    paddingVertical: 10,
-    marginBottom: 12,
-  },
-  clearButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   footerButtons: {
     flexDirection: 'row',

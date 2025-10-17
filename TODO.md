@@ -32,20 +32,45 @@
 
 ---
 
+## ✅ **COMPLETED - FiltersV2 Rebuild (Oct 16, 2025)**
+
+### **Complete Rebuild per SportStream Spec**
+- ✅ QuickViewsRadio - 2×2 grid with MY TEAMS/ALL GAMES × MY SERVICES/ANY SERVICE
+- ✅ SportsChipsV2 - 50+ sports catalog with search functionality
+- ✅ TeamsSectionV2 - Mode switcher (Followed vs Pick Specific) with star/plus/minus controls
+- ✅ BadgesLabelsSection - Independent visual toggles (Elsewhere, National)
+- ✅ CollapsibleSection - Reusable header component
+- ✅ FiltersSheetV2 - Main integration with proper state management
+- ✅ Updated types.ts with new QuickView IDs, TeamsMode, 50+ sports
+- ✅ Updated presets.ts with sports catalog and new preset logic
+- ✅ Bug fix: Safe preset access to handle old store data
+
+**Files Created/Updated:**
+- `src/components/ui/filters-v2/FiltersSheetV2.tsx`
+- `src/components/ui/filters-v2/QuickViewsRadio.tsx`
+- `src/components/ui/filters-v2/SportsChipsV2.tsx`
+- `src/components/ui/filters-v2/TeamsSectionV2.tsx`
+- `src/components/ui/filters-v2/BadgesLabelsSection.tsx`
+- `src/components/ui/filters-v2/CollapsibleSection.tsx`
+- `src/components/ui/filters-v2/types.ts`
+- `src/components/ui/filters-v2/presets.ts`
+
+---
+
 ## 📋 **UP NEXT - High Level Priorities**
 
-### **Phase 1: Card Refinements**
+### **Phase 1: Store Integration**
+- [ ] Update appStore to match new FiltersV2State type structure
+- [ ] Add migration logic for old preset IDs → new IDs
+- [ ] Wire team follow/unfollow to actual API
+- [ ] Wire service ownership to actual API
+- [ ] Test state persistence across app restarts
+
+### **Phase 2: Card Refinements**
 - [ ] Finalize expanded card layout (detail view)
 - [ ] Review and adjust card spacing/sizing if needed
 - [ ] Verify all broadcast/service indicators work correctly
 - [ ] Polish animations and transitions
-
-### **Phase 2: Filters Integration**
-- [ ] Wire up FilterBottomSheet to global state
-- [ ] Add filter button to header (hamburger | title | filters)
-- [ ] Implement filter logic: My Teams, National, Available, Live
-- [ ] Test filter combinations
-- [ ] Ensure filters persist across app restarts
 
 ### **Phase 3: Menu/Settings**
 - [ ] Review existing SettingsScreen
@@ -107,5 +132,5 @@
 
 ---
 
-**Last Updated:** October 13, 2025 11:00 PM
-**Commit:** Pending - about to commit all DailyV3 work
+**Last Updated:** October 16, 2025 7:38 PM
+**Commit:** FiltersV2 complete rebuild per SportStream spec

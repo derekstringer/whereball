@@ -335,14 +335,14 @@ export const DailyV3: React.FC = () => {
 
   // Calculate initial scroll index (flat item index to today's header)
   const initialScrollIndex = useMemo(() => {
-    const todaySectionIndex = sections.findIndex(s => s.isToday);
+    const todaySectionIndex = filteredSections.findIndex(s => s.isToday);
     if (todaySectionIndex === -1) return 0;
     
     // Calculate total flat items before today's section
     let flatIndex = 0;
     for (let i = 0; i < todaySectionIndex; i++) {
       flatIndex += 1; // header
-      flatIndex += sections[i].data.length; // items
+      flatIndex += filteredSections[i].data.length; // items
       flatIndex += 1; // footer
     }
     
@@ -351,7 +351,7 @@ export const DailyV3: React.FC = () => {
     
     console.log('Today section:', todaySectionIndex, 'Flat index (header):', flatIndex);
     return flatIndex;
-  }, [sections]);
+  }, [filteredSections]);
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
@@ -364,7 +364,7 @@ export const DailyV3: React.FC = () => {
   };
 
   const scrollToToday = () => {
-    const todaySectionIndex = sections.findIndex(s => s.isToday);
+    const todaySectionIndex = filteredSections.findIndex(s => s.isToday);
     if (todaySectionIndex !== -1 && sectionListRef.current) {
       // Set flag to prevent handleScroll from triggering loads
       isScrollingToToday.current = true;
@@ -380,7 +380,7 @@ export const DailyV3: React.FC = () => {
       
       // Fallback: If still not visible after animation, try again
       setTimeout(() => {
-        const checkIndex = sections.findIndex(s => s.isToday);
+        const checkIndex = filteredSections.findIndex(s => s.isToday);
         if (checkIndex !== -1 && sectionListRef.current) {
           sectionListRef.current.scrollToLocation({
             sectionIndex: checkIndex,
@@ -498,8 +498,8 @@ export const DailyV3: React.FC = () => {
           let offset = 0;
           let currentItemIndex = 0;
           
-          for (let i = 0; i < sections.length; i++) {
-            const section = sections[i];
+          for (let i = 0; i < filteredSections.length; i++) {
+            const section = filteredSections[i];
             const sectionItemCount = section.data.length;
             
             if (currentItemIndex + sectionItemCount + 2 <= index) {

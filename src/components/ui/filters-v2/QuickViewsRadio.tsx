@@ -1,5 +1,6 @@
 /**
- * QuickViewsRadio - Radio group for selecting Quick View presets
+ * QuickViewsRadio - 2x2 grid of Quick View presets
+ * Updated to match SportStream spec
  */
 
 import React from 'react';
@@ -21,93 +22,135 @@ export const QuickViewsRadio: React.FC<QuickViewsRadioProps> = ({
 }) => {
   const { colors } = useTheme();
 
-  const presetIds: Array<Exclude<QuickView, 'custom'>> = ['preset1', 'preset2', 'preset3'];
+  const presetIds: Array<Exclude<QuickView, 'custom'>> = [
+    'my_teams_my_services',
+    'my_teams_any_service',
+    'all_games_my_services',
+    'all_games_any_service',
+  ];
+
+  const renderBlock = (presetId: Exclude<QuickView, 'custom'>) => {
+    const preset = QUICK_VIEW_PRESETS[presetId];
+    const isSelected = selected === presetId;
+
+    return (
+      <TouchableOpacity
+        key={presetId}
+        style={[
+          styles.block,
+          { 
+            backgroundColor: colors.card,
+            borderColor: isSelected ? colors.primary : colors.border,
+          },
+          isSelected && {
+            shadowColor: colors.primary,
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            shadowOffset: { width: 0, height: 2 },
+            elevation: 6,
+          },
+        ]}
+        onPress={() => onSelect(presetId)}
+        activeOpacity={0.7}
+        role="radio"
+        aria-checked={isSelected}
+        aria-label={`${preset.line1} ${preset.line2} ${preset.line3}`}
+      >
+        {/* Line 1 - ALL CAPS */}
+        <Text
+          style={[
+            styles.line1,
+            { color: isSelected ? colors.primary : colors.text },
+          ]}
+          numberOfLines={1}
+        >
+          {preset.line1}
+        </Text>
+
+        {/* Line 2 - Small "ON" */}
+        <Text
+          style={[
+            styles.line2,
+            { color: isSelected ? colors.primary : colors.textSecondary },
+          ]}
+        >
+          {preset.line2}
+        </Text>
+
+        {/* Line 3 - ALL CAPS */}
+        <Text
+          style={[
+            styles.line3,
+            { color: isSelected ? colors.primary : colors.text },
+          ]}
+          numberOfLines={2}
+        >
+          {preset.line3}
+        </Text>
+
+        {/* Selection indicator (radio dot in top-right corner) */}
+        <View
+          style={[
+            styles.radioIndicator,
+            { borderColor: isSelected ? colors.primary : colors.border },
+          ]}
+        >
+          {isSelected && (
+            <View
+              style={[styles.radioInner, { backgroundColor: colors.primary }]}
+            />
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
         QUICK VIEWS
       </Text>
-      
+
       {/* Show "Custom" indicator if not on a preset */}
-      {selected === 'custom' && lastPreset && (
-        <View style={[styles.customBanner, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}>
+      {selected === 'custom' && lastPreset && QUICK_VIEW_PRESETS[lastPreset] && (
+        <View
+          style={[
+            styles.customBanner,
+            {
+              backgroundColor: colors.primary + '15',
+              borderColor: colors.primary + '30',
+            },
+          ]}
+        >
           <Text style={[styles.customText, { color: colors.primary }]}>
             Custom selection
           </Text>
           <TouchableOpacity onPress={() => onSelect(lastPreset)}>
             <Text style={[styles.resetLink, { color: colors.primary }]}>
-              Reset to {QUICK_VIEW_PRESETS[lastPreset].label}
+              Reset to preset
             </Text>
           </TouchableOpacity>
         </View>
       )}
 
-      <View style={styles.radioGroup} role="radiogroup" aria-label="Quick Views">
-        {presetIds.map(presetId => {
-          const preset = QUICK_VIEW_PRESETS[presetId];
-          const isSelected = selected === presetId;
+      {/* Helper text on first run */}
+      <Text style={[styles.helperText, { color: colors.textSecondary }]}>
+        Pick a quick view. You can still fine-tune below.
+      </Text>
 
-          return (
-            <TouchableOpacity
-              key={presetId}
-              style={[
-                styles.radioOption,
-                { backgroundColor: colors.card, borderColor: colors.stroke },
-                isSelected && {
-                  borderColor: colors.primary,
-                  backgroundColor: colors.primary + '10',
-                  shadowColor: colors.primary,
-                  shadowOpacity: 0.25,
-                  shadowRadius: 8,
-                  elevation: 4,
-                },
-              ]}
-              onPress={() => onSelect(presetId)}
-              activeOpacity={0.7}
-              role="radio"
-              aria-checked={isSelected}
-              aria-label={preset.label}
-            >
-              {/* Radio indicator */}
-              <View style={styles.radioIndicator}>
-                <View
-                  style={[
-                    styles.radioOuter,
-                    { borderColor: isSelected ? colors.primary : colors.border },
-                  ]}
-                >
-                  {isSelected && (
-                    <View
-                      style={[styles.radioInner, { backgroundColor: colors.primary }]}
-                    />
-                  )}
-                </View>
-              </View>
+      {/* 2x2 Grid */}
+      <View style={styles.grid} role="radiogroup" aria-label="Quick Views">
+        {/* Row 1 */}
+        <View style={styles.row}>
+          {renderBlock('my_teams_my_services')}
+          {renderBlock('my_teams_any_service')}
+        </View>
 
-              {/* Label */}
-              <View style={styles.radioText}>
-                <Text
-                  style={[
-                    styles.radioLabel,
-                    { color: colors.text },
-                    isSelected && { color: colors.primary, fontWeight: '700' },
-                  ]}
-                >
-                  {preset.label}
-                </Text>
-                <Text
-                  style={[
-                    styles.radioDescription,
-                    { color: colors.textSecondary },
-                  ]}
-                >
-                  {preset.description}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+        {/* Row 2 */}
+        <View style={styles.row}>
+          {renderBlock('all_games_my_services')}
+          {renderBlock('all_games_any_service')}
+        </View>
       </View>
     </View>
   );
@@ -121,7 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.5,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   customBanner: {
     flexDirection: 'row',
@@ -142,46 +185,62 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
-  radioGroup: {
+  helperText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginBottom: 12,
+  },
+  grid: {
     gap: 12,
   },
-  radioOption: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderWidth: 2,
     gap: 12,
   },
-  radioIndicator: {
-    width: 24,
-    height: 24,
+  block: {
+    flex: 1,
+    aspectRatio: 1, // Square blocks
+    borderWidth: 2,
+    borderRadius: 12,
+    padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
+    position: 'relative',
   },
-  radioOuter: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  line1: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  line2: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginVertical: 4,
+  },
+  line3: {
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    textTransform: 'uppercase',
+  },
+  radioIndicator: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     borderWidth: 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  radioText: {
-    flex: 1,
-  },
-  radioLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  radioDescription: {
-    fontSize: 13,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });

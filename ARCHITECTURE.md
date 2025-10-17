@@ -117,6 +117,43 @@ Before implementing ANY major UI pattern, answer these questions:
 - `src/components/daily-v2/VerticalGameCard.tsx` - Scoreboard-style card layout
 - `src/components/daily-v2/DateHeader.tsx` - Sticky date headers
 
+### Success #2: FiltersV2 - Modular Component Architecture
+**Achievement:** Complete rebuild of filters system following spec (October 16, 2025)
+
+**What We Did Right:**
+1. Built modular, reusable components (CollapsibleSection)
+2. Separated concerns: QuickViews, Sports, Teams, Services, Badges
+3. Used composition over monolithic components
+4. Implemented proper state management (working copy pattern)
+5. Made badges independent of filter selections (per spec)
+
+**Implementation Details:**
+- `QuickViewsRadio` - 2×2 grid with new preset IDs
+- `SportsChipsV2` - 50+ sports with search and metadata
+- `TeamsSectionV2` - Mode switcher (Followed vs Pick Specific) with star/plus/minus controls
+- `BadgesLabelsSection` - Independent toggles that don't affect filtering
+- `CollapsibleSection` - Reusable header pattern
+- `FiltersSheetV2` - Main integration with proper dirty state detection
+
+**Results:**
+- ✅ Clean component separation
+- ✅ Reusable patterns (CollapsibleSection)
+- ✅ Type-safe with comprehensive TypeScript types
+- ✅ Search functionality in Sports and Teams
+- ✅ Independent badge toggles (visual only)
+- ✅ Proper Apply/Cancel with dirty state tracking
+- ✅ 50+ sports catalog with placeholder indicators
+
+**Files:**
+- `src/components/ui/filters-v2/FiltersSheetV2.tsx` - Main component
+- `src/components/ui/filters-v2/QuickViewsRadio.tsx` - 2×2 grid
+- `src/components/ui/filters-v2/SportsChipsV2.tsx` - Sports with search
+- `src/components/ui/filters-v2/TeamsSectionV2.tsx` - Teams with mode switcher
+- `src/components/ui/filters-v2/BadgesLabelsSection.tsx` - Independent badges
+- `src/components/ui/filters-v2/CollapsibleSection.tsx` - Reusable header
+- `src/components/ui/filters-v2/types.ts` - Comprehensive type definitions
+- `src/components/ui/filters-v2/presets.ts` - Sports catalog + preset logic
+
 ### Key Insight
 **The framework usually has the right tool already built. Use it first, fight it never.**
 
