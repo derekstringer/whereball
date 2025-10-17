@@ -97,13 +97,13 @@ const DEFAULT_FILTERS: GameFilters = {
   showAll: false,
 };
 
-// Default FiltersV2 state
+// Default FiltersV2 state (updated to new preset IDs)
 const DEFAULT_FILTERS_V2: FiltersV2State = {
-  quickView: 'preset1',
-  lastPreset: 'preset1',
-  includeElsewhereInListings: false,
+  quickView: 'my_teams_my_services',
+  lastPreset: 'my_teams_my_services',
   showElsewhereBadges: true,
   showNationalBadges: true,
+  customSelections: undefined,
 };
 
 // Default Elsewhere Nudge state

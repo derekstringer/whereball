@@ -28,7 +28,7 @@ import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGame
 import { SettingsScreen } from '../settings/SettingsScreen';
 import { FiltersSheetV2 } from '../../components/ui/filters-v2/FiltersSheetV2';
 import { FEATURES } from '../../config/features';
-import { applyFiltersV2 } from '../../lib/filters-v2-engine';
+import { applyFilters, buildMatchPredicate, UserFilterContext } from '../../lib/filters-v2-engine';
 
 interface GameSection {
   title: string; // YYYY-MM-DD
@@ -67,13 +67,14 @@ export const DailyV3: React.FC = () => {
       return sections;
     }
 
+    const filterContext: UserFilterContext = {
+      follows,
+      subscriptions,
+    };
+    
     return sections.map(section => ({
       ...section,
-      data: applyFiltersV2(section.data, {
-        filters: filtersV2,
-        userFollows,
-        userServices: userServiceCodes,
-      }),
+      data: applyFilters(section.data as any[], filtersV2, filterContext) as unknown as NHLGame[],
     }));
   }, [sections, filtersV2, userFollows, userServiceCodes]);
 

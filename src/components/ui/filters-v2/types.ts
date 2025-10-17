@@ -158,3 +158,12 @@ export interface ServiceOwnershipToggleEvent {
   serviceId: string;
   newState: boolean;
 }
+
+/**
+ * Elsewhere nudge state (for no-options scenarios)
+ */
+export interface ElsewhereNudgeState {
+  dismissed: boolean;
+  noOptionsGamesSeen: number;
+  lastNoOptionsDate: string | null;
+}

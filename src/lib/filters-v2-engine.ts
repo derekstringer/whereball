@@ -1,125 +1,266 @@
 /**
- * FiltersV2 Engine - Apply filters to games list
+ * FiltersV2 Engine - Game filtering logic
+ * Implements the predicate function per FILTERS_WIRING_PLAN.md
  */
 
-import { NHLGame } from './nhl-api';
-import { FiltersV2State } from '../components/ui/filters-v2/types';
-import { getServicesForBroadcast } from './broadcast-mapper';
+import { FiltersV2State, Sport, TeamsMode } from '../components/ui/filters-v2/types';
+import { Follow, UserSubscription } from '../types';
 
-interface FilterContext {
-  filters: FiltersV2State;
-  userFollows: string[]; // team IDs (e.g., "nhl_tor")
-  userServices: string[]; // service codes (e.g., "espn_plus")
+/**
+ * User context needed for filtering decisions
+ */
+export interface UserFilterContext {
+  follows: Follow[];
+  subscriptions: UserSubscription[];
+  location?: {
+    zipCode: string;
+    dmaCode?: string;
+  };
 }
 
 /**
- * Apply FiltersV2 to a games array
+ * Game data structure (minimal fields needed for filtering)
  */
-export function applyFiltersV2(
-  games: NHLGame[],
-  context: FilterContext
-): NHLGame[] {
-  const { filters, userFollows, userServices } = context;
+export interface FilterableGame {
+  id: string;
+  sportId: Sport;
+  homeTeamId: string;
+  awayTeamId: string;
+  broadcastProviders: Array<{
+    serviceCode: string;
+    isBlackedOut?: boolean;
+    isNational?: boolean;
+  }>;
+  status: 'scheduled' | 'live' | 'final';
+  scheduledAt: Date;
+}
 
-  // If preset1 (All Games), return all games
-  if (filters.quickView === 'preset1') {
-    return games;
-  }
+/**
+ * Derived helpers from filter state
+ */
+export class FiltersHelper {
+  constructor(
+    private filters: FiltersV2State,
+    private context: UserFilterContext
+  ) {}
 
-  // Get active filters based on preset or custom
-  let activeSports: string[] = [];
-  let activeTeams: string[] = [];
-  let activeServices: string[] = [];
-
-  if (filters.quickView === 'custom' && filters.customSelections) {
-    activeSports = filters.customSelections.sports || [];
-    activeTeams = filters.customSelections.teams || [];
-    activeServices = filters.customSelections.services || [];
-  } else if (filters.quickView === 'preset2') {
-    // My Stuff: followed teams only
-    activeSports = ['NHL']; // Only NHL for now
-    activeTeams = userFollows;
-    activeServices = userServices;
-  } else if (filters.quickView === 'preset3') {
-    // Tonight: games today with user's services
-    activeSports = ['NHL']; // Only NHL for now
-    activeTeams = [];
-    activeServices = userServices;
-  }
-
-  // Filter games
-  return games.filter(game => {
-    // 1. Sport filter (NHL only for now, skip check)
-    // Future: if (activeSports.length > 0 && !activeSports.includes('NHL')) return false;
-
-    // 2. Team filter (if any teams selected)
-    if (activeTeams.length > 0) {
-      // Convert NHL team IDs (numbers) to our team ID format (e.g., "nhl_tor")
-      const homeTeamId = `nhl_${game.homeTeam.abbreviation.toLowerCase()}`;
-      const awayTeamId = `nhl_${game.awayTeam.abbreviation.toLowerCase()}`;
-      
-      const hasHomeTeam = activeTeams.includes(homeTeamId);
-      const hasAwayTeam = activeTeams.includes(awayTeamId);
-      
-      if (!hasHomeTeam && !hasAwayTeam) {
-        return false;
+  /**
+   * Get effective team IDs based on teams mode
+   */
+  effectiveTeamIds(): Set<string> {
+    const customSelections = this.filters.customSelections;
+    
+    if (!customSelections) {
+      // Using a preset - determine from quickView
+      if (this.teamScope() === 'MY') {
+        // Followed teams mode
+        const followedIds = new Set(this.context.follows.map(f => f.team_id));
+        return followedIds;
+      } else {
+        // All teams mode
+        return new Set(); // Empty set means "all teams"
       }
     }
 
-    // 3. Service filter (if any services selected)
-    if (activeServices.length > 0) {
-      // Map broadcast networks to service codes
-      const gameServices: string[] = [];
-      game.broadcasts.forEach(b => {
-        const services = getServicesForBroadcast(b.network);
-        gameServices.push(...services);
+    // Custom mode
+    const teamsMode = customSelections.teamsMode;
+    
+    if (teamsMode === 'followed') {
+      // Start with followed teams, remove excludes
+      const followedIds = new Set(this.context.follows.map(f => f.team_id));
+      customSelections.excludedTeams.forEach(id => followedIds.delete(id));
+      return followedIds;
+    } else {
+      // pick_specific mode
+      return new Set(customSelections.teams);
+    }
+  }
+
+  /**
+   * Get team scope from quick view
+   */
+  teamScope(): 'MY' | 'ALL' {
+    return this.filters.quickView.startsWith('my_teams') ? 'MY' : 'ALL';
+  }
+
+  /**
+   * Get service scope from quick view
+   */
+  serviceScope(): 'MY' | 'ANY' {
+    return this.filters.quickView.endsWith('my_services') ? 'MY' : 'ANY';
+  }
+
+  /**
+   * Get selected sports (empty means all sports)
+   */
+  selectedSports(): Set<Sport> {
+    const customSelections = this.filters.customSelections;
+    if (!customSelections || customSelections.sports.length === 0) {
+      return new Set(); // Empty = all sports
+    }
+    return new Set(customSelections.sports);
+  }
+
+  /**
+   * Get owned service codes
+   */
+  ownedServiceIds(): Set<string> {
+    return new Set(this.context.subscriptions.map(s => s.service_code));
+  }
+}
+
+/**
+ * Build a predicate function that filters games based on current filter state
+ * 
+ * @param filters - Current filter state
+ * @param context - User context (follows, subscriptions, location)
+ * @returns A function that returns true if game should be included in results
+ */
+export function buildMatchPredicate(
+  filters: FiltersV2State,
+  context: UserFilterContext
+): (game: FilterableGame) => boolean {
+  const helper = new FiltersHelper(filters, context);
+  
+  // Pre-compute these once for efficiency
+  const selectedSports = helper.selectedSports();
+  const effectiveTeams = helper.effectiveTeamIds();
+  const teamScope = helper.teamScope();
+  const serviceScope = helper.serviceScope();
+  const ownedServices = helper.ownedServiceIds();
+
+  return (game: FilterableGame): boolean => {
+    // 1. SPORTS FILTER
+    if (selectedSports.size > 0) {
+      if (!selectedSports.has(game.sportId)) {
+        return false; // Game's sport not in selected sports
+      }
+    }
+    // If selectedSports is empty, treat as "all sports" - continue
+
+    // 2. TEAMS FILTER
+    if (teamScope === 'MY') {
+      // MY TEAMS mode - must include at least one team
+      if (effectiveTeams.size > 0) {
+        const hasTeam = effectiveTeams.has(game.homeTeamId) || 
+                       effectiveTeams.has(game.awayTeamId);
+        if (!hasTeam) {
+          return false; // Neither team is followed
+        }
+      }
+      // If effectiveTeams is empty in MY TEAMS mode, show nothing (user follows no teams)
+      else {
+        return false;
+      }
+    }
+    // If teamScope === 'ALL', no team filtering - continue
+
+    // 3. SERVICES FILTER (Watchability)
+    if (serviceScope === 'MY') {
+      // MY SERVICES mode - must be watchable on at least one owned service
+      const isWatchable = game.broadcastProviders.some(provider => {
+        // Check if we own this service AND it's not blacked out
+        return ownedServices.has(provider.serviceCode) && 
+               !provider.isBlackedOut;
       });
       
-      const hasMatchingService = gameServices.some(service => 
-        activeServices.includes(service)
-      );
-      
-      if (!hasMatchingService) {
-        return false;
+      if (!isWatchable) {
+        return false; // Not watchable on any owned services
       }
     }
+    // If serviceScope === 'ANY', show all legal broadcasts - no filtering
 
+    // Game passed all filters
     return true;
-  });
+  };
 }
 
 /**
- * Check if game should show "Elsewhere" badge
+ * Apply filters to a list of games
+ * 
+ * @param games - Array of games to filter
+ * @param filters - Current filter state
+ * @param context - User context
+ * @returns Filtered array of games
+ */
+export function applyFilters(
+  games: FilterableGame[],
+  filters: FiltersV2State,
+  context: UserFilterContext
+): FilterableGame[] {
+  const predicate = buildMatchPredicate(filters, context);
+  return games.filter(predicate);
+}
+
+/**
+ * Determine if a game should show the "Available Elsewhere" badge
+ * 
+ * @param game - The game to check
+ * @param context - User context
+ * @returns true if badge should be shown
  */
 export function shouldShowElsewhereBadge(
-  game: NHLGame,
-  userServices: string[],
-  showElsewhereBadges: boolean
+  game: FilterableGame,
+  context: UserFilterContext
 ): boolean {
-  if (!showElsewhereBadges) return false;
-
-  // Map broadcast networks to service codes
-  const gameServices: string[] = [];
-  game.broadcasts.forEach(b => {
-    const services = getServicesForBroadcast(b.network);
-    gameServices.push(...services);
-  });
-    
-  const hasUserService = gameServices.some(service => userServices.includes(service));
-  const hasOtherServices = gameServices.length > 0;
-
-  // Show "elsewhere" if game is available but not on user's services
-  return !hasUserService && hasOtherServices;
+  const ownedServices = new Set(context.subscriptions.map(s => s.service_code));
+  
+  // Show badge if there are providers we don't own
+  return game.broadcastProviders.some(provider => 
+    !ownedServices.has(provider.serviceCode) && !provider.isBlackedOut
+  );
 }
 
 /**
- * Check if game should show "National" badge
+ * Determine if a game should show the "Nationally Televised" badge
+ * 
+ * @param game - The game to check
+ * @returns true if badge should be shown
  */
 export function shouldShowNationalBadge(
-  game: NHLGame,
-  showNationalBadges: boolean
+  game: FilterableGame
 ): boolean {
-  if (!showNationalBadges) return false;
+  return game.broadcastProviders.some(provider => provider.isNational);
+}
 
-  return game.broadcasts.some(b => b.type === 'national');
+/**
+ * Get a human-readable summary of current filters
+ * 
+ * @param filters - Current filter state
+ * @param context - User context
+ * @returns Description string
+ */
+export function getFiltersSummary(
+  filters: FiltersV2State,
+  context: UserFilterContext
+): string {
+  const helper = new FiltersHelper(filters, context);
+  const parts: string[] = [];
+
+  // Quick View
+  if (filters.quickView !== 'custom') {
+    const qvMap = {
+      'my_teams_my_services': 'My Teams • My Services',
+      'my_teams_any_service': 'My Teams • Any Service',
+      'all_games_my_services': 'All Games • My Services',
+      'all_games_any_service': 'All Games • Any Service',
+    };
+    parts.push(qvMap[filters.quickView] || filters.quickView);
+  } else {
+    parts.push('Custom');
+  }
+
+  // Sports
+  const selectedSports = helper.selectedSports();
+  if (selectedSports.size > 0) {
+    parts.push(`${selectedSports.size} sport${selectedSports.size === 1 ? '' : 's'}`);
+  }
+
+  // Teams
+  const effectiveTeams = helper.effectiveTeamIds();
+  if (helper.teamScope() === 'MY' && effectiveTeams.size > 0) {
+    parts.push(`${effectiveTeams.size} team${effectiveTeams.size === 1 ? '' : 's'}`);
+  }
+
+  return parts.join(' • ');
 }
