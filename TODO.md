@@ -59,11 +59,38 @@
 
 ## 📋 **UP NEXT - High Level Priorities**
 
-### **Phase 1: Store Integration**
-- [ ] Update appStore to match new FiltersV2State type structure
+### **Phase 1: FiltersV2 Wiring (See FILTERS_WIRING_PLAN.md)**
+
+**Store Update:**
+- [ ] Update appStore with new FiltersState shape (Sets, not arrays)
+- [ ] Implement derived selectors (effectiveTeamIds, teamScope, serviceScope)
+- [ ] Implement all actions (setQuickView, markCustom, applyFilters, etc.)
 - [ ] Add migration logic for old preset IDs → new IDs
+- [ ] Test store in isolation
+
+**Predicate Function:**
+- [ ] Create `buildMatchPredicate` in `lib/filters-v2-engine.ts`
+- [ ] Implement sports filtering (empty = all sports)
+- [ ] Implement teams filtering (MY vs ALL with effectiveTeamIds)
+- [ ] Implement services filtering (MY_SERVICES with blackout rules vs ANY_SERVICE)
+- [ ] Add unit tests for predicate logic
+
+**List Integration:**
+- [ ] Apply predicate in DailyV3 data pipeline
+- [ ] Handle empty sections gracefully
+- [ ] Smooth re-rendering on filter changes (no scroll resets)
 - [ ] Wire team follow/unfollow to actual API
 - [ ] Wire service ownership to actual API
+
+**Empty States:**
+- [ ] Add empty state cards for no results scenarios
+- [ ] Wire up action buttons (Turn On Any Service, Manage Services, etc.)
+- [ ] Test all empty state scenarios
+
+**E2E Testing:**
+- [ ] Run through all 10 test scenarios from wiring plan
+- [ ] Performance testing with large datasets
+- [ ] Edge case handling
 - [ ] Test state persistence across app restarts
 
 ### **Phase 2: Card Refinements**
