@@ -25,6 +25,7 @@ import { getGamesForDate, getLiveGameClock, type NHLGame } from '../../lib/nhl-a
 import { DateHeader } from '../../components/daily-v2/DateHeader';
 import { VerticalGameCard } from '../../components/daily-v2/VerticalGameCard';
 import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGameCardExpanded';
+import { EmptyStateCard } from '../../components/daily-v2/EmptyStateCard';
 import { SettingsScreen } from '../settings/SettingsScreen';
 import { FiltersSheetV2 } from '../../components/ui/filters-v2/FiltersSheetV2';
 import { FEATURES } from '../../config/features';
