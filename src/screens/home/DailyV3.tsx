@@ -77,7 +77,120 @@ export const DailyV3: React.FC = () => {
       ...section,
       data: applyFilters(section.data as any[], filtersV2, filterContext) as unknown as NHLGame[],
     }));
-  }, [sections, filtersV2, userFollows, userServiceCodes]);
+  }, [sections, filtersV2, userFollows, userServiceCodes, follows, subscriptions]);
+
+  // Detect empty state scenarios
+  const hasAnyGames = useMemo(() => {
+    return filteredSections.some(section => section.data.length > 0);
+  }, [filteredSections]);
+
+  const emptyStateInfo = useMemo(() => {
+    if (hasAnyGames || !FEATURES.USE_FILTERS_V2) return null;
+
+    // Scenario 1: MY_TEAMS but no followed teams
+    if (filtersV2.quickView.startsWith('my_teams') && follows.length === 0) {
+      return {
+        message: "You're not following any teams yet",
+        description: "Follow some teams to see their games, or switch to see all games.",
+        actions: [
+          {
+            label: 'See All Games',
+            primary: true,
+            onPress: () => {
+              // Switch to ALL_GAMES with same service scope
+              const newPreset = filtersV2.quickView.endsWith('my_services')
+                ? 'all_games_my_services' as const
+                : 'all_games_any_service' as const;
+              useAppStore.getState().setFiltersV2({ ...filtersV2, quickView: newPreset, lastPreset: newPreset });
+            },
+          },
+          {
+            label: 'Follow Teams',
+            onPress: () => setShowFilters(true),
+          },
+        ],
+      };
+    }
+
+    // Scenario 2: ALL_GAMES ON MY_SERVICES but nothing watchable
+    if (filtersV2.quickView === 'all_games_my_services') {
+      return {
+        message: "No games on your services right now",
+        description: "Try expanding to any service, or manage your service subscriptions.",
+        actions: [
+          {
+            label: "Turn On 'Any Service'",
+            primary: true,
+            onPress: () => {
+              useAppStore.getState().setFiltersV2({
+                ...filtersV2,
+                quickView: 'all_games_any_service',
+                lastPreset: 'all_games_any_service',
+              });
+            },
+          },
+          {
+            label: 'My Teams',
+            onPress: () => {
+              useAppStore.getState().setFiltersV2({
+                ...filtersV2,
+                quickView: 'my_teams_my_services',
+                lastPreset: 'my_teams_my_services',
+              });
+            },
+          },
+          {
+            label: 'Manage Services',
+            onPress: () => setShowFilters(true),
+          },
+        ],
+      };
+    }
+
+    // Scenario 3: MY_TEAMS ON MY_SERVICES but nothing watchable
+    if (filtersV2.quickView === 'my_teams_my_services') {
+      return {
+        message: "Your teams aren't playing on your services",
+        description: "Try expanding to any service to see where they're available.",
+        actions: [
+          {
+            label: "Turn On 'Any Service'",
+            primary: true,
+            onPress: () => {
+              useAppStore.getState().setFiltersV2({
+                ...filtersV2,
+                quickView: 'my_teams_any_service',
+                lastPreset: 'my_teams_any_service',
+              });
+            },
+          },
+          {
+            label: 'See All Games',
+            onPress: () => {
+              useAppStore.getState().setFiltersV2({
+                ...filtersV2,
+                quickView: 'all_games_my_services',
+                lastPreset: 'all_games_my_services',
+              });
+            },
+          },
+        ],
+      };
+    }
+
+    // Generic empty state
+    return {
+      message: "No games match your filters",
+      description: "Try adjusting your filter settings.",
+      actions: [
+        {
+          label: 'Adjust Filters',
+          primary: true,
+          onPress: () => setShowFilters(true),
+        },
+      ],
+    };
+  }, [hasAnyGames, filtersV2, follows.length, setShowFilters]);
 
   // Get today's date key
   const getTodayDateKey = (): string => {
@@ -472,15 +585,24 @@ export const DailyV3: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      <SectionList<NHLGame, GameSection>
-        ref={sectionListRef}
-        sections={filteredSections}
-        renderSectionHeader={renderSectionHeader}
-        renderItem={renderItem}
-        renderSectionFooter={renderSectionFooter}
-        keyExtractor={(item) => item.id}
-        stickySectionHeadersEnabled={true}
-        initialScrollIndex={initialScrollIndex}
+      {emptyStateInfo ? (
+        <View style={styles.emptyStateContainer}>
+          <EmptyStateCard
+            message={emptyStateInfo.message}
+            description={emptyStateInfo.description}
+            actions={emptyStateInfo.actions}
+          />
+        </View>
+      ) : (
+        <SectionList<NHLGame, GameSection>
+          ref={sectionListRef}
+          sections={filteredSections}
+          renderSectionHeader={renderSectionHeader}
+          renderItem={renderItem}
+          renderSectionFooter={renderSectionFooter}
+          keyExtractor={(item) => item.id}
+          stickySectionHeadersEnabled={true}
+          initialScrollIndex={initialScrollIndex}
         removeClippedSubviews={false}
         windowSize={10}
         initialNumToRender={20}
@@ -528,7 +650,8 @@ export const DailyV3: React.FC = () => {
           
           return { length: ITEM_HEIGHT, offset, index };
         }}
-      />
+        />
+      )}
 
       {/* Settings Modal */}
       <Modal
@@ -611,5 +734,9 @@ const styles = StyleSheet.create({
   },
   sectionSpacer: {
     height: 8,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
   },
 });
