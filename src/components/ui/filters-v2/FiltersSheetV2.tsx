@@ -10,9 +10,9 @@ import { useAppStore } from '../../../store/appStore';
 import { FiltersWorkingState, QuickView, Sport, TeamsMode } from './types';
 import { buildStateFromPreset } from './presets';
 import { QuickViewsRadio } from './QuickViewsRadio';
-import { SportsChipsV2 } from './SportsChipsV2';
+import { SportsSectionV3 } from './SportsSectionV3';
 import { TeamsSectionV3 } from './TeamsSectionV3';
-import { ServicesSection } from './ServicesSection';
+import { ServicesSectionV3 } from './ServicesSectionV3';
 import { BadgesLabelsSection } from './BadgesLabelsSection';
 
 interface FiltersSheetV2Props {
@@ -295,10 +295,12 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               lastPreset={workingState.lastPreset}
             />
 
-            {/* 2. Sports (collapsible with search) */}
-            <SportsChipsV2
+            {/* 2. Sports (grid with search) */}
+            <SportsSectionV3
               selectedSports={workingState.selectedSports}
-              onToggleSport={handleToggleSport}
+              followedSportIds={[]} // TODO: Add sport follows to store
+              onToggleFollow={handleToggleSport} // Temporarily using same handler
+              onToggleInclude={handleToggleSport}
               isExpanded={expandedSection === 'sports'}
               onToggleExpanded={() => setExpandedSection(expandedSection === 'sports' ? null : 'sports')}
             />
@@ -314,11 +316,12 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               onToggleExpanded={() => setExpandedSection(expandedSection === 'teams' ? null : 'teams')}
             />
 
-            {/* 4. Services (collapsible with owned toggles) */}
-            <ServicesSection
+            {/* 4. Services (grid with owned toggles) */}
+            <ServicesSectionV3
               selectedServices={workingState.selectedServices}
               ownedServices={subscriptions.map(s => s.service_code)}
-              onToggleService={handleToggleService}
+              onToggleOwned={(code) => handleToggleService(code)} // TODO: Implement ownership toggle
+              onToggleInclude={(code) => handleToggleService(code)}
               isExpanded={expandedSection === 'services'}
               onToggleExpanded={() => setExpandedSection(expandedSection === 'services' ? null : 'services')}
             />
