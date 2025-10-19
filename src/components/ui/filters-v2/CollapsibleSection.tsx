@@ -31,6 +31,10 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         style={[
           styles.header,
           { backgroundColor: colors.card, borderColor: colors.border },
+          isExpanded && {
+            backgroundColor: colors.primary + '08',
+            borderColor: colors.primary + '40',
+          },
         ]}
         onPress={onToggle}
         activeOpacity={0.7}
@@ -102,10 +106,10 @@ const styles = StyleSheet.create({
   chevron: {
     fontSize: 24,
     fontWeight: '300',
-    transform: [{ rotate: '90deg' }],
+    transform: [{ rotate: '0deg' }], // Right arrow (collapsed)
   },
   chevronExpanded: {
-    transform: [{ rotate: '270deg' }],
+    transform: [{ rotate: '90deg' }], // Down arrow (expanded)
   },
   content: {
     marginTop: 12,
