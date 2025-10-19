@@ -109,13 +109,25 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   };
 
   // Sports handlers
-  const handleToggleSport = (sport: Sport) => {
+  const handleToggleSportFollow = (sportId: Sport) => {
+    // Sport follows - TODO: Add to store like team follows
+    // For now, just treat as selections
     markAsCustom();
     setWorkingState(prev => ({
       ...prev,
-      selectedSports: prev.selectedSports.includes(sport)
-        ? prev.selectedSports.filter(s => s !== sport)
-        : [...prev.selectedSports, sport],
+      selectedSports: prev.selectedSports.includes(sportId)
+        ? prev.selectedSports.filter(s => s !== sportId)
+        : [...prev.selectedSports, sportId],
+    }));
+  };
+
+  const handleToggleSportInclude = (sportId: Sport) => {
+    markAsCustom();
+    setWorkingState(prev => ({
+      ...prev,
+      selectedSports: prev.selectedSports.includes(sportId)
+        ? prev.selectedSports.filter(s => s !== sportId)
+        : [...prev.selectedSports, sportId],
     }));
   };
 
@@ -170,11 +182,26 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   };
 
   // Services handlers
-  const handleToggleService = (serviceCode: string) => {
-    // Services ownership persists immediately to profile
-    // For now, just update local state
-    // TODO: Call API to update subscriptions
+  const handleToggleServiceOwned = (serviceCode: string) => {
+    // Services ownership - TODO: persist to subscriptions store
+    // For now, treat as selections
     markAsCustom();
+    setWorkingState(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.includes(serviceCode)
+        ? prev.selectedServices.filter(s => s !== serviceCode)
+        : [...prev.selectedServices, serviceCode],
+    }));
+  };
+
+  const handleToggleServiceInclude = (serviceCode: string) => {
+    markAsCustom();
+    setWorkingState(prev => ({
+      ...prev,
+      selectedServices: prev.selectedServices.includes(serviceCode)
+        ? prev.selectedServices.filter(s => s !== serviceCode)
+        : [...prev.selectedServices, serviceCode],
+    }));
   };
 
   // Badge handlers (independent - do NOT mark as custom)
@@ -299,8 +326,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             <SportsSectionV3
               selectedSports={workingState.selectedSports}
               followedSportIds={[]} // TODO: Add sport follows to store
-              onToggleFollow={handleToggleSport} // Temporarily using same handler
-              onToggleInclude={handleToggleSport}
+              onToggleFollow={handleToggleSportFollow}
+              onToggleInclude={handleToggleSportInclude}
               isExpanded={expandedSection === 'sports'}
               onToggleExpanded={() => setExpandedSection(expandedSection === 'sports' ? null : 'sports')}
             />
@@ -320,8 +347,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             <ServicesSectionV3
               selectedServices={workingState.selectedServices}
               ownedServices={subscriptions.map(s => s.service_code)}
-              onToggleOwned={(code) => handleToggleService(code)} // TODO: Implement ownership toggle
-              onToggleInclude={(code) => handleToggleService(code)}
+              onToggleOwned={handleToggleServiceOwned}
+              onToggleInclude={handleToggleServiceInclude}
               isExpanded={expandedSection === 'services'}
               onToggleExpanded={() => setExpandedSection(expandedSection === 'services' ? null : 'services')}
             />
