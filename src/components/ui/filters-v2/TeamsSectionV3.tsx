@@ -88,7 +88,7 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
     );
   }, [sportFilteredTeams, searchQuery]);
 
-  // Sort teams by priority: ⭐+✓, ⭐ only, ✓ only, rest
+  // Sort teams: ⭐ (all followed), ✓ (checked but not followed), rest
   const sortedTeams = useMemo(() => {
     return [...searchFilteredTeams].sort((a, b) => {
       const aFollowed = followedTeamIds.includes(a.id);
@@ -96,23 +96,15 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
       const aIncluded = selectedTeams.includes(a.id);
       const bIncluded = selectedTeams.includes(b.id);
 
-      // Priority 1: ⭐+✓ (followed + included)
-      const aPriority1 = aFollowed && aIncluded;
-      const bPriority1 = bFollowed && bIncluded;
-      if (aPriority1 && !bPriority1) return -1;
-      if (!aPriority1 && bPriority1) return 1;
+      // Priority 1: ALL ⭐ followed teams (regardless of check state)
+      if (aFollowed && !bFollowed) return -1;
+      if (!aFollowed && bFollowed) return 1;
 
-      // Priority 2: ⭐ only (followed, not included)
-      const aPriority2 = aFollowed && !aIncluded;
-      const bPriority2 = bFollowed && !bIncluded;
-      if (aPriority2 && !bPriority2) return -1;
-      if (!aPriority2 && bPriority2) return 1;
-
-      // Priority 3: ✓ only (included, not followed)
-      const aPriority3 = !aFollowed && aIncluded;
-      const bPriority3 = !bFollowed && bIncluded;
-      if (aPriority3 && !bPriority3) return -1;
-      if (!aPriority3 && bPriority3) return 1;
+      // Priority 2: ✓ only (checked but not followed)
+      const aCheckedOnly = !aFollowed && aIncluded;
+      const bCheckedOnly = !bFollowed && bIncluded;
+      if (aCheckedOnly && !bCheckedOnly) return -1;
+      if (!aCheckedOnly && bCheckedOnly) return 1;
 
       // Alphabetical within same priority
       return a.abbr.localeCompare(b.abbr);
