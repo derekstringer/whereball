@@ -40,8 +40,10 @@ export const SportsChipsV2: React.FC<SportsChipsV2Props> = ({
     );
   }, [searchQuery]);
 
-  // Compute badge text
-  const badgeText = selectedSports.length === 0 ? 'ALL' : String(selectedSports.length);
+  // Compute badges
+  const badges = selectedSports.length === 0 
+    ? [{ text: 'ALL' }] 
+    : [{ text: String(selectedSports.length) }];
 
   // Handle "All Sports" toggle
   const handleToggleAll = () => {
@@ -63,7 +65,7 @@ export const SportsChipsV2: React.FC<SportsChipsV2Props> = ({
   return (
     <CollapsibleSection
       title="Sports"
-      badge={badgeText}
+      badges={badges}
       isExpanded={isExpanded}
       onToggle={onToggleExpanded}
     >

@@ -29,10 +29,10 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
   const ownedServicesList = STREAMING_SERVICES.filter(s => ownedServices.includes(s.code));
   const notOwnedServicesList = STREAMING_SERVICES.filter(s => !ownedServices.includes(s.code));
 
-  // Badge text
-  const badgeText = useMemo(() => {
-    if (selectedServices.length === 0) return 'ALL';
-    return String(selectedServices.length);
+  // Badges
+  const badges = useMemo(() => {
+    if (selectedServices.length === 0) return [{ text: 'ALL' }];
+    return [{ text: String(selectedServices.length) }];
   }, [selectedServices.length]);
 
   const renderServiceChip = (service: Service, isOwned: boolean) => {
@@ -73,7 +73,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
   return (
     <CollapsibleSection
       title="Streaming Services"
-      badge={badgeText}
+      badges={badges}
       isExpanded={isExpanded}
       onToggle={onToggleExpanded}
     >

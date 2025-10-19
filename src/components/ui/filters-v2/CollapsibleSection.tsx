@@ -7,9 +7,14 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 
+interface Badge {
+  text: string;
+  icon?: string; // Optional icon like "⭐" or "✓"
+}
+
 interface CollapsibleSectionProps {
   title: string;
-  badge: string; // e.g., "ALL", "3", "FOLLOWED"
+  badges: Badge[]; // Array of badges for flexibility
   isExpanded: boolean;
   onToggle: () => void;
   children: React.ReactNode;
@@ -17,7 +22,7 @@ interface CollapsibleSectionProps {
 
 export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
   title,
-  badge,
+  badges,
   isExpanded,
   onToggle,
   children,
@@ -42,16 +47,20 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
         
         <View style={styles.right}>
-          <View
-            style={[
-              styles.badge,
-              { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' },
-            ]}
-          >
-            <Text style={[styles.badgeText, { color: colors.primary }]}>
-              {badge}
-            </Text>
-          </View>
+          {badges.map((badge, index) => (
+            <View
+              key={index}
+              style={[
+                styles.badge,
+                { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' },
+              ]}
+            >
+              <Text style={[styles.badgeText, { color: colors.primary }]}>
+                {badge.text}
+                {badge.icon && ` ${badge.icon}`}
+              </Text>
+            </View>
+          ))}
           
           <Text
             style={[

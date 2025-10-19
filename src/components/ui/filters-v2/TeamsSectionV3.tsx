@@ -165,11 +165,27 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
   const visibleTeams = showAll ? sortedTeams : sortedTeams.slice(0, INITIAL_COUNT);
   const remainingCount = sortedTeams.length - INITIAL_COUNT;
 
-  // Badge text
-  const badgeText = useMemo(() => {
-    if (selectedTeams.length === 0) return 'ALL';
-    return String(selectedTeams.length);
-  }, [selectedTeams.length]);
+  // Badge logic: Show { X ⭐ } { X ✓ } or { X ⭐ } or { ALL }
+  const badges = useMemo(() => {
+    const followedCount = followedTeamIds.length;
+    const checkedOnlyCount = selectedTeams.filter(id => !followedTeamIds.includes(id)).length;
+    
+    // Case 1: Nothing selected
+    if (selectedTeams.length === 0) {
+      return [{ text: 'ALL' }];
+    }
+    
+    // Case 2: Only followed teams (no additional checked)
+    if (checkedOnlyCount === 0) {
+      return [{ text: String(followedCount), icon: '⭐' }];
+    }
+    
+    // Case 3: Both followed and checked-only teams
+    return [
+      { text: String(followedCount), icon: '⭐' },
+      { text: String(checkedOnlyCount), icon: '✓' },
+    ];
+  }, [selectedTeams, followedTeamIds]);
 
   // Handle follow toggle with auto-check behavior
   const handleFollowToggle = (teamId: string) => {
@@ -195,7 +211,7 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
   return (
     <CollapsibleSection
       title="Teams"
-      badge={badgeText}
+      badges={badges}
       isExpanded={isExpanded}
       onToggle={onToggleExpanded}
     >
