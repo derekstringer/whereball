@@ -121,6 +121,23 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     });
   };
 
+  // Helper to auto-save current state to store
+  const autoSave = (newState: typeof workingState) => {
+    setFiltersV2({
+      quickView: newState.quickView,
+      lastPreset: newState.lastPreset,
+      showElsewhereBadges: newState.showElsewhereBadges,
+      showNationalBadges: newState.showNationalBadges,
+      customSelections: newState.quickView === 'custom' ? {
+        teamsMode: newState.teamsMode,
+        sports: newState.selectedSports,
+        teams: newState.selectedTeams,
+        excludedTeams: newState.excludedTeams,
+        services: newState.selectedServices,
+      } : undefined,
+    });
+  };
+
   // Mark as custom when user makes manual changes
   const markAsCustom = () => {
     if (workingState.quickView !== 'custom') {
@@ -134,22 +151,32 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   // Sports handlers
   const handleToggleSportFollow = (sportId: Sport) => {
     markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      followedSports: prev.followedSports.includes(sportId)
-        ? prev.followedSports.filter(s => s !== sportId)
-        : [...prev.followedSports, sportId],
-    }));
+    setWorkingState(prev => {
+      const newState = {
+        ...prev,
+        quickView: 'custom' as QuickView,
+        followedSports: prev.followedSports.includes(sportId)
+          ? prev.followedSports.filter(s => s !== sportId)
+          : [...prev.followedSports, sportId],
+      };
+      autoSave(newState);
+      return newState;
+    });
   };
 
   const handleToggleSportInclude = (sportId: Sport) => {
     markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      selectedSports: prev.selectedSports.includes(sportId)
-        ? prev.selectedSports.filter(s => s !== sportId)
-        : [...prev.selectedSports, sportId],
-    }));
+    setWorkingState(prev => {
+      const newState = {
+        ...prev,
+        quickView: 'custom' as QuickView,
+        selectedSports: prev.selectedSports.includes(sportId)
+          ? prev.selectedSports.filter(s => s !== sportId)
+          : [...prev.selectedSports, sportId],
+      };
+      autoSave(newState);
+      return newState;
+    });
   };
 
   // Teams handlers
@@ -184,58 +211,86 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
   const handleToggleInclude = (teamId: string) => {
     markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      selectedTeams: prev.selectedTeams.includes(teamId)
-        ? prev.selectedTeams.filter(t => t !== teamId)
-        : [...prev.selectedTeams, teamId],
-    }));
+    setWorkingState(prev => {
+      const newState = {
+        ...prev,
+        quickView: 'custom' as QuickView,
+        selectedTeams: prev.selectedTeams.includes(teamId)
+          ? prev.selectedTeams.filter(t => t !== teamId)
+          : [...prev.selectedTeams, teamId],
+      };
+      autoSave(newState);
+      return newState;
+    });
   };
 
   const handleToggleExclude = (teamId: string) => {
     markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      excludedTeams: prev.excludedTeams.includes(teamId)
-        ? prev.excludedTeams.filter(t => t !== teamId)
-        : [...prev.excludedTeams, teamId],
-    }));
+    setWorkingState(prev => {
+      const newState = {
+        ...prev,
+        quickView: 'custom' as QuickView,
+        excludedTeams: prev.excludedTeams.includes(teamId)
+          ? prev.excludedTeams.filter(t => t !== teamId)
+          : [...prev.excludedTeams, teamId],
+      };
+      autoSave(newState);
+      return newState;
+    });
   };
 
   // Services handlers
   const handleToggleServiceOwned = (serviceCode: string) => {
     markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      ownedServices: prev.ownedServices.includes(serviceCode)
-        ? prev.ownedServices.filter(s => s !== serviceCode)
-        : [...prev.ownedServices, serviceCode],
-    }));
+    setWorkingState(prev => {
+      const newState = {
+        ...prev,
+        quickView: 'custom' as QuickView,
+        ownedServices: prev.ownedServices.includes(serviceCode)
+          ? prev.ownedServices.filter(s => s !== serviceCode)
+          : [...prev.ownedServices, serviceCode],
+      };
+      autoSave(newState);
+      return newState;
+    });
   };
 
   const handleToggleServiceInclude = (serviceCode: string) => {
     markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      selectedServices: prev.selectedServices.includes(serviceCode)
-        ? prev.selectedServices.filter(s => s !== serviceCode)
-        : [...prev.selectedServices, serviceCode],
-    }));
+    setWorkingState(prev => {
+      const newState = {
+        ...prev,
+        quickView: 'custom' as QuickView,
+        selectedServices: prev.selectedServices.includes(serviceCode)
+          ? prev.selectedServices.filter(s => s !== serviceCode)
+          : [...prev.selectedServices, serviceCode],
+      };
+      autoSave(newState);
+      return newState;
+    });
   };
 
   // Badge handlers (independent - do NOT mark as custom)
   const handleToggleElsewhereBadges = () => {
-    setWorkingState(prev => ({
-      ...prev,
-      showElsewhereBadges: !prev.showElsewhereBadges,
-    }));
+    setWorkingState(prev => {
+      const newState = {
+        ...prev,
+        showElsewhereBadges: !prev.showElsewhereBadges,
+      };
+      autoSave(newState);
+      return newState;
+    });
   };
 
   const handleToggleNationalBadges = () => {
-    setWorkingState(prev => ({
-      ...prev,
-      showNationalBadges: !prev.showNationalBadges,
-    }));
+    setWorkingState(prev => {
+      const newState = {
+        ...prev,
+        showNationalBadges: !prev.showNationalBadges,
+      };
+      autoSave(newState);
+      return newState;
+    });
   };
 
   // Apply changes
