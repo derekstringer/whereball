@@ -34,12 +34,6 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
 }) => {
   const { colors } = useTheme();
 
-  // Get display name (abbreviate DIRECTV STREAM)
-  const getDisplayName = (name: string) => {
-    if (name === 'DIRECTV STREAM') return 'DirecTV';
-    return name;
-  };
-
   // Sort services: ★ (owned), ✓ (checked but not owned), rest
   const sortedServices = useMemo(() => {
     return [...STREAMING_SERVICES].sort((a, b) => {
@@ -133,7 +127,7 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
             >
               {/* Row 1: Service name */}
               <Text style={[styles.serviceName, { color: colors.text }]} numberOfLines={1}>
-                {getDisplayName(service.name)}
+                {service.name}
               </Text>
 
               {/* Row 2: Controls */}
