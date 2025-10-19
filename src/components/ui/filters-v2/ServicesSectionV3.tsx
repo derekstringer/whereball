@@ -3,8 +3,8 @@
  * Simple 2-control system: Star = own/subscribe, Check = include in current filter
  */
 
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, Dimensions } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { CollapsibleSection } from './CollapsibleSection';
 import { STREAMING_SERVICES } from '../../../constants/services';
@@ -33,10 +33,22 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
   onToggleExpanded,
 }) => {
   const { colors } = useTheme();
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter by search query
+  const searchFilteredServices = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return STREAMING_SERVICES;
+    }
+    const query = searchQuery.toLowerCase();
+    return STREAMING_SERVICES.filter(
+      (service) => service.name.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
 
   // Sort services: ★ (owned), ✓ (checked but not owned), rest
   const sortedServices = useMemo(() => {
-    return [...STREAMING_SERVICES].sort((a, b) => {
+    return [...searchFilteredServices].sort((a, b) => {
       const aOwned = ownedServices.includes(a.code);
       const bOwned = ownedServices.includes(b.code);
       const aIncluded = selectedServices.includes(a.code);
@@ -55,7 +67,7 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
       // Alphabetical within same priority
       return a.name.localeCompare(b.name);
     });
-  }, [ownedServices, selectedServices]);
+  }, [searchFilteredServices, ownedServices, selectedServices]);
 
   // Badge logic: Show counts with icons (★ for owned, ✓ for checked-only)
   const badges = useMemo(() => {
@@ -107,6 +119,28 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
       isExpanded={isExpanded}
       onToggle={onToggleExpanded}
     >
+      {/* Search bar */}
+      <View
+        style={[
+          styles.searchContainer,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}
+      >
+        <Text style={[styles.searchIcon, { color: colors.textSecondary }]}>🔍</Text>
+        <TextInput
+          style={[styles.searchInput, { color: colors.text }]}
+          placeholder="Search services..."
+          placeholderTextColor={colors.textSecondary}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')}>
+            <Text style={[styles.clearIcon, { color: colors.textSecondary }]}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       {/* Services Grid */}
       <View style={styles.grid}>
         {sortedServices.map((service) => {
@@ -164,11 +198,40 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
           );
         })}
       </View>
+
+      {/* No results */}
+      {sortedServices.length === 0 && searchQuery && (
+        <Text style={[styles.noResults, { color: colors.textSecondary }]}>
+          No services match "{searchQuery}"
+        </Text>
+      )}
     </CollapsibleSection>
   );
 };
 
 const styles = StyleSheet.create({
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  searchIcon: {
+    fontSize: 16,
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    paddingVertical: 0,
+  },
+  clearIcon: {
+    fontSize: 18,
+    paddingHorizontal: 8,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -197,5 +260,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  noResults: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 20,
   },
 });
