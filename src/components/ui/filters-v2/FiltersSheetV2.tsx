@@ -159,7 +159,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           ? prev.followedSports.filter(s => s !== sportId)
           : [...prev.followedSports, sportId],
       };
-      autoSave(newState);
+      setTimeout(() => autoSave(newState), 0);
       return newState;
     });
   };
@@ -174,7 +174,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           ? prev.selectedSports.filter(s => s !== sportId)
           : [...prev.selectedSports, sportId],
       };
-      autoSave(newState);
+      setTimeout(() => autoSave(newState), 0);
       return newState;
     });
   };
@@ -219,7 +219,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           ? prev.selectedTeams.filter(t => t !== teamId)
           : [...prev.selectedTeams, teamId],
       };
-      autoSave(newState);
+      setTimeout(() => autoSave(newState), 0);
       return newState;
     });
   };
@@ -234,7 +234,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           ? prev.excludedTeams.filter(t => t !== teamId)
           : [...prev.excludedTeams, teamId],
       };
-      autoSave(newState);
+      setTimeout(() => autoSave(newState), 0);
       return newState;
     });
   };
@@ -250,7 +250,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           ? prev.ownedServices.filter(s => s !== serviceCode)
           : [...prev.ownedServices, serviceCode],
       };
-      autoSave(newState);
+      setTimeout(() => autoSave(newState), 0);
       return newState;
     });
   };
@@ -265,7 +265,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           ? prev.selectedServices.filter(s => s !== serviceCode)
           : [...prev.selectedServices, serviceCode],
       };
-      autoSave(newState);
+      setTimeout(() => autoSave(newState), 0);
       return newState;
     });
   };
@@ -277,7 +277,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
         ...prev,
         showElsewhereBadges: !prev.showElsewhereBadges,
       };
-      autoSave(newState);
+      setTimeout(() => autoSave(newState), 0);
       return newState;
     });
   };
@@ -288,7 +288,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
         ...prev,
         showNationalBadges: !prev.showNationalBadges,
       };
-      autoSave(newState);
+      setTimeout(() => autoSave(newState), 0);
       return newState;
     });
   };
