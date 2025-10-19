@@ -40,6 +40,9 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     showNationalBadges: true,
   });
 
+  // Accordion state: only one section open at a time
+  const [expandedSection, setExpandedSection] = useState<'sports' | 'teams' | 'services' | null>('teams');
+
   // Initialize working state on open (ONLY when sheet becomes visible)
   useEffect(() => {
     if (visible) {
@@ -296,6 +299,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             <SportsChipsV2
               selectedSports={workingState.selectedSports}
               onToggleSport={handleToggleSport}
+              isExpanded={expandedSection === 'sports'}
+              onToggleExpanded={() => setExpandedSection(expandedSection === 'sports' ? null : 'sports')}
             />
 
             {/* 3. Teams (new grid design) */}
@@ -305,6 +310,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               selectedSports={workingState.selectedSports}
               onToggleFollow={handleToggleFollow}
               onToggleInclude={handleToggleInclude}
+              isExpanded={expandedSection === 'teams'}
+              onToggleExpanded={() => setExpandedSection(expandedSection === 'teams' ? null : 'teams')}
             />
 
             {/* 4. Services (collapsible with owned toggles) */}
@@ -312,6 +319,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               selectedServices={workingState.selectedServices}
               ownedServices={subscriptions.map(s => s.service_code)}
               onToggleService={handleToggleService}
+              isExpanded={expandedSection === 'services'}
+              onToggleExpanded={() => setExpandedSection(expandedSection === 'services' ? null : 'services')}
             />
 
             {/* 5. Badges & Labels (bottom, independent) */}

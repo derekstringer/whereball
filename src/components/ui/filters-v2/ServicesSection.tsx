@@ -13,15 +13,18 @@ interface ServicesSectionProps {
   selectedServices: string[];
   ownedServices: string[];
   onToggleService: (serviceCode: string) => void;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
 }
 
 export const ServicesSection: React.FC<ServicesSectionProps> = ({
   selectedServices,
   ownedServices,
   onToggleService,
+  isExpanded,
+  onToggleExpanded,
 }) => {
   const { colors } = useTheme();
-  const [isExpanded, setIsExpanded] = useState(true);
 
   const ownedServicesList = STREAMING_SERVICES.filter(s => ownedServices.includes(s.code));
   const notOwnedServicesList = STREAMING_SERVICES.filter(s => !ownedServices.includes(s.code));
@@ -72,7 +75,7 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
       title="Streaming Services"
       badge={badgeText}
       isExpanded={isExpanded}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onToggle={onToggleExpanded}
     >
       {/* Owned Services */}
       {ownedServicesList.length > 0 && (

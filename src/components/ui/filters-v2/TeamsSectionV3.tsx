@@ -14,6 +14,8 @@ interface TeamsSectionV3Props {
   selectedSports: string[]; // Filter teams by selected sports
   onToggleFollow: (teamId: string) => void; // Star - saves to profile
   onToggleInclude: (teamId: string) => void; // Check - this filter only
+  isExpanded: boolean; // Accordion state from parent
+  onToggleExpanded: () => void; // Accordion toggle from parent
 }
 
 interface Team {
@@ -36,9 +38,10 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
   selectedSports,
   onToggleFollow,
   onToggleInclude,
+  isExpanded,
+  onToggleExpanded,
 }) => {
   const { colors } = useTheme();
-  const [isExpanded, setIsExpanded] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAll, setShowAll] = useState(false);
 
@@ -150,7 +153,7 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
       title="Teams"
       badge={badgeText}
       isExpanded={isExpanded}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onToggle={onToggleExpanded}
     >
       {/* Search bar */}
       <View

@@ -13,14 +13,17 @@ import { CollapsibleSection } from './CollapsibleSection';
 interface SportsChipsV2Props {
   selectedSports: Sport[];
   onToggleSport: (sport: Sport) => void;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
 }
 
 export const SportsChipsV2: React.FC<SportsChipsV2Props> = ({
   selectedSports,
   onToggleSport,
+  isExpanded,
+  onToggleExpanded,
 }) => {
   const { colors } = useTheme();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter sports by search query
@@ -62,7 +65,7 @@ export const SportsChipsV2: React.FC<SportsChipsV2Props> = ({
       title="Sports"
       badge={badgeText}
       isExpanded={isExpanded}
-      onToggle={() => setIsExpanded(!isExpanded)}
+      onToggle={onToggleExpanded}
     >
       {/* Search bar */}
       <View
