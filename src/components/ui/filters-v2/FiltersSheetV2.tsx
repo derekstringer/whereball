@@ -95,19 +95,29 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  // Handle preset selection
+  // Handle preset selection - auto-save
   const handlePresetSelect = (preset: Exclude<QuickView, 'custom'>) => {
     const presetState = buildStateFromPreset(preset, follows, subscriptions);
     const ownedServiceCodes = subscriptions.map(s => s.service_code);
-    setWorkingState({
+    const newState = {
       quickView: preset,
       lastPreset: preset,
       ...presetState,
-      teamsMode: 'followed', // presets reset to followed mode
+      teamsMode: 'followed' as TeamsMode, // presets reset to followed mode
       selectedTeams: [],
       excludedTeams: [],
       ownedServices: ownedServiceCodes,
       followedSports: [],
+    };
+    setWorkingState(newState);
+    
+    // Auto-save to store
+    setFiltersV2({
+      quickView: preset,
+      lastPreset: preset,
+      showElsewhereBadges: presetState.showElsewhereBadges,
+      showNationalBadges: presetState.showNationalBadges,
+      customSelections: undefined, // Presets don't have custom selections
     });
   };
 
@@ -305,21 +315,14 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
           {/* Header */}
           <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={[styles.title, { color: colors.text }]}>
-                Filters
-              </Text>
-              {workingState.quickView === 'custom' && (
-                <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.badgeText}>Custom</Text>
-                </View>
-              )}
-            </View>
-            <TouchableOpacity onPress={handleCancel}>
-              <Text style={[styles.closeButton, { color: colors.primary }]}>
-                ✕
-              </Text>
-            </TouchableOpacity>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Filters
+            </Text>
+            {workingState.quickView === 'custom' && (
+              <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.badgeText}>Custom</Text>
+              </View>
+            )}
           </View>
 
           {/* Content */}
@@ -377,31 +380,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             />
           </ScrollView>
 
-          {/* Footer (sticky) */}
-          <View style={[styles.footer, { borderTopColor: colors.border, backgroundColor: colors.bg }]}>
-            <View style={styles.footerButtons}>
-              <TouchableOpacity
-                style={[styles.cancelButton, { borderColor: colors.border }]}
-                onPress={handleCancel}
-              >
-                <Text style={[styles.cancelButtonText, { color: colors.text }]}>
-                  Cancel
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.applyButton,
-                  { backgroundColor: isDirty() ? colors.primary : colors.border },
-                ]}
-                onPress={handleApply}
-                disabled={!isDirty()}
-              >
-                <Text style={[styles.applyButtonText, { opacity: isDirty() ? 1 : 0.5 }]}>
-                  Apply
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -435,7 +413,7 @@ const styles = StyleSheet.create({
   },
   dragHandleContainer: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 8,
   },
   dragHandle: {
     width: 40,
