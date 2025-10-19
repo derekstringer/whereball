@@ -40,7 +40,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     showNationalBadges: true,
   });
 
-  // Initialize working state on open
+  // Initialize working state on open (ONLY when sheet becomes visible)
   useEffect(() => {
     if (visible) {
       // Auto-check all followed teams
@@ -78,7 +78,9 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
         });
       }
     }
-  }, [visible, filtersV2, follows, subscriptions]);
+    // Only run when sheet becomes visible, NOT when follows/subscriptions change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible]);
 
   // Handle preset selection
   const handlePresetSelect = (preset: Exclude<QuickView, 'custom'>) => {
