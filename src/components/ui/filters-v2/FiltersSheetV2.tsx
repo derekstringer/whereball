@@ -43,6 +43,9 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   // Initialize working state on open
   useEffect(() => {
     if (visible) {
+      // Auto-check all followed teams
+      const followedTeamIds = follows.map(f => f.team_id);
+      
       // Load current state
       if (filtersV2.quickView !== 'custom') {
         const presetState = buildStateFromPreset(filtersV2.quickView, follows, subscriptions);
@@ -50,7 +53,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           quickView: filtersV2.quickView,
           lastPreset: filtersV2.lastPreset || filtersV2.quickView,
           teamsMode: 'followed', // presets always start in followed mode
-          selectedTeams: [],
+          selectedTeams: followedTeamIds, // Auto-check all followed teams
           excludedTeams: [],
           selectedSports: presetState.selectedSports,
           selectedServices: presetState.selectedServices,
@@ -58,12 +61,15 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           showNationalBadges: presetState.showNationalBadges,
         });
       } else {
-        // Load custom selections
+        // Load custom selections, but ensure followed teams are checked
+        const customTeams = filtersV2.customSelections?.teams || [];
+        const mergedTeams = Array.from(new Set([...customTeams, ...followedTeamIds]));
+        
         setWorkingState({
           quickView: 'custom',
           lastPreset: filtersV2.lastPreset || 'my_teams_my_services',
           teamsMode: filtersV2.customSelections?.teamsMode || 'followed',
-          selectedTeams: filtersV2.customSelections?.teams || [],
+          selectedTeams: mergedTeams, // Include followed teams
           excludedTeams: filtersV2.customSelections?.excludedTeams || [],
           selectedSports: filtersV2.customSelections?.sports || [],
           selectedServices: filtersV2.customSelections?.services || [],
@@ -120,10 +126,22 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   };
 
   const handleToggleFollow = (teamId: string) => {
-    // This should persist immediately to profile
-    // For now, just update local state
-    // TODO: Call API to update follows
-    markAsCustom();
+    // Follow changes persist immediately to profile via store
+    const { addFollow, removeFollow, follows: currentFollows } = useAppStore.getState();
+    const isFollowed = currentFollows.some(f => f.team_id === teamId);
+    
+    if (isFollowed) {
+      removeFollow(teamId);
+    } else {
+      // Add follow (TODO: Get proper league from team data)
+      addFollow({
+        user_id: 'current_user', // TODO: Get from auth
+        team_id: teamId,
+        league: 'NHL', // TODO: Get from team data
+        created_at: new Date().toISOString(),
+      });
+    }
+    // Note: This updates the global follows array, which will trigger a re-render
   };
 
   const handleToggleInclude = (teamId: string) => {

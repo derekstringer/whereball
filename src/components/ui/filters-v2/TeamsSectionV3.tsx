@@ -137,15 +137,16 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
     const isFollowed = followedTeamIds.includes(teamId);
     const isIncluded = selectedTeams.includes(teamId);
 
+    // Always toggle follow first
+    onToggleFollow(teamId);
+    
     if (isFollowed) {
-      // Unfollowing → auto-uncheck
-      onToggleFollow(teamId);
+      // Unfollowing → auto-uncheck if it's checked
       if (isIncluded) {
         onToggleInclude(teamId); // Remove from filter
       }
     } else {
       // Following → auto-check
-      onToggleFollow(teamId);
       if (!isIncluded) {
         onToggleInclude(teamId); // Add to filter
       }
