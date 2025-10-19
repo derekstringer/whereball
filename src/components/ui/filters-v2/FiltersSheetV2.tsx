@@ -397,18 +397,19 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             { backgroundColor: colors.bg, transform: [{ translateY }] },
           ]}
         >
+          {/* Drag Handle */}
+          <View 
+            style={styles.dragHandleContainer}
+            {...panResponder.panHandlers}
+          >
+            <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
+          </View>
+
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
+            style={styles.keyboardView}
             keyboardVerticalOffset={0}
           >
-            {/* Drag Handle */}
-            <View 
-              style={styles.dragHandleContainer}
-              {...panResponder.panHandlers}
-            >
-              <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
-            </View>
 
           {/* Header */}
           <View style={styles.header}>
@@ -590,5 +591,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  keyboardView: {
+    flex: 1,
   },
 });
