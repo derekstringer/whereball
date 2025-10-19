@@ -69,25 +69,25 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
     });
   }, [searchFilteredServices, ownedServices, selectedServices]);
 
-  // Badge logic: Show counts with icons (★ for owned, ✓ for checked-only)
+  // Badge logic: Show counts with icons (★ for owned, ✓ for total selected)
   const badges = useMemo(() => {
     const ownedCount = ownedServices.length;
-    const checkedOnlyCount = selectedServices.filter(code => !ownedServices.includes(code)).length;
+    const totalSelectedCount = selectedServices.length;
     
     // Case 1: Nothing selected
-    if (selectedServices.length === 0) {
+    if (totalSelectedCount === 0) {
       return [{ text: 'ALL' }];
     }
     
-    // Case 2: Only owned services (no additional checked)
-    if (checkedOnlyCount === 0) {
-      return [{ text: String(ownedCount), icon: '★' }];
+    // Case 2: No owned services (only checked)
+    if (ownedCount === 0) {
+      return [{ text: String(totalSelectedCount), icon: '✓' }];
     }
     
-    // Case 3: Both owned and checked-only services
+    // Case 3: Has owned services
     return [
       { text: String(ownedCount), icon: '★' },
-      { text: String(checkedOnlyCount), icon: '✓' },
+      { text: String(totalSelectedCount), icon: '✓' },
     ];
   }, [selectedServices, ownedServices]);
 

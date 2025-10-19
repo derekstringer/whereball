@@ -80,25 +80,25 @@ export const SportsSectionV3: React.FC<SportsSectionV3Props> = ({
   const visibleSports = showAll ? sortedSports : sortedSports.slice(0, INITIAL_COUNT);
   const remainingCount = sortedSports.length - INITIAL_COUNT;
 
-  // Badge logic: Show counts with icons (★ for followed, ✓ for checked-only)
+  // Badge logic: Show counts with icons (★ for followed, ✓ for total selected)
   const badges = useMemo(() => {
     const followedCount = followedSportIds.length;
-    const checkedOnlyCount = selectedSports.filter(id => !followedSportIds.includes(id)).length;
+    const totalSelectedCount = selectedSports.length;
     
     // Case 1: Nothing selected
-    if (selectedSports.length === 0) {
+    if (totalSelectedCount === 0) {
       return [{ text: 'ALL' }];
     }
     
-    // Case 2: Only followed sports (no additional checked)
-    if (checkedOnlyCount === 0) {
-      return [{ text: String(followedCount), icon: '★' }];
+    // Case 2: No followed sports (only checked)
+    if (followedCount === 0) {
+      return [{ text: String(totalSelectedCount), icon: '✓' }];
     }
     
-    // Case 3: Both followed and checked-only sports
+    // Case 3: Has followed sports
     return [
       { text: String(followedCount), icon: '★' },
-      { text: String(checkedOnlyCount), icon: '✓' },
+      { text: String(totalSelectedCount), icon: '✓' },
     ];
   }, [selectedSports, followedSportIds]);
 

@@ -165,25 +165,25 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
   const visibleTeams = showAll ? sortedTeams : sortedTeams.slice(0, INITIAL_COUNT);
   const remainingCount = sortedTeams.length - INITIAL_COUNT;
 
-  // Badge logic: Show counts with icons (★ from team cards, ✓ for checked)
+  // Badge logic: Show counts with icons (★ for followed, ✓ for total selected)
   const badges = useMemo(() => {
     const followedCount = followedTeamIds.length;
-    const checkedOnlyCount = selectedTeams.filter(id => !followedTeamIds.includes(id)).length;
+    const totalSelectedCount = selectedTeams.length;
     
     // Case 1: Nothing selected
-    if (selectedTeams.length === 0) {
+    if (totalSelectedCount === 0) {
       return [{ text: 'ALL' }];
     }
     
-    // Case 2: Only followed teams (no additional checked)
-    if (checkedOnlyCount === 0) {
-      return [{ text: String(followedCount), icon: '★' }];
+    // Case 2: No followed teams (only checked)
+    if (followedCount === 0) {
+      return [{ text: String(totalSelectedCount), icon: '✓' }];
     }
     
-    // Case 3: Both followed and checked-only teams
+    // Case 3: Has followed teams
     return [
       { text: String(followedCount), icon: '★' },
-      { text: String(checkedOnlyCount), icon: '✓' },
+      { text: String(totalSelectedCount), icon: '✓' },
     ];
   }, [selectedTeams, followedTeamIds]);
 
