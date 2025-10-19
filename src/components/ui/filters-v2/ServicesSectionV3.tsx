@@ -19,7 +19,7 @@ interface ServicesSectionV3Props {
 }
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const COLUMNS = 4;
+const COLUMNS = 3;
 const SCROLLVIEW_PADDING = 48; // 24px on each side from FiltersSheetV2
 const CARD_GAP = 8;
 const CARD_WIDTH = (SCREEN_WIDTH - SCROLLVIEW_PADDING - CARD_GAP * (COLUMNS - 1)) / COLUMNS;
