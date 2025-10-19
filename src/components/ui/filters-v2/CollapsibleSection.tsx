@@ -57,8 +57,12 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
             >
               <Text style={[styles.badgeText, { color: colors.primary }]}>
                 {badge.text}
-                {badge.icon && ` ${badge.icon}`}
               </Text>
+              {badge.icon && (
+                <Text style={[styles.badgeIcon, { color: colors.primary }]}>
+                  {badge.icon}
+                </Text>
+              )}
             </View>
           ))}
           
@@ -111,6 +115,11 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 12,
     fontWeight: '700',
+  },
+  badgeIcon: {
+    fontSize: 12,
+    fontWeight: '700',
+    marginLeft: 3,
   },
   chevron: {
     fontSize: 24,
