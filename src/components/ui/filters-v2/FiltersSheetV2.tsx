@@ -364,9 +364,13 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           keyboardVerticalOffset={0}
         >
           {/* Drag Handle */}
-          <View style={styles.dragHandleContainer}>
+          <TouchableOpacity 
+            style={styles.dragHandleContainer}
+            onPress={handleCancel}
+            activeOpacity={0.7}
+          >
             <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
-          </View>
+          </TouchableOpacity>
 
           {/* Header */}
           <View style={styles.header}>
@@ -468,12 +472,14 @@ const styles = StyleSheet.create({
   },
   dragHandleContainer: {
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingTop: 8,
+    paddingBottom: 12,
+    width: '100%',
   },
   dragHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
   },
   header: {
     flexDirection: 'row',
