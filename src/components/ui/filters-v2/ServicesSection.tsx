@@ -2,11 +2,12 @@
  * ServicesSection - Service chips grouped by owned/not-owned
  */
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { STREAMING_SERVICES } from '../../../constants/services';
 import { Service } from '../../../types';
+import { CollapsibleSection } from './CollapsibleSection';
 
 interface ServicesSectionProps {
   selectedServices: string[];
@@ -20,9 +21,16 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
   onToggleService,
 }) => {
   const { colors } = useTheme();
+  const [isExpanded, setIsExpanded] = useState(true);
 
   const ownedServicesList = STREAMING_SERVICES.filter(s => ownedServices.includes(s.code));
   const notOwnedServicesList = STREAMING_SERVICES.filter(s => !ownedServices.includes(s.code));
+
+  // Badge text
+  const badgeText = useMemo(() => {
+    if (selectedServices.length === 0) return 'ALL';
+    return String(selectedServices.length);
+  }, [selectedServices.length]);
 
   const renderServiceChip = (service: Service, isOwned: boolean) => {
     const isSelected = selectedServices.includes(service.code);
@@ -60,11 +68,12 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        STREAMING SERVICES
-      </Text>
-
+    <CollapsibleSection
+      title="Streaming Services"
+      badge={badgeText}
+      isExpanded={isExpanded}
+      onToggle={() => setIsExpanded(!isExpanded)}
+    >
       {/* Owned Services */}
       {ownedServicesList.length > 0 && (
         <View style={styles.subsection}>
@@ -88,20 +97,11 @@ export const ServicesSection: React.FC<ServicesSectionProps> = ({
           </View>
         </View>
       )}
-    </View>
+    </CollapsibleSection>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
   subsection: {
     marginBottom: 16,
   },
