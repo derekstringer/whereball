@@ -107,6 +107,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: 12,
     paddingHorizontal: 10,
     paddingVertical: 4,
