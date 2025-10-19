@@ -3,8 +3,8 @@
  * Features: 2x2 Quick Views, collapsible sections, mode switcher, badges
  */
 
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, PanResponder, Animated } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAppStore } from '../../../store/appStore';
 import { FiltersWorkingState, QuickView, Sport, TeamsMode } from './types';
@@ -47,6 +47,39 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
   // Accordion state: only one section open at a time
   const [expandedSection, setExpandedSection] = useState<'sports' | 'teams' | 'services' | null>('teams');
+
+  // Drag to dismiss
+  const translateY = useRef(new Animated.Value(0)).current;
+  
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Only respond to downward drags
+        return gestureState.dy > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        // Only allow dragging down (positive dy)
+        if (gestureState.dy > 0) {
+          translateY.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        // If dragged down more than 100px or velocity is high, close
+        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
+          onClose();
+        } else {
+          // Spring back to original position
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            tension: 50,
+            friction: 8,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   // Initialize working state on open (ONLY when sheet becomes visible)
   useEffect(() => {
@@ -358,19 +391,24 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           activeOpacity={1}
           onPress={handleCancel}
         />
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={[styles.sheet, { backgroundColor: colors.bg }]}
-          keyboardVerticalOffset={0}
+        <Animated.View
+          style={[
+            styles.sheet,
+            { backgroundColor: colors.bg, transform: [{ translateY }] },
+          ]}
         >
-          {/* Drag Handle */}
-          <TouchableOpacity 
-            style={styles.dragHandleContainer}
-            onPress={handleCancel}
-            activeOpacity={0.7}
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex: 1 }}
+            keyboardVerticalOffset={0}
           >
-            <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
-          </TouchableOpacity>
+            {/* Drag Handle */}
+            <View 
+              style={styles.dragHandleContainer}
+              {...panResponder.panHandlers}
+            >
+              <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
+            </View>
 
           {/* Header */}
           <View style={styles.header}>
@@ -438,8 +476,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               onToggleNational={handleToggleNationalBadges}
             />
           </ScrollView>
-
-        </KeyboardAvoidingView>
+          </KeyboardAvoidingView>
+        </Animated.View>
       </View>
     </Modal>
   );
