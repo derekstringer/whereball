@@ -53,10 +53,10 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
+      onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only respond to downward drags
-        return gestureState.dy > 5;
+        // Only respond to downward drags from the handle area
+        return Math.abs(gestureState.dy) > 5 && gestureState.dy > 0;
       },
       onPanResponderMove: (_, gestureState) => {
         // Only allow dragging down (positive dy)
@@ -84,6 +84,9 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   // Initialize working state on open (ONLY when sheet becomes visible)
   useEffect(() => {
     if (visible) {
+      // Reset drag position
+      translateY.setValue(0);
+      
       // Auto-check all followed teams
       const followedTeamIds = follows.map(f => f.team_id);
       const ownedServiceCodes = subscriptions.map(s => s.service_code);
