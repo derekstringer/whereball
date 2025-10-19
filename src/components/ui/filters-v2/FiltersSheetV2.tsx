@@ -28,7 +28,10 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
 
   // Working state (changes only on Apply)
-  const [workingState, setWorkingState] = useState<FiltersWorkingState>({
+  const [workingState, setWorkingState] = useState<FiltersWorkingState & { 
+    ownedServices: string[];
+    followedSports: Sport[];
+  }>({
     quickView: 'my_teams_my_services',
     lastPreset: 'my_teams_my_services',
     teamsMode: 'followed',
@@ -36,6 +39,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     excludedTeams: [],
     selectedSports: [],
     selectedServices: [],
+    ownedServices: [], // Track owned services in working state
+    followedSports: [], // Track followed sports in working state
     showElsewhereBadges: true,
     showNationalBadges: true,
   });
@@ -48,6 +53,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     if (visible) {
       // Auto-check all followed teams
       const followedTeamIds = follows.map(f => f.team_id);
+      const ownedServiceCodes = subscriptions.map(s => s.service_code);
       
       // Load current state
       if (filtersV2.quickView !== 'custom') {
@@ -60,6 +66,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           excludedTeams: [],
           selectedSports: presetState.selectedSports,
           selectedServices: presetState.selectedServices,
+          ownedServices: ownedServiceCodes, // Initialize from store
+          followedSports: [], // TODO: Get from store when implemented
           showElsewhereBadges: presetState.showElsewhereBadges,
           showNationalBadges: presetState.showNationalBadges,
         });
@@ -76,6 +84,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           excludedTeams: filtersV2.customSelections?.excludedTeams || [],
           selectedSports: filtersV2.customSelections?.sports || [],
           selectedServices: filtersV2.customSelections?.services || [],
+          ownedServices: ownedServiceCodes, // Initialize from store
+          followedSports: [], // TODO: Get from store when implemented
           showElsewhereBadges: filtersV2.showElsewhereBadges,
           showNationalBadges: filtersV2.showNationalBadges,
         });
@@ -88,6 +98,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   // Handle preset selection
   const handlePresetSelect = (preset: Exclude<QuickView, 'custom'>) => {
     const presetState = buildStateFromPreset(preset, follows, subscriptions);
+    const ownedServiceCodes = subscriptions.map(s => s.service_code);
     setWorkingState({
       quickView: preset,
       lastPreset: preset,
@@ -95,6 +106,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
       teamsMode: 'followed', // presets reset to followed mode
       selectedTeams: [],
       excludedTeams: [],
+      ownedServices: ownedServiceCodes,
+      followedSports: [],
     });
   };
 
@@ -110,14 +123,12 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
   // Sports handlers
   const handleToggleSportFollow = (sportId: Sport) => {
-    // Sport follows - TODO: Add to store like team follows
-    // For now, just treat as selections
     markAsCustom();
     setWorkingState(prev => ({
       ...prev,
-      selectedSports: prev.selectedSports.includes(sportId)
-        ? prev.selectedSports.filter(s => s !== sportId)
-        : [...prev.selectedSports, sportId],
+      followedSports: prev.followedSports.includes(sportId)
+        ? prev.followedSports.filter(s => s !== sportId)
+        : [...prev.followedSports, sportId],
     }));
   };
 
@@ -183,14 +194,12 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
   // Services handlers
   const handleToggleServiceOwned = (serviceCode: string) => {
-    // Services ownership - TODO: persist to subscriptions store
-    // For now, treat as selections
     markAsCustom();
     setWorkingState(prev => ({
       ...prev,
-      selectedServices: prev.selectedServices.includes(serviceCode)
-        ? prev.selectedServices.filter(s => s !== serviceCode)
-        : [...prev.selectedServices, serviceCode],
+      ownedServices: prev.ownedServices.includes(serviceCode)
+        ? prev.ownedServices.filter(s => s !== serviceCode)
+        : [...prev.ownedServices, serviceCode],
     }));
   };
 
@@ -325,7 +334,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             {/* 2. Sports (grid with search) */}
             <SportsSectionV3
               selectedSports={workingState.selectedSports}
-              followedSportIds={[]} // TODO: Add sport follows to store
+              followedSportIds={workingState.followedSports}
               onToggleFollow={handleToggleSportFollow}
               onToggleInclude={handleToggleSportInclude}
               isExpanded={expandedSection === 'sports'}
@@ -346,7 +355,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             {/* 4. Services (grid with owned toggles) */}
             <ServicesSectionV3
               selectedServices={workingState.selectedServices}
-              ownedServices={subscriptions.map(s => s.service_code)}
+              ownedServices={workingState.ownedServices}
               onToggleOwned={handleToggleServiceOwned}
               onToggleInclude={handleToggleServiceInclude}
               isExpanded={expandedSection === 'services'}
