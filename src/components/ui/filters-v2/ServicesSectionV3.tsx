@@ -129,7 +129,7 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
         <Text style={[styles.searchIcon, { color: colors.textSecondary }]}>🔍</Text>
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
-          placeholder="Search services..."
+          placeholder="Search streaming services..."
           placeholderTextColor={colors.textSecondary}
           value={searchQuery}
           onChangeText={setSearchQuery}
