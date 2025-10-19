@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAppStore } from '../../../store/appStore';
 import { FiltersWorkingState, QuickView, Sport, TeamsMode } from './types';
@@ -293,7 +293,11 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           activeOpacity={1}
           onPress={handleCancel}
         />
-        <View style={[styles.sheet, { backgroundColor: colors.bg }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={[styles.sheet, { backgroundColor: colors.bg }]}
+          keyboardVerticalOffset={0}
+        >
           {/* Drag Handle */}
           <View style={styles.dragHandleContainer}>
             <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
@@ -398,7 +402,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </View>
     </Modal>
   );
