@@ -459,7 +459,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 8,
     paddingBottom: 40,
-    maxHeight: '95%',
+    maxHeight: '85%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
@@ -468,7 +468,7 @@ const styles = StyleSheet.create({
   },
   dragHandleContainer: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   dragHandle: {
     width: 40,
