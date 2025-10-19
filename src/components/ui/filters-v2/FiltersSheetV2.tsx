@@ -11,7 +11,7 @@ import { FiltersWorkingState, QuickView, Sport, TeamsMode } from './types';
 import { buildStateFromPreset } from './presets';
 import { QuickViewsRadio } from './QuickViewsRadio';
 import { SportsChipsV2 } from './SportsChipsV2';
-import { TeamsSectionV2 } from './TeamsSectionV2';
+import { TeamsSectionV3 } from './TeamsSectionV3';
 import { ServicesSection } from './ServicesSection';
 import { BadgesLabelsSection } from './BadgesLabelsSection';
 
@@ -278,16 +278,13 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               onToggleSport={handleToggleSport}
             />
 
-            {/* 3. Teams (collapsible with mode switcher) */}
-            <TeamsSectionV2
-              teamsMode={workingState.teamsMode}
+            {/* 3. Teams (new grid design) */}
+            <TeamsSectionV3
               selectedTeams={workingState.selectedTeams}
-              excludedTeams={workingState.excludedTeams}
               followedTeamIds={follows.map(f => f.team_id)}
-              onToggleMode={handleToggleTeamsMode}
+              selectedSports={workingState.selectedSports}
               onToggleFollow={handleToggleFollow}
               onToggleInclude={handleToggleInclude}
-              onToggleExclude={handleToggleExclude}
             />
 
             {/* 4. Services (collapsible with owned toggles) */}
