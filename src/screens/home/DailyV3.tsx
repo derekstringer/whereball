@@ -220,6 +220,46 @@ export const DailyV3: React.FC = () => {
     loadInitialData();
   }, []);
 
+  // When filters change, scroll to first matching date
+  useEffect(() => {
+    // Skip on initial mount (initialScrollIndex handles that)
+    if (loading) return;
+    
+    // Skip if no sections loaded yet
+    if (filteredSections.length === 0) return;
+    
+    // Find first future date with matching games
+    const todayDate = new Date(todayDateKey);
+    todayDate.setHours(0, 0, 0, 0);
+    
+    let targetSectionIndex = filteredSections.findIndex(s => s.isToday);
+    
+    // If today has no matching games, find first FUTURE section
+    if (targetSectionIndex === -1) {
+      const futureSection = filteredSections.find(s => s.dateObj > todayDate);
+      if (futureSection) {
+        targetSectionIndex = filteredSections.indexOf(futureSection);
+      } else {
+        // No future games, show last section
+        targetSectionIndex = filteredSections.length - 1;
+      }
+    }
+    
+    // Scroll to target section
+    if (targetSectionIndex !== -1 && sectionListRef.current) {
+      // Small delay to ensure filteredSections has been rendered
+      setTimeout(() => {
+        sectionListRef.current?.scrollToLocation({
+          sectionIndex: targetSectionIndex,
+          itemIndex: 0,
+          animated: true,
+          viewPosition: 0,
+          viewOffset: 0,
+        });
+      }, 100);
+    }
+  }, [filtersV2, filteredSections.length]); // Re-run when filters change
+
   // Live polling: Refresh games every 15 seconds when app is active
   useEffect(() => {
     let pollInterval: NodeJS.Timeout | null = null;
