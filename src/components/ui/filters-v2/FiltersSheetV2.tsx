@@ -346,8 +346,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: 40,
-    height: '68%', // Compact initial size
-    maxHeight: '90%', // Can grow to 90% when sections expand
+    height: '85%', // Increased from 68% to show all content without scrolling at rest
+    maxHeight: '95%', // Can grow to 95% when sections expand
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
