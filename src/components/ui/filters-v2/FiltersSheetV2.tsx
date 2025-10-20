@@ -26,15 +26,11 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   const { colors } = useTheme();
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
   const flatListRef = React.useRef<FlatList>(null);
+  const [contentHeight, setContentHeight] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
 
-  // Ensure FlatList starts scrolled to top on mount
-  useEffect(() => {
-    if (visible && flatListRef.current) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
-      }, 100);
-    }
-  }, [visible]);
+  // Only enable scroll if content is actually larger than container
+  const shouldScroll = contentHeight > containerHeight;
 
   // Working state (changes only on Apply)
   // Working state (changes only on Apply)
@@ -333,8 +329,11 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            bounces={false}
-            scrollToOverflowEnabled={false}
+            bounces={true}
+            scrollToOverflowEnabled={true}
+            scrollEnabled={shouldScroll}
+            onContentSizeChange={(w, h) => setContentHeight(h)}
+            onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
             ListHeaderComponent={() => (
               <View>
                 {/* 1. Quick Views (2x2 grid) */}
