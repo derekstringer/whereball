@@ -319,6 +319,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
+            bounces={false}
+            alwaysBounceVertical={false}
           >
             {/* 1. Quick Views (2x2 grid) */}
             <QuickViewsRadio
