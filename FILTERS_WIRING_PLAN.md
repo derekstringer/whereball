@@ -1,7 +1,9 @@
 # FiltersV2 Wiring Plan - End-to-End Integration
 
-**Status:** Specification Complete - Ready for Implementation  
-**Last Updated:** October 16, 2025
+**⚠️ IMPORTANT:** This document reflects the original design with `teamsMode`. See [FILTERS_V2_MIGRATION.md](./FILTERS_V2_MIGRATION.md) for current implementation without teamsMode.
+
+**Status:** Specification Complete - Implementation Updated Oct 19, 2025  
+**Last Updated:** October 16, 2025 (Original Spec)
 
 ---
 

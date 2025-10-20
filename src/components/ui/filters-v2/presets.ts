@@ -3,7 +3,7 @@
  * Updated to match SportStream spec (2x2 grid format)
  */
 
-import { QuickView, QuickViewPreset, Sport, TeamsMode, SportMetadata } from './types';
+import { QuickView, QuickViewPreset, Sport, SportMetadata } from './types';
 import { Follow, UserSubscription } from '../../../types';
 
 /**
@@ -151,7 +151,43 @@ export function getSportsFromFollows(follows: Follow[]): Sport[] {
 }
 
 /**
+ * Get ALL team IDs for given sports
+ * This is used for "ALL GAMES" presets to populate selectedTeams
+ */
+export function getAllTeamsForSports(sports: Sport[]): string[] {
+  // TODO: Import actual team data from constants/teams.ts
+  // For now, return mock team IDs based on sport
+  const allTeamIds: string[] = [];
+  
+  sports.forEach(sport => {
+    if (sport === 'nhl') {
+      // All 32 NHL teams
+      const nhlTeams = ['nhl_ana', 'nhl_ari', 'nhl_bos', 'nhl_buf', 'nhl_cgy', 'nhl_car', 'nhl_chi', 'nhl_col', 'nhl_cbj', 'nhl_dal', 'nhl_det', 'nhl_edm', 'nhl_fla', 'nhl_lak', 'nhl_min', 'nhl_mtl', 'nhl_nsh', 'nhl_njd', 'nhl_nyi', 'nhl_nyr', 'nhl_ott', 'nhl_phi', 'nhl_pit', 'nhl_sjs', 'nhl_sea', 'nhl_stl', 'nhl_tbl', 'nhl_tor', 'nhl_van', 'nhl_vgk', 'nhl_wsh', 'nhl_wpg'];
+      allTeamIds.push(...nhlTeams);
+    } else if (sport === 'nba') {
+      // All 30 NBA teams (sample)
+      const nbaTeams = ['nba_atl', 'nba_bos', 'nba_bkn', 'nba_cha', 'nba_chi', 'nba_cle', 'nba_dal', 'nba_den', 'nba_det', 'nba_gsw', 'nba_hou', 'nba_ind', 'nba_lac', 'nba_lal', 'nba_mem', 'nba_mia', 'nba_mil', 'nba_min', 'nba_nop', 'nba_nyk', 'nba_okc', 'nba_orl', 'nba_phi', 'nba_phx', 'nba_por', 'nba_sac', 'nba_sas', 'nba_tor', 'nba_uta', 'nba_was'];
+      allTeamIds.push(...nbaTeams);
+    }
+    // Add other sports as needed
+  });
+  
+  return allTeamIds;
+}
+
+/**
+ * Get ALL service codes
+ * This is used for "ANY SERVICE" presets that should check all services
+ */
+export function getAllServiceCodes(): string[] {
+  // Import actual service codes from constants
+  const { STREAMING_SERVICES } = require('../../../constants/services');
+  return STREAMING_SERVICES.map((s: any) => s.code);
+}
+
+/**
  * Build state from a preset
+ * Returns the correct selectedTeams, selectedSports, selectedServices for each Quick View
  */
 export function buildStateFromPreset(
   preset: Exclude<QuickView, 'custom'>,
@@ -162,47 +198,53 @@ export function buildStateFromPreset(
   const ownedServiceCodes = subscriptions.map(s => s.service_code);
   const sportsFromFollows = getSportsFromFollows(follows);
 
+  const defaultSports = sportsFromFollows.length > 0 ? sportsFromFollows : ['nhl' as Sport];
+
   switch (preset) {
     case 'my_teams_my_services':
+      // MY TEAMS = only followed teams checked
+      // Sports: auto-check sports from followed teams
+      // Services: only owned services checked
       return {
-        teamsMode: 'followed' as TeamsMode,
-        selectedTeams: [], // Empty in followed mode = use all followed
-        excludedTeams: [], // No excludes
-        selectedSports: sportsFromFollows.length > 0 ? sportsFromFollows : ['nhl' as Sport],
+        selectedTeams: followedTeamIds,
+        selectedSports: defaultSports,
         selectedServices: ownedServiceCodes,
         showElsewhereBadges: true,
         showNationalBadges: true,
       };
 
     case 'my_teams_any_service':
+      // MY TEAMS = only followed teams checked
+      // Sports: auto-check sports from followed teams
+      // Services: ALL services checked (ANY SERVICE = all are valid)
       return {
-        teamsMode: 'followed' as TeamsMode,
-        selectedTeams: [], // Empty in followed mode = use all followed
-        excludedTeams: [],
-        selectedSports: sportsFromFollows.length > 0 ? sportsFromFollows : ['nhl' as Sport],
-        selectedServices: [], // Empty = any service
+        selectedTeams: followedTeamIds,
+        selectedSports: defaultSports,
+        selectedServices: getAllServiceCodes(), // Check ALL services
         showElsewhereBadges: true,
         showNationalBadges: true,
       };
 
     case 'all_games_my_services':
+      // ALL GAMES = all teams in selected sports checked
+      // Sports: auto-check sports from followed teams
+      // Services: only owned services checked
       return {
-        teamsMode: 'pick_specific' as TeamsMode,
-        selectedTeams: [], // Empty in pick_specific = all teams
-        excludedTeams: [],
-        selectedSports: [], // Empty = all sports
+        selectedTeams: getAllTeamsForSports(defaultSports), // Check ALL teams in these sports
+        selectedSports: defaultSports,
         selectedServices: ownedServiceCodes,
         showElsewhereBadges: true,
         showNationalBadges: true,
       };
 
     case 'all_games_any_service':
+      // ALL GAMES = all teams in selected sports checked
+      // Sports: auto-check sports from followed teams
+      // Services: ALL services checked
       return {
-        teamsMode: 'pick_specific' as TeamsMode,
-        selectedTeams: [], // Empty in pick_specific = all teams
-        excludedTeams: [],
-        selectedSports: [], // Empty = all sports
-        selectedServices: [], // Empty = any service
+        selectedTeams: getAllTeamsForSports(defaultSports), // Check ALL teams in these sports
+        selectedSports: defaultSports,
+        selectedServices: getAllServiceCodes(), // Check ALL services
         showElsewhereBadges: true,
         showNationalBadges: true,
       };
@@ -213,76 +255,5 @@ export function buildStateFromPreset(
   }
 }
 
-/**
- * Detect which preset matches current state
- */
-export function detectPresetFromState(
-  state: {
-    teamsMode: TeamsMode;
-    selectedTeams: string[];
-    excludedTeams: string[];
-    selectedSports: Sport[];
-    selectedServices: string[];
-  },
-  follows: Follow[],
-  subscriptions: UserSubscription[]
-): QuickView {
-  const followedTeamIds = follows.map(f => f.team_id);
-  const ownedServiceCodes = subscriptions.map(s => s.service_code);
-  const sportsFromFollows = getSportsFromFollows(follows);
-
-  // Check all_games_any_service: pick_specific mode, no teams, no sports, no services
-  if (
-    state.teamsMode === 'pick_specific' &&
-    state.selectedTeams.length === 0 &&
-    state.selectedSports.length === 0 &&
-    state.selectedServices.length === 0
-  ) {
-    return 'all_games_any_service';
-  }
-
-  // Check all_games_my_services: pick_specific mode, no teams, no sports, has owned services
-  if (
-    state.teamsMode === 'pick_specific' &&
-    state.selectedTeams.length === 0 &&
-    state.selectedSports.length === 0 &&
-    arraysEqual(state.selectedServices, ownedServiceCodes)
-  ) {
-    return 'all_games_my_services';
-  }
-
-  // Check my_teams_any_service: followed mode, no excludes, sports match follows, no services
-  if (
-    state.teamsMode === 'followed' &&
-    state.selectedTeams.length === 0 &&
-    state.excludedTeams.length === 0 &&
-    arraysEqual(state.selectedSports, sportsFromFollows) &&
-    state.selectedServices.length === 0
-  ) {
-    return 'my_teams_any_service';
-  }
-
-  // Check my_teams_my_services: followed mode, no excludes, sports match follows, has owned services
-  if (
-    state.teamsMode === 'followed' &&
-    state.selectedTeams.length === 0 &&
-    state.excludedTeams.length === 0 &&
-    arraysEqual(state.selectedSports, sportsFromFollows) &&
-    arraysEqual(state.selectedServices, ownedServiceCodes)
-  ) {
-    return 'my_teams_my_services';
-  }
-
-  // Doesn't match any preset
-  return 'custom';
-}
-
-/**
- * Helper: Check if two arrays have the same elements (order doesn't matter)
- */
-function arraysEqual(a: string[], b: string[]): boolean {
-  if (a.length !== b.length) return false;
-  const sortedA = [...a].sort();
-  const sortedB = [...b].sort();
-  return sortedA.every((val, i) => val === sortedB[i]);
-}
+// Note: detectPresetFromState removed - no longer needed since we removed teamsMode
+// Quick Views now directly set the correct selectedTeams based on preset type

@@ -53,9 +53,6 @@ export interface SportMetadata {
   category: 'us_core' | 'soccer' | 'motorsport' | 'combat' | 'cricket' | 'rugby' | 'tennis' | 'golf' | 'cycling' | 'other';
 }
 
-// Teams mode: followed (with excludes) vs pick specific
-export type TeamsMode = 'followed' | 'pick_specific';
-
 /**
  * Quick View Preset definition
  */
@@ -74,18 +71,12 @@ export interface FiltersWorkingState {
   quickView: QuickView;
   lastPreset: Exclude<QuickView, 'custom'>;
   
-  // Teams
-  teamsMode: TeamsMode;
-  selectedTeams: string[]; // For pick_specific mode OR includes in followed mode
-  excludedTeams: string[]; // For followed mode excludes
+  // Teams - just an array of selected team IDs (checked in filter)
+  selectedTeams: string[];
   
   // Sports & Services
   selectedSports: Sport[];
   selectedServices: string[]; // service codes
-  
-  // Badges (independent, bottom section)
-  showElsewhereBadges: boolean;
-  showNationalBadges: boolean;
 }
 
 /**
@@ -95,16 +86,10 @@ export interface FiltersV2State {
   quickView: QuickView;
   lastPreset: Exclude<QuickView, 'custom'>;
   
-  // Badges (independent)
-  showElsewhereBadges: boolean;
-  showNationalBadges: boolean;
-  
   // Custom selections (only when quickView === 'custom')
   customSelections?: {
-    teamsMode: TeamsMode;
     sports: Sport[];
-    teams: string[]; // includes for pick_specific, or includes in followed mode
-    excludedTeams: string[]; // excludes for followed mode
+    teams: string[]; // Team IDs to include in filter
     services: string[];
   };
 }
@@ -138,14 +123,9 @@ export interface Service {
  */
 export interface FiltersApplyEvent {
   quickView: QuickView;
-  teamsMode: TeamsMode;
   sportsCount: number;
   teamsCountEffective: number;
   servicesOwnedCount: number;
-  toggles: {
-    elsewhere: boolean;
-    national: boolean;
-  };
   changedKeys: string[];
 }
 

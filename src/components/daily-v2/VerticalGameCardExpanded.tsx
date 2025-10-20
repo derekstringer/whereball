@@ -163,8 +163,8 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       );
     }
     
-    // Yellow: check toggle
-    if (filtersV2.showElsewhereBadges && unsubscribed.length > 0) {
+    // Yellow: always show
+    if (unsubscribed.length > 0) {
       icons.push(
         <Image
           key="elsewhere"
@@ -175,9 +175,9 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       );
     }
     
-    // Blue: check toggle
+    // Blue: always show
     const hasNational = game.broadcasts.some(b => b.type === 'national');
-    if (filtersV2.showNationalBadges && hasNational) {
+    if (hasNational) {
       icons.push(
         <Image
           key="national"

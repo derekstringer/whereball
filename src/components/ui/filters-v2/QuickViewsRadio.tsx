@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   block: {
     flex: 1,
-    aspectRatio: 1, // Square blocks
+    aspectRatio: 1.6, // Rectangular blocks (wider than tall)
     borderWidth: 2,
     borderRadius: 12,
     padding: 12,

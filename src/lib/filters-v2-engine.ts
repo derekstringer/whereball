@@ -3,7 +3,7 @@
  * Implements the predicate function per FILTERS_WIRING_PLAN.md
  */
 
-import { FiltersV2State, Sport, TeamsMode } from '../components/ui/filters-v2/types';
+import { FiltersV2State, Sport } from '../components/ui/filters-v2/types';
 import { Follow, UserSubscription } from '../types';
 
 /**
@@ -45,35 +45,25 @@ export class FiltersHelper {
   ) {}
 
   /**
-   * Get effective team IDs based on teams mode
+   * Get effective team IDs based on current filter state
+   * Returns the set of team IDs to include in results
    */
   effectiveTeamIds(): Set<string> {
     const customSelections = this.filters.customSelections;
     
     if (!customSelections) {
-      // Using a preset - determine from quickView
+      // Using a preset - check the quickView to determine teams
       if (this.teamScope() === 'MY') {
-        // Followed teams mode
-        const followedIds = new Set(this.context.follows.map(f => f.team_id));
-        return followedIds;
+        // MY TEAMS preset - use followed teams
+        return new Set(this.context.follows.map(f => f.team_id));
       } else {
-        // All teams mode
-        return new Set(); // Empty set means "all teams"
+        // ALL GAMES preset - empty set means "all teams"
+        return new Set();
       }
     }
 
-    // Custom mode
-    const teamsMode = customSelections.teamsMode;
-    
-    if (teamsMode === 'followed') {
-      // Start with followed teams, remove excludes
-      const followedIds = new Set(this.context.follows.map(f => f.team_id));
-      customSelections.excludedTeams.forEach(id => followedIds.delete(id));
-      return followedIds;
-    } else {
-      // pick_specific mode
-      return new Set(customSelections.teams);
-    }
+    // Custom mode - use the teams array from customSelections
+    return new Set(customSelections.teams || []);
   }
 
   /**

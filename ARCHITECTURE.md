@@ -118,7 +118,8 @@ Before implementing ANY major UI pattern, answer these questions:
 - `src/components/daily-v2/DateHeader.tsx` - Sticky date headers
 
 ### Success #2: FiltersV2 - Modular Component Architecture
-**Achievement:** Complete rebuild of filters system following spec (October 16, 2025)
+**Achievement:** Complete rebuild of filters system following spec (October 16, 2025)  
+**Updated:** Simplified team selection by removing teamsMode system (October 19, 2025)
 
 **What We Did Right:**
 1. Built modular, reusable components (CollapsibleSection)
@@ -144,15 +145,24 @@ Before implementing ANY major UI pattern, answer these questions:
 - ✅ Proper Apply/Cancel with dirty state tracking
 - ✅ 50+ sports catalog with placeholder indicators
 
+**Major Simplification (October 19, 2025):**
+- Removed complex `teamsMode` system ('followed' vs 'pick_specific')
+- Replaced with direct team selection via `selectedTeams` array
+- Simplified filtering engine to work without mode concept
+- Updated TeamsSectionV3 with simpler star + check pattern
+- See `FILTERS_V2_MIGRATION.md` for full details
+
 **Files:**
 - `src/components/ui/filters-v2/FiltersSheetV2.tsx` - Main component
 - `src/components/ui/filters-v2/QuickViewsRadio.tsx` - 2×2 grid
 - `src/components/ui/filters-v2/SportsChipsV2.tsx` - Sports with search
-- `src/components/ui/filters-v2/TeamsSectionV2.tsx` - Teams with mode switcher
+- `src/components/ui/filters-v2/TeamsSectionV3.tsx` - Teams with star + check (V3 = current, V2 = deprecated)
 - `src/components/ui/filters-v2/BadgesLabelsSection.tsx` - Independent badges
 - `src/components/ui/filters-v2/CollapsibleSection.tsx` - Reusable header
-- `src/components/ui/filters-v2/types.ts` - Comprehensive type definitions
-- `src/components/ui/filters-v2/presets.ts` - Sports catalog + preset logic
+- `src/components/ui/filters-v2/types.ts` - Comprehensive type definitions (teamsMode removed)
+- `src/components/ui/filters-v2/presets.ts` - Sports catalog + preset logic (simplified)
+- `src/lib/filters-v2-engine.ts` - Filtering logic (teamsMode removed)
+- `FILTERS_V2_MIGRATION.md` - Migration documentation
 
 ### Key Insight
 **The framework usually has the right tool already built. Use it first, fight it never.**

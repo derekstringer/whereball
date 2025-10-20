@@ -138,8 +138,8 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       );
     }
     
-    // Yellow: available but not yours (check toggle)
-    if (filtersV2.showElsewhereBadges && unsubscribed.length > 0) {
+    // Yellow: available but not yours (always show)
+    if (unsubscribed.length > 0) {
       icons.push(
         <Image
           key="elsewhere"
@@ -150,9 +150,9 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       );
     }
     
-    // Blue: national broadcast (check toggle)
+    // Blue: national broadcast (always show)
     const hasNational = game.broadcasts.some(b => b.type === 'national');
-    if (filtersV2.showNationalBadges && hasNational) {
+    if (hasNational) {
       icons.push(
         <Image
           key="national"

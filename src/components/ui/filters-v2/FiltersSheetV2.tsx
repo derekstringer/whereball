@@ -13,7 +13,6 @@ import { QuickViewsRadio } from './QuickViewsRadio';
 import { SportsSectionV3 } from './SportsSectionV3';
 import { TeamsSectionV3 } from './TeamsSectionV3';
 import { ServicesSectionV3 } from './ServicesSectionV3';
-import { BadgesLabelsSection } from './BadgesLabelsSection';
 
 interface FiltersSheetV2Props {
   visible: boolean;
@@ -39,8 +38,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     selectedServices: [],
     ownedServices: [], // Track owned services in working state
     followedSports: [], // Track followed sports in working state
-    showElsewhereBadges: true,
-    showNationalBadges: true,
   });
 
   // Accordion state: only one section open at a time
@@ -65,9 +62,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           selectedServices: presetState.selectedServices,
           ownedServices: ownedServiceCodes,
           followedSports: followedSportsFromTeams, // Auto-starred from team follows
-          // IMPORTANT: Use saved badge states from store, NOT preset defaults
-          showElsewhereBadges: filtersV2.showElsewhereBadges,
-          showNationalBadges: filtersV2.showNationalBadges,
         });
       } else {
         // Load custom selections
@@ -81,8 +75,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           selectedServices: filtersV2.customSelections?.services || [],
           ownedServices: ownedServiceCodes,
           followedSports: followedSportsFromTeams, // Auto-starred from team follows
-          showElsewhereBadges: filtersV2.showElsewhereBadges,
-          showNationalBadges: filtersV2.showNationalBadges,
         });
       }
     }
@@ -104,18 +96,13 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
       ...presetState,
       ownedServices: ownedServiceCodes,
       followedSports: followedSportsFromTeams, // Auto-star sports from team follows
-      // IMPORTANT: Preserve current badge settings, don't reset from preset
-      showElsewhereBadges: workingState.showElsewhereBadges,
-      showNationalBadges: workingState.showNationalBadges,
     };
     setWorkingState(newState);
     
-    // Auto-save to store - preserve current badge settings
+    // Auto-save to store
     setFiltersV2({
       quickView: preset,
       lastPreset: preset,
-      showElsewhereBadges: workingState.showElsewhereBadges,
-      showNationalBadges: workingState.showNationalBadges,
       customSelections: undefined, // Presets don't have custom selections
     });
   };
@@ -125,8 +112,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     setFiltersV2({
       quickView: newState.quickView,
       lastPreset: newState.lastPreset,
-      showElsewhereBadges: newState.showElsewhereBadges,
-      showNationalBadges: newState.showNationalBadges,
       customSelections: newState.quickView === 'custom' ? {
         sports: newState.selectedSports,
         teams: newState.selectedTeams,
@@ -242,36 +227,12 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     });
   };
 
-  // Badge handlers (independent - do NOT mark as custom)
-  const handleToggleElsewhereBadges = () => {
-    setWorkingState(prev => {
-      const newState = {
-        ...prev,
-        showElsewhereBadges: !prev.showElsewhereBadges,
-      };
-      setTimeout(() => autoSave(newState), 0);
-      return newState;
-    });
-  };
-
-  const handleToggleNationalBadges = () => {
-    setWorkingState(prev => {
-      const newState = {
-        ...prev,
-        showNationalBadges: !prev.showNationalBadges,
-      };
-      setTimeout(() => autoSave(newState), 0);
-      return newState;
-    });
-  };
-
+  // Apply changes
   // Apply changes
   const handleApply = () => {
     setFiltersV2({
       quickView: workingState.quickView,
       lastPreset: workingState.lastPreset,
-      showElsewhereBadges: workingState.showElsewhereBadges,
-      showNationalBadges: workingState.showNationalBadges,
       customSelections: workingState.quickView === 'custom' ? {
         sports: workingState.selectedSports,
         teams: workingState.selectedTeams,
@@ -284,8 +245,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   // Check if state has changed (dirty state)
   const isDirty = () => {
     if (filtersV2.quickView !== workingState.quickView) return true;
-    if (filtersV2.showElsewhereBadges !== workingState.showElsewhereBadges) return true;
-    if (filtersV2.showNationalBadges !== workingState.showNationalBadges) return true;
     
     // Check custom selections if in custom mode
     if (workingState.quickView === 'custom' && filtersV2.customSelections) {
@@ -397,14 +356,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               onToggleInclude={handleToggleServiceInclude}
               isExpanded={expandedSection === 'services'}
               onToggleExpanded={() => setExpandedSection(expandedSection === 'services' ? null : 'services')}
-            />
-
-            {/* 5. Badges & Labels (bottom, independent) */}
-            <BadgesLabelsSection
-              showElsewhereBadges={workingState.showElsewhereBadges}
-              showNationalBadges={workingState.showNationalBadges}
-              onToggleElsewhere={handleToggleElsewhereBadges}
-              onToggleNational={handleToggleNationalBadges}
             />
           </ScrollView>
           </KeyboardAvoidingView>
