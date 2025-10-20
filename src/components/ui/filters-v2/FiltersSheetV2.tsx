@@ -25,6 +25,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 }) => {
   const { colors } = useTheme();
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
   // Working state (changes only on Apply)
   const [workingState, setWorkingState] = useState<FiltersWorkingState & { 
@@ -314,14 +315,21 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
           {/* Content */}
           <ScrollView
+            ref={scrollViewRef}
             style={styles.content}
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             bounces={true}
-            scrollIndicatorInsets={{ top: 0 }}
-            contentInsetAdjustmentBehavior="never"
+            scrollEventThrottle={16}
+            onScroll={(event) => {
+              const yOffset = event.nativeEvent.contentOffset.y;
+              // Prevent negative scroll (scrolling above content start)
+              if (yOffset < 0 && scrollViewRef.current) {
+                scrollViewRef.current.scrollTo({ y: 0, animated: false });
+              }
+            }}
           >
             {/* 1. Quick Views (2x2 grid) */}
             <QuickViewsRadio

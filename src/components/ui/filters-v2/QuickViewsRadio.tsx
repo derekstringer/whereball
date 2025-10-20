@@ -158,7 +158,6 @@ export const QuickViewsRadio: React.FC<QuickViewsRadioProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 16, // Prevents content from scrolling behind header when bouncing
     marginBottom: 24,
   },
   sectionTitle: {
