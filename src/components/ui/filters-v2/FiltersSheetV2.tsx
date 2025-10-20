@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAppStore } from '../../../store/appStore';
 import { FiltersWorkingState, QuickView, Sport } from './types';
@@ -25,7 +25,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 }) => {
   const { colors } = useTheme();
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
-  const scrollViewRef = React.useRef<ScrollView>(null);
 
   // Working state (changes only on Apply)
   const [workingState, setWorkingState] = useState<FiltersWorkingState & { 
@@ -313,57 +312,58 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             </View>
           </View>
 
-          {/* Content */}
-          <ScrollView
-            ref={scrollViewRef}
+          {/* Content - Using FlatList for proper iOS scroll behavior */}
+          <FlatList
             style={styles.content}
             contentContainerStyle={styles.contentContainer}
+            data={[]} // Empty data array - we use ListHeaderComponent for content
+            renderItem={null}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             bounces={true}
-            contentInset={{ top: 1 }}
-            contentOffset={{ x: 0, y: -1 }}
-            automaticallyAdjustContentInsets={false}
-          >
-            {/* 1. Quick Views (2x2 grid) */}
-            <QuickViewsRadio
-              selected={workingState.quickView}
-              onSelect={handlePresetSelect}
-              lastPreset={workingState.lastPreset}
-            />
+            ListHeaderComponent={() => (
+              <View>
+                {/* 1. Quick Views (2x2 grid) */}
+                <QuickViewsRadio
+                  selected={workingState.quickView}
+                  onSelect={handlePresetSelect}
+                  lastPreset={workingState.lastPreset}
+                />
 
-            {/* 2. Sports (grid with search) */}
-            <SportsSectionV3
-              selectedSports={workingState.selectedSports}
-              followedSportIds={workingState.followedSports}
-              onToggleFollow={handleToggleSportFollow}
-              onToggleInclude={handleToggleSportInclude}
-              isExpanded={expandedSection === 'sports'}
-              onToggleExpanded={() => setExpandedSection(expandedSection === 'sports' ? null : 'sports')}
-            />
+                {/* 2. Sports (grid with search) */}
+                <SportsSectionV3
+                  selectedSports={workingState.selectedSports}
+                  followedSportIds={workingState.followedSports}
+                  onToggleFollow={handleToggleSportFollow}
+                  onToggleInclude={handleToggleSportInclude}
+                  isExpanded={expandedSection === 'sports'}
+                  onToggleExpanded={() => setExpandedSection(expandedSection === 'sports' ? null : 'sports')}
+                />
 
-            {/* 3. Teams (new grid design) */}
-            <TeamsSectionV3
-              selectedTeams={workingState.selectedTeams}
-              followedTeamIds={follows.map(f => f.team_id)}
-              selectedSports={workingState.selectedSports}
-              onToggleFollow={handleToggleFollow}
-              onToggleInclude={handleToggleInclude}
-              isExpanded={expandedSection === 'teams'}
-              onToggleExpanded={() => setExpandedSection(expandedSection === 'teams' ? null : 'teams')}
-            />
+                {/* 3. Teams (new grid design) */}
+                <TeamsSectionV3
+                  selectedTeams={workingState.selectedTeams}
+                  followedTeamIds={follows.map(f => f.team_id)}
+                  selectedSports={workingState.selectedSports}
+                  onToggleFollow={handleToggleFollow}
+                  onToggleInclude={handleToggleInclude}
+                  isExpanded={expandedSection === 'teams'}
+                  onToggleExpanded={() => setExpandedSection(expandedSection === 'teams' ? null : 'teams')}
+                />
 
-            {/* 4. Services (grid with owned toggles) */}
-            <ServicesSectionV3
-              selectedServices={workingState.selectedServices}
-              ownedServices={workingState.ownedServices}
-              onToggleOwned={handleToggleServiceOwned}
-              onToggleInclude={handleToggleServiceInclude}
-              isExpanded={expandedSection === 'services'}
-              onToggleExpanded={() => setExpandedSection(expandedSection === 'services' ? null : 'services')}
-            />
-          </ScrollView>
+                {/* 4. Services (grid with owned toggles) */}
+                <ServicesSectionV3
+                  selectedServices={workingState.selectedServices}
+                  ownedServices={workingState.ownedServices}
+                  onToggleOwned={handleToggleServiceOwned}
+                  onToggleInclude={handleToggleServiceInclude}
+                  isExpanded={expandedSection === 'services'}
+                  onToggleExpanded={() => setExpandedSection(expandedSection === 'services' ? null : 'services')}
+                />
+              </View>
+            )}
+          />
           </KeyboardAvoidingView>
         </View>
       </View>
