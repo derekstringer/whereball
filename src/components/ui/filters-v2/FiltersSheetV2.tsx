@@ -416,6 +416,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomWidth: 1,
     alignItems: 'center',
+    zIndex: 100,
+    position: 'relative',
   },
   dragHandleContainer: {
     alignItems: 'center',
