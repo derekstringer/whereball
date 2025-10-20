@@ -322,14 +322,9 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             bounces={true}
-            scrollEventThrottle={16}
-            onScroll={(event) => {
-              const yOffset = event.nativeEvent.contentOffset.y;
-              // Prevent negative scroll (scrolling above content start)
-              if (yOffset < 0 && scrollViewRef.current) {
-                scrollViewRef.current.scrollTo({ y: 0, animated: false });
-              }
-            }}
+            contentInset={{ top: 1 }}
+            contentOffset={{ x: 0, y: -1 }}
+            automaticallyAdjustContentInsets={false}
           >
             {/* 1. Quick Views (2x2 grid) */}
             <QuickViewsRadio
