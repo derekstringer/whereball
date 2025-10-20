@@ -383,7 +383,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 8,
     paddingBottom: 40,
-    maxHeight: '90%', // Cap at 90% so user doesn't lose context
+    height: '65%', // Compact initial size
+    maxHeight: '90%', // Can grow to 90% when sections expand
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
