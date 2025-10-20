@@ -30,6 +30,7 @@ import { SettingsScreen } from '../settings/SettingsScreen';
 import { FiltersSheetV2 } from '../../components/ui/filters-v2/FiltersSheetV2';
 import { FEATURES } from '../../config/features';
 import { applyFilters, buildMatchPredicate, UserFilterContext } from '../../lib/filters-v2-engine';
+import { mapNHLGamesToFilterable } from '../../lib/game-mapper';
 
 interface GameSection {
   title: string; // YYYY-MM-DD
@@ -74,10 +75,19 @@ export const DailyV3: React.FC = () => {
     };
     
     return sections
-      .map(section => ({
-        ...section,
-        data: applyFilters(section.data as any[], filtersV2, filterContext) as unknown as NHLGame[],
-      }))
+      .map(section => {
+        // Convert NHLGames to FilterableGames format
+        const filterableGames = mapNHLGamesToFilterable(section.data);
+        // Apply filters
+        const filtered = applyFilters(filterableGames, filtersV2, filterContext);
+        // Extract original game IDs that passed the filter
+        const passedIds = new Set(filtered.map(g => g.id));
+        // Return only the original games that passed
+        return {
+          ...section,
+          data: section.data.filter(game => passedIds.has(game.id)),
+        };
+      })
       .filter(section => section.data.length > 0); // SKIP EMPTY DATES
   }, [sections, filtersV2, userFollows, userServiceCodes, follows, subscriptions]);
 
