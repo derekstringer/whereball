@@ -323,16 +323,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             </View>
           </View>
 
-          {/* 1. Quick Views - FIXED AT TOP (never scrolls) */}
-          <View style={[styles.quickViewsFixedSection, { paddingHorizontal: 24 }]}>
-            <QuickViewsRadio
-              selected={workingState.quickView}
-              onSelect={handlePresetSelect}
-              lastPreset={workingState.lastPreset}
-            />
-          </View>
-
-          {/* 2. Scrollable Sections (Sports, Teams, Services) */}
+          {/* Content - ALL SCROLLABLE: QuickViews through Services */}
           <FlatList
             ref={flatListRef}
             style={styles.content}
@@ -342,10 +333,17 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
-            bounces={true}
+            bounces={false}
             scrollToOverflowEnabled={false}
             ListHeaderComponent={() => (
               <View>
+                {/* 1. Quick Views (2x2 grid) */}
+                <QuickViewsRadio
+                  selected={workingState.quickView}
+                  onSelect={handlePresetSelect}
+                  lastPreset={workingState.lastPreset}
+                />
+
                 {/* 2. Sports (grid with search) */}
                 <SportsSectionV3
                   selectedSports={workingState.selectedSports}
@@ -461,11 +459,8 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '300',
   },
-  quickViewsFixedSection: {
-    flexShrink: 0, // Prevent shrinking, stay at fixed size
-  },
   content: {
-    flex: 1, // Take remaining space
+    paddingHorizontal: 24,
   },
   contentContainer: {
     paddingBottom: 20,
