@@ -104,15 +104,18 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
       ...presetState,
       ownedServices: ownedServiceCodes,
       followedSports: followedSportsFromTeams, // Auto-star sports from team follows
+      // IMPORTANT: Preserve current badge settings, don't reset from preset
+      showElsewhereBadges: workingState.showElsewhereBadges,
+      showNationalBadges: workingState.showNationalBadges,
     };
     setWorkingState(newState);
     
-    // Auto-save to store
+    // Auto-save to store - preserve current badge settings
     setFiltersV2({
       quickView: preset,
       lastPreset: preset,
-      showElsewhereBadges: presetState.showElsewhereBadges,
-      showNationalBadges: presetState.showNationalBadges,
+      showElsewhereBadges: workingState.showElsewhereBadges,
+      showNationalBadges: workingState.showNationalBadges,
       customSelections: undefined, // Presets don't have custom selections
     });
   };
