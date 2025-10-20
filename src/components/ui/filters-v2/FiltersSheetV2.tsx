@@ -323,7 +323,16 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             </View>
           </View>
 
-          {/* Content - Using FlatList for proper iOS scroll behavior */}
+          {/* 1. Quick Views - FIXED AT TOP (never scrolls) */}
+          <View style={[styles.quickViewsFixedSection, { paddingHorizontal: 24 }]}>
+            <QuickViewsRadio
+              selected={workingState.quickView}
+              onSelect={handlePresetSelect}
+              lastPreset={workingState.lastPreset}
+            />
+          </View>
+
+          {/* 2. Scrollable Sections (Sports, Teams, Services) */}
           <FlatList
             ref={flatListRef}
             style={styles.content}
@@ -335,23 +344,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             keyboardDismissMode="on-drag"
             bounces={true}
             scrollToOverflowEnabled={false}
-            initialScrollIndex={0}
-            onMomentumScrollEnd={(e) => {
-              // After bounce completes, clamp scroll to 0 if negative
-              const offset = e.nativeEvent.contentOffset.y;
-              if (offset < 0) {
-                flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
-              }
-            }}
             ListHeaderComponent={() => (
               <View>
-                {/* 1. Quick Views (2x2 grid) */}
-                <QuickViewsRadio
-                  selected={workingState.quickView}
-                  onSelect={handlePresetSelect}
-                  lastPreset={workingState.lastPreset}
-                />
-
                 {/* 2. Sports (grid with search) */}
                 <SportsSectionV3
                   selectedSports={workingState.selectedSports}
@@ -467,8 +461,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '300',
   },
+  quickViewsFixedSection: {
+    flexShrink: 0, // Prevent shrinking, stay at fixed size
+  },
   content: {
-    paddingHorizontal: 24,
+    flex: 1, // Take remaining space
   },
   contentContainer: {
     paddingBottom: 20,
