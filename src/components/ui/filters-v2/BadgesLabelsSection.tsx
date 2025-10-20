@@ -72,11 +72,11 @@ export const BadgesLabelsSection: React.FC<BadgesLabelsSectionProps> = ({
   return (
     <View style={styles.container}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>
-        BADGES & LABELS
+        BADGES
       </Text>
 
       <Text style={[styles.helperText, { color: colors.textSecondary }]}>
-        Visual indicators only • Does not change results
+        Visual indicators on game cards • Does not affect filtering
       </Text>
 
       <View style={styles.toggles}>
