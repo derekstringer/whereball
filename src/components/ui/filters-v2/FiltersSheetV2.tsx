@@ -3,11 +3,11 @@
  * Features: 2x2 Quick Views, collapsible sections, mode switcher, badges
  */
 
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, PanResponder, Animated } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAppStore } from '../../../store/appStore';
-import { FiltersWorkingState, QuickView, Sport, TeamsMode } from './types';
+import { FiltersWorkingState, QuickView, Sport } from './types';
 import { buildStateFromPreset } from './presets';
 import { QuickViewsRadio } from './QuickViewsRadio';
 import { SportsSectionV3 } from './SportsSectionV3';
@@ -34,9 +34,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   }>({
     quickView: 'my_teams_my_services',
     lastPreset: 'my_teams_my_services',
-    teamsMode: 'followed',
     selectedTeams: [],
-    excludedTeams: [],
     selectedSports: [],
     selectedServices: [],
     ownedServices: [], // Track owned services in working state
@@ -46,50 +44,15 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   });
 
   // Accordion state: only one section open at a time
-  const [expandedSection, setExpandedSection] = useState<'sports' | 'teams' | 'services' | null>('teams');
-
-  // Drag to dismiss
-  const translateY = useRef(new Animated.Value(0)).current;
-  
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        // Only respond to downward drags from the handle area
-        return Math.abs(gestureState.dy) > 5 && gestureState.dy > 0;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        // Only allow dragging down (positive dy)
-        if (gestureState.dy > 0) {
-          translateY.setValue(gestureState.dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        // If dragged down more than 100px or velocity is high, close
-        if (gestureState.dy > 100 || gestureState.vy > 0.5) {
-          onClose();
-        } else {
-          // Spring back to original position
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            tension: 50,
-            friction: 8,
-          }).start();
-        }
-      },
-    })
-  ).current;
+  const [expandedSection, setExpandedSection] = useState<'sports' | 'teams' | 'services' | null>(null);
 
   // Initialize working state on open (ONLY when sheet becomes visible)
   useEffect(() => {
     if (visible) {
-      // Reset drag position
-      translateY.setValue(0);
-      
-      // Auto-check all followed teams
-      const followedTeamIds = follows.map(f => f.team_id);
       const ownedServiceCodes = subscriptions.map(s => s.service_code);
+      // Derive followed sports from team follows (auto-star logic)
+      const { getSportsFromFollows } = require('./presets');
+      const followedSportsFromTeams = getSportsFromFollows(follows);
       
       // Load current state
       if (filtersV2.quickView !== 'custom') {
@@ -97,31 +60,27 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
         setWorkingState({
           quickView: filtersV2.quickView,
           lastPreset: filtersV2.lastPreset || filtersV2.quickView,
-          teamsMode: 'followed', // presets always start in followed mode
-          selectedTeams: followedTeamIds, // Auto-check all followed teams
-          excludedTeams: [],
+          selectedTeams: presetState.selectedTeams, // Use teams from preset
           selectedSports: presetState.selectedSports,
           selectedServices: presetState.selectedServices,
-          ownedServices: ownedServiceCodes, // Initialize from store
-          followedSports: [], // TODO: Get from store when implemented
-          showElsewhereBadges: presetState.showElsewhereBadges,
-          showNationalBadges: presetState.showNationalBadges,
+          ownedServices: ownedServiceCodes,
+          followedSports: followedSportsFromTeams, // Auto-starred from team follows
+          // IMPORTANT: Use saved badge states from store, NOT preset defaults
+          showElsewhereBadges: filtersV2.showElsewhereBadges,
+          showNationalBadges: filtersV2.showNationalBadges,
         });
       } else {
-        // Load custom selections, but ensure followed teams are checked
+        // Load custom selections
         const customTeams = filtersV2.customSelections?.teams || [];
-        const mergedTeams = Array.from(new Set([...customTeams, ...followedTeamIds]));
         
         setWorkingState({
           quickView: 'custom',
           lastPreset: filtersV2.lastPreset || 'my_teams_my_services',
-          teamsMode: filtersV2.customSelections?.teamsMode || 'followed',
-          selectedTeams: mergedTeams, // Include followed teams
-          excludedTeams: filtersV2.customSelections?.excludedTeams || [],
+          selectedTeams: customTeams,
           selectedSports: filtersV2.customSelections?.sports || [],
           selectedServices: filtersV2.customSelections?.services || [],
-          ownedServices: ownedServiceCodes, // Initialize from store
-          followedSports: [], // TODO: Get from store when implemented
+          ownedServices: ownedServiceCodes,
+          followedSports: followedSportsFromTeams, // Auto-starred from team follows
           showElsewhereBadges: filtersV2.showElsewhereBadges,
           showNationalBadges: filtersV2.showNationalBadges,
         });
@@ -135,15 +94,16 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   const handlePresetSelect = (preset: Exclude<QuickView, 'custom'>) => {
     const presetState = buildStateFromPreset(preset, follows, subscriptions);
     const ownedServiceCodes = subscriptions.map(s => s.service_code);
+    // Derive followed sports from team follows
+    const { getSportsFromFollows } = require('./presets');
+    const followedSportsFromTeams = getSportsFromFollows(follows);
+    
     const newState = {
       quickView: preset,
       lastPreset: preset,
       ...presetState,
-      teamsMode: 'followed' as TeamsMode, // presets reset to followed mode
-      selectedTeams: [],
-      excludedTeams: [],
       ownedServices: ownedServiceCodes,
-      followedSports: [],
+      followedSports: followedSportsFromTeams, // Auto-star sports from team follows
     };
     setWorkingState(newState);
     
@@ -165,10 +125,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
       showElsewhereBadges: newState.showElsewhereBadges,
       showNationalBadges: newState.showNationalBadges,
       customSelections: newState.quickView === 'custom' ? {
-        teamsMode: newState.teamsMode,
         sports: newState.selectedSports,
         teams: newState.selectedTeams,
-        excludedTeams: newState.excludedTeams,
         services: newState.selectedServices,
       } : undefined,
     });
@@ -216,16 +174,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   };
 
   // Teams handlers
-  const handleToggleTeamsMode = (mode: TeamsMode) => {
-    markAsCustom();
-    setWorkingState(prev => ({
-      ...prev,
-      teamsMode: mode,
-      selectedTeams: [], // Clear selections when switching modes
-      excludedTeams: [],
-    }));
-  };
-
   const handleToggleFollow = (teamId: string) => {
     // Follow changes persist immediately to profile via store
     const { addFollow, removeFollow, follows: currentFollows } = useAppStore.getState();
@@ -254,21 +202,6 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
         selectedTeams: prev.selectedTeams.includes(teamId)
           ? prev.selectedTeams.filter(t => t !== teamId)
           : [...prev.selectedTeams, teamId],
-      };
-      setTimeout(() => autoSave(newState), 0);
-      return newState;
-    });
-  };
-
-  const handleToggleExclude = (teamId: string) => {
-    markAsCustom();
-    setWorkingState(prev => {
-      const newState = {
-        ...prev,
-        quickView: 'custom' as QuickView,
-        excludedTeams: prev.excludedTeams.includes(teamId)
-          ? prev.excludedTeams.filter(t => t !== teamId)
-          : [...prev.excludedTeams, teamId],
       };
       setTimeout(() => autoSave(newState), 0);
       return newState;
@@ -337,10 +270,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
       showElsewhereBadges: workingState.showElsewhereBadges,
       showNationalBadges: workingState.showNationalBadges,
       customSelections: workingState.quickView === 'custom' ? {
-        teamsMode: workingState.teamsMode,
         sports: workingState.selectedSports,
         teams: workingState.selectedTeams,
-        excludedTeams: workingState.excludedTeams,
         services: workingState.selectedServices,
       } : undefined,
     });
@@ -355,16 +286,12 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     
     // Check custom selections if in custom mode
     if (workingState.quickView === 'custom' && filtersV2.customSelections) {
-      if (filtersV2.customSelections.teamsMode !== workingState.teamsMode) return true;
-      
       const currentSports = filtersV2.customSelections.sports || [];
       const currentTeams = filtersV2.customSelections.teams || [];
-      const currentExcluded = filtersV2.customSelections.excludedTeams || [];
       const currentServices = filtersV2.customSelections.services || [];
       
       if (JSON.stringify(currentSports.sort()) !== JSON.stringify(workingState.selectedSports.sort())) return true;
       if (JSON.stringify(currentTeams.sort()) !== JSON.stringify(workingState.selectedTeams.sort())) return true;
-      if (JSON.stringify(currentExcluded.sort()) !== JSON.stringify(workingState.excludedTeams.sort())) return true;
       if (JSON.stringify(currentServices.sort()) !== JSON.stringify(workingState.selectedServices.sort())) return true;
     }
     
@@ -394,20 +321,12 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           activeOpacity={1}
           onPress={handleCancel}
         />
-        <Animated.View
+        <View
           style={[
             styles.sheet,
-            { backgroundColor: colors.bg, transform: [{ translateY }] },
+            { backgroundColor: colors.bg },
           ]}
         >
-          {/* Drag Handle */}
-          <View 
-            style={styles.dragHandleContainer}
-            {...panResponder.panHandlers}
-          >
-            <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary + '40' }]} />
-          </View>
-
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.keyboardView}
@@ -419,11 +338,16 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             <Text style={[styles.title, { color: colors.text }]}>
               Filters
             </Text>
-            {workingState.quickView === 'custom' && (
-              <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                <Text style={styles.badgeText}>Custom</Text>
-              </View>
-            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              {workingState.quickView === 'custom' && (
+                <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.badgeText}>Custom</Text>
+                </View>
+              )}
+              <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Text style={[styles.doneButton, { color: colors.primary }]}>Done</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Content */}
@@ -481,7 +405,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             />
           </ScrollView>
           </KeyboardAvoidingView>
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );
@@ -505,7 +429,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 8,
     paddingBottom: 40,
-    maxHeight: '85%',
+    height: '85%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
@@ -514,14 +438,18 @@ const styles = StyleSheet.create({
   },
   dragHandleContainer: {
     alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 12,
+    paddingTop: 12,
+    paddingBottom: 16,
     width: '100%',
   },
   dragHandle: {
-    width: 36,
-    height: 5,
-    borderRadius: 2.5,
+    width: 48,
+    height: 6,
+    borderRadius: 3,
+  },
+  doneButton: {
+    fontSize: 17,
+    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
