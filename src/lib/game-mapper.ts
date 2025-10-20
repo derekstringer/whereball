@@ -11,9 +11,9 @@ import { Sport } from '../components/ui/filters-v2/types';
  * Convert NHLGame to FilterableGame format for filtering
  */
 export function mapNHLGameToFilterable(game: NHLGame): FilterableGame {
-  // Convert team IDs from numbers to strings with 'nhl_' prefix
-  const homeTeamId = `nhl_${game.homeTeam.id}`;
-  const awayTeamId = `nhl_${game.awayTeam.id}`;
+  // Convert team abbreviations to our team ID format (e.g., 'PHI' -> 'nhl_phi')
+  const homeTeamId = `nhl_${game.homeTeam.abbreviation.toLowerCase()}`;
+  const awayTeamId = `nhl_${game.awayTeam.abbreviation.toLowerCase()}`;
   
   // Map broadcasts to broadcastProviders
   // TODO: This is a placeholder - real broadcast mapping needs service codes
