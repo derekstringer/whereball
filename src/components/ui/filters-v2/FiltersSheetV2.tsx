@@ -68,6 +68,16 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   // Accordion state: only one section open at a time
   const [expandedSection, setExpandedSection] = useState<'sports' | 'teams' | 'services' | null>(null);
 
+  // Toast state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToastNotification = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 2000);
+  };
+
   // Auto-scroll when section expands to show expanded content
   useEffect(() => {
     if (expandedSection && flatListRef.current) {
@@ -218,8 +228,12 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     const { addFollow, removeFollow, follows: currentFollows } = useAppStore.getState();
     const isFollowed = currentFollows.some(f => f.team_id === teamId);
     
+    const NHL_TEAMS = require('../../../constants/teams').NHL_TEAMS;
+    const team = NHL_TEAMS.find((t: any) => t.id === teamId);
+    
     if (isFollowed) {
       removeFollow(teamId);
+      showToastNotification(`${team?.market || 'Team'} removed from favorites`);
     } else {
       // Add follow (TODO: Get proper league from team data)
       addFollow({
@@ -228,6 +242,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
         league: 'NHL', // TODO: Get from team data
         created_at: new Date().toISOString(),
       });
+      showToastNotification(`${team?.market || 'Team'} added to favorites`);
     }
     // Note: This updates the global follows array, which will trigger a re-render
   };
@@ -251,13 +266,33 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   const handleToggleServiceOwned = (serviceCode: string) => {
     markAsCustom();
     setWorkingState(prev => {
+      const isCurrentlyOwned = prev.ownedServices.includes(serviceCode);
+      const newOwnedServices = isCurrentlyOwned
+        ? prev.ownedServices.filter(s => s !== serviceCode)
+        : [...prev.ownedServices, serviceCode];
+      
       const newState = {
         ...prev,
         quickView: 'custom' as QuickView,
-        ownedServices: prev.ownedServices.includes(serviceCode)
-          ? prev.ownedServices.filter(s => s !== serviceCode)
-          : [...prev.ownedServices, serviceCode],
+        ownedServices: newOwnedServices,
       };
+      
+      // CRITICAL: Also update subscriptions in global store
+      // This ensures the ownership state persists
+      const { setSubscriptions } = useAppStore.getState();
+      const newSubscriptions = newOwnedServices.map(code => ({
+        user_id: 'user-1', // TODO: Get from auth
+        service_code: code,
+        created_at: new Date().toISOString(),
+      }));
+      setSubscriptions(newSubscriptions);
+      
+      // Show feedback
+      const STREAMING_SERVICES = require('../../../constants/services').STREAMING_SERVICES;
+      const service = STREAMING_SERVICES.find((s: any) => s.code === serviceCode);
+      const action = isCurrentlyOwned ? 'removed' : 'added';
+      showToastNotification(`${service?.name || 'Service'} ${action}`);
+      
       setTimeout(() => autoSave(newState), 0);
       return newState;
     });
@@ -327,6 +362,15 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
                 </View>
               )}
             </View>
+
+            {/* Toast Notification */}
+            {showToast && (
+              <View style={styles.toastContainer}>
+                <View style={styles.toast}>
+                  <Text style={styles.toastText}>{toastMessage}</Text>
+                </View>
+              </View>
+            )}
 
             {/* Content - SCROLLABLE area (FlatList below header) */}
             <FlatList
@@ -464,5 +508,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 20,
+  },
+  toastContainer: {
+    position: 'absolute',
+    top: 80,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  toast: {
+    backgroundColor: '#333333',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  toastText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
