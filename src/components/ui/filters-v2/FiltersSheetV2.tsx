@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 8,
     paddingBottom: 40,
-    height: '65%', // Compact initial size
+    height: '68%', // Compact initial size - adjusted up per user feedback
     maxHeight: '90%', // Can grow to 90% when sections expand
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
