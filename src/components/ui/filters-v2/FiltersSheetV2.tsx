@@ -336,6 +336,13 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             bounces={true}
             scrollToOverflowEnabled={false}
             initialScrollIndex={0}
+            onMomentumScrollEnd={(e) => {
+              // After bounce completes, clamp scroll to 0 if negative
+              const offset = e.nativeEvent.contentOffset.y;
+              if (offset < 0) {
+                flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+              }
+            }}
             ListHeaderComponent={() => (
               <View>
                 {/* 1. Quick Views (2x2 grid) */}
