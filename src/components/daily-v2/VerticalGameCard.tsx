@@ -6,6 +6,7 @@
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
+import { useAppStore } from '../../store/appStore';
 import { NHLGame } from '../../lib/nhl-api';
 import { getServicesForGameSplit } from '../../lib/service-helpers';
 import { LiveClockWidget } from './LiveClockWidget';
@@ -26,6 +27,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   onPress,
 }) => {
   const { colors } = useTheme();
+  const { filtersV2 } = useAppStore();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
@@ -124,7 +126,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   const renderStatusIcons = () => {
     const icons = [];
     
-    // Green: on your services
+    // Green: on your services (always show)
     if (subscribed.length > 0) {
       icons.push(
         <Image
@@ -136,8 +138,8 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       );
     }
     
-    // Yellow: available but not yours
-    if (unsubscribed.length > 0) {
+    // Yellow: available but not yours (check toggle)
+    if (filtersV2.showElsewhereBadges && unsubscribed.length > 0) {
       icons.push(
         <Image
           key="elsewhere"
@@ -148,9 +150,9 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       );
     }
     
-    // Blue: national broadcast
+    // Blue: national broadcast (check toggle)
     const hasNational = game.broadcasts.some(b => b.type === 'national');
-    if (hasNational) {
+    if (filtersV2.showNationalBadges && hasNational) {
       icons.push(
         <Image
           key="national"

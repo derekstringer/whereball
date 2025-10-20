@@ -23,7 +23,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   onCollapse,
 }) => {
   const { colors } = useTheme();
-  const { filters } = useAppStore();
+  const { filters, filtersV2 } = useAppStore();
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
@@ -151,6 +151,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   const renderStatusIcons = () => {
     const icons = [];
     
+    // Green: always show (on your services)
     if (subscribed.length > 0) {
       icons.push(
         <Image
@@ -162,7 +163,8 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       );
     }
     
-    if (unsubscribed.length > 0) {
+    // Yellow: check toggle
+    if (filtersV2.showElsewhereBadges && unsubscribed.length > 0) {
       icons.push(
         <Image
           key="elsewhere"
@@ -173,8 +175,9 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       );
     }
     
+    // Blue: check toggle
     const hasNational = game.broadcasts.some(b => b.type === 'national');
-    if (hasNational) {
+    if (filtersV2.showNationalBadges && hasNational) {
       icons.push(
         <Image
           key="national"
