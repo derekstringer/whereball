@@ -383,7 +383,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingTop: 8,
     paddingBottom: 40,
-    height: '85%',
+    maxHeight: '90%', // Cap at 90% so user doesn't lose context
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.3,
