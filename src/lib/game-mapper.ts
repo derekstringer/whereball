@@ -6,6 +6,7 @@
 import { FilterableGame } from './filters-v2-engine';
 import { NHLGame } from './nhl-api';
 import { Sport } from '../components/ui/filters-v2/types';
+import { getServicesForBroadcast } from './broadcast-mapper';
 
 /**
  * Convert NHLGame to FilterableGame format for filtering
@@ -16,12 +17,21 @@ export function mapNHLGameToFilterable(game: NHLGame): FilterableGame {
   const awayTeamId = `nhl_${game.awayTeam.abbreviation.toLowerCase()}`;
   
   // Map broadcasts to broadcastProviders
-  // TODO: This is a placeholder - real broadcast mapping needs service codes
-  const broadcastProviders = game.broadcasts.map(broadcast => ({
-    serviceCode: broadcast.network.toLowerCase().replace(/\s+/g, '_'),
-    isBlackedOut: false, // TODO: Implement blackout logic
-    isNational: broadcast.type === 'national',
-  }));
+  // For each broadcast network, get ALL services that carry it
+  const broadcastProviders: FilterableGame['broadcastProviders'] = [];
+  
+  game.broadcasts.forEach(broadcast => {
+    const serviceCodes = getServicesForBroadcast(broadcast.network);
+    
+    // Create a provider entry for each service
+    serviceCodes.forEach(serviceCode => {
+      broadcastProviders.push({
+        serviceCode,
+        isBlackedOut: false, // TODO: Implement blackout logic based on location
+        isNational: broadcast.type === 'national',
+      });
+    });
+  });
   
   // Map game state
   const statusMap = {
