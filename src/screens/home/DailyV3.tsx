@@ -460,25 +460,40 @@ export const DailyV3: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
-  // Calculate initial scroll index (flat item index to today's header)
+  // Calculate initial scroll index (flat item index to today's header or first future game)
   const initialScrollIndex = useMemo(() => {
-    const todaySectionIndex = filteredSections.findIndex(s => s.isToday);
-    if (todaySectionIndex === -1) return 0;
+    let targetSectionIndex = filteredSections.findIndex(s => s.isToday);
     
-    // Calculate total flat items before today's section
+    // If today has no games, find first FUTURE section
+    if (targetSectionIndex === -1) {
+      const todayDate = new Date(todayDateKey);
+      todayDate.setHours(0, 0, 0, 0);
+      
+      // Find first section with date > today
+      const futureSection = filteredSections.find(s => s.dateObj > todayDate);
+      if (futureSection) {
+        targetSectionIndex = filteredSections.indexOf(futureSection);
+        console.log('No games today, jumping to first future date:', futureSection.title);
+      } else {
+        // No future games, default to last section
+        targetSectionIndex = filteredSections.length > 0 ? filteredSections.length - 1 : 0;
+        console.log('No future games, showing last section');
+      }
+    }
+    
+    if (targetSectionIndex === -1) return 0;
+    
+    // Calculate total flat items before target section
     let flatIndex = 0;
-    for (let i = 0; i < todaySectionIndex; i++) {
+    for (let i = 0; i < targetSectionIndex; i++) {
       flatIndex += 1; // header
       flatIndex += filteredSections[i].data.length; // items
       flatIndex += 1; // footer
     }
     
-    // flatIndex now points to today's header (don't add 1 more)
-    // This makes the header stick immediately
-    
-    console.log('Today section:', todaySectionIndex, 'Flat index (header):', flatIndex);
+    console.log('Target section:', targetSectionIndex, 'Flat index (header):', flatIndex);
     return flatIndex;
-  }, [filteredSections]);
+  }, [filteredSections, todayDateKey]);
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
