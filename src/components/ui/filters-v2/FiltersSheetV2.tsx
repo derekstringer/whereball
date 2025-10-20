@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   contentContainer: {
-    paddingTop: 0, // Ensure content starts at top, no negative scroll
+    paddingTop: 8, // Buffer space so content never overlaps header when bouncing
     paddingBottom: 20,
   },
   footer: {
