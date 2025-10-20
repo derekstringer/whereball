@@ -46,6 +46,24 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   // Accordion state: only one section open at a time
   const [expandedSection, setExpandedSection] = useState<'sports' | 'teams' | 'services' | null>(null);
 
+  // Auto-scroll when section expands to show expanded content
+  useEffect(() => {
+    if (expandedSection && flatListRef.current) {
+      // When a section expands, scroll up to expose it
+      // Offset depends on which section was expanded
+      const offsetMap = {
+        'sports': 100,  // Scroll up a bit to show Sports content
+        'teams': 250,   // Scroll more for Teams (lower down)
+        'services': 400, // Scroll most for Services (lowest)
+      };
+      
+      const offset = offsetMap[expandedSection];
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset, animated: true });
+      }, 100);
+    }
+  }, [expandedSection]);
+
   // Initialize working state on open (ONLY when sheet becomes visible)
   useEffect(() => {
     if (visible) {
