@@ -447,6 +447,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   contentContainer: {
+    paddingTop: 0, // Ensure content starts at top, no negative scroll
     paddingBottom: 20,
   },
   footer: {
