@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, KeyboardAvoidingView, Platform, PanResponder, Animated, Dimensions } from 'react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { useAppStore } from '../../../store/appStore';
 import { FiltersWorkingState, QuickView, Sport } from './types';
@@ -28,6 +28,28 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   const { colors } = useTheme();
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
   const flatListRef = React.useRef<FlatList>(null);
+
+  // Drag gesture handling
+  const panY = React.useRef(new Animated.Value(0)).current;
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => false,
+      onPanResponderMove: Animated.event([null, { dy: panY }], { useNativeDriver: false }),
+      onPanResponderRelease: (e, { dy }) => {
+        // Close if dragged down more than 100px
+        if (dy > 100) {
+          onClose();
+        } else {
+          // Snap back to original position
+          Animated.spring(panY, {
+            toValue: 0,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    })
+  ).current;
 
   // Working state (changes only on Apply)
   const [workingState, setWorkingState] = useState<FiltersWorkingState & { 
@@ -273,18 +295,30 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             style={styles.keyboardView}
             keyboardVerticalOffset={0}
           >
-            {/* Header - FIXED, OUTSIDE scrollable area (like SettingsScreen) */}
-            <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
-              </TouchableOpacity>
+            {/* Header - DRAGGABLE for native iOS close gesture */}
+            <Animated.View
+              style={[
+                styles.header,
+                { backgroundColor: colors.bg, borderBottomColor: colors.border },
+                { transform: [{ translateY: panY }] },
+              ]}
+              {...panResponder.panHandlers}
+            >
+              {/* Drag Handle - visual indicator at top center */}
+              <View style={styles.dragHandleContainer}>
+                <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary }]} />
+              </View>
+              
+              {/* Title - centered */}
               <Text style={[styles.title, { color: colors.text }]}>Filters</Text>
+              
+              {/* Custom badge - right side */}
               {workingState.quickView === 'custom' && (
                 <View style={[styles.badge, { backgroundColor: colors.primary }]}>
                   <Text style={styles.badgeText}>Custom</Text>
                 </View>
               )}
-            </View>
+            </Animated.View>
 
             {/* Content - SCROLLABLE area (FlatList below header) */}
             <FlatList
@@ -377,29 +411,27 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 16,
     borderBottomWidth: 1,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  closeButtonText: {
-    fontSize: 24,
-    fontWeight: '400',
+  dragHandleContainer: {
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.5,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    flex: 1,
     textAlign: 'center',
+    marginBottom: 8,
   },
   badge: {
     backgroundColor: '#00E5FF',
