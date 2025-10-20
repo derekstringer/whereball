@@ -25,7 +25,18 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 }) => {
   const { colors } = useTheme();
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
+  const flatListRef = React.useRef<FlatList>(null);
 
+  // Ensure FlatList starts scrolled to top on mount
+  useEffect(() => {
+    if (visible && flatListRef.current) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: false });
+      }, 100);
+    }
+  }, [visible]);
+
+  // Working state (changes only on Apply)
   // Working state (changes only on Apply)
   const [workingState, setWorkingState] = useState<FiltersWorkingState & { 
     ownedServices: string[];
@@ -314,6 +325,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
           {/* Content - Using FlatList for proper iOS scroll behavior */}
           <FlatList
+            ref={flatListRef}
             style={styles.content}
             contentContainerStyle={styles.contentContainer}
             data={[]} // Empty data array - we use ListHeaderComponent for content
@@ -322,6 +334,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             bounces={true}
+            scrollToOverflowEnabled={false}
+            initialScrollIndex={0}
             ListHeaderComponent={() => (
               <View>
                 {/* 1. Quick Views (2x2 grid) */}
