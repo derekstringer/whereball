@@ -284,10 +284,11 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           activeOpacity={1}
           onPress={onClose}
         />
-        <View
+        <Animated.View
           style={[
             styles.sheet,
             { backgroundColor: colors.bg },
+            { transform: [{ translateY: panY }] },
           ]}
         >
           <KeyboardAvoidingView
@@ -296,11 +297,10 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             keyboardVerticalOffset={0}
           >
             {/* Header - DRAGGABLE for native iOS close gesture */}
-            <Animated.View
+            <View
               style={[
                 styles.header,
                 { backgroundColor: colors.bg, borderBottomColor: colors.border },
-                { transform: [{ translateY: panY }] },
               ]}
               {...panResponder.panHandlers}
             >
@@ -318,7 +318,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
                   <Text style={styles.badgeText}>Custom</Text>
                 </View>
               )}
-            </Animated.View>
+            </View>
 
             {/* Content - SCROLLABLE area (FlatList below header) */}
             <FlatList
@@ -375,7 +375,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
               )}
             />
           </KeyboardAvoidingView>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
