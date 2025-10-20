@@ -1,6 +1,8 @@
 /**
- * FiltersSheetV2 - Complete rebuild per SportStream spec
- * Features: 2x2 Quick Views, collapsible sections, mode switcher, badges
+ * FiltersSheetV2 - Complete rebuild per SportStream spec + SettingsScreen architecture
+ * Features: 2x2 Quick Views, collapsible sections, fixed header, perfect scroll behavior
+ * 
+ * KEY FIX: Header outside FlatList (mirrors SettingsScreen pattern)
  */
 
 import React, { useState, useEffect } from 'react';
@@ -26,13 +28,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   const { colors } = useTheme();
   const { filtersV2, follows, subscriptions, setFiltersV2 } = useAppStore();
   const flatListRef = React.useRef<FlatList>(null);
-  const [contentHeight, setContentHeight] = useState(0);
-  const [containerHeight, setContainerHeight] = useState(0);
 
-  // Only enable scroll if content is actually larger than container
-  const shouldScroll = contentHeight > containerHeight;
-
-  // Working state (changes only on Apply)
   // Working state (changes only on Apply)
   const [workingState, setWorkingState] = useState<FiltersWorkingState & { 
     ownedServices: string[];
@@ -234,61 +230,19 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     });
   };
 
-  // Apply changes
-  // Apply changes
-  const handleApply = () => {
-    setFiltersV2({
-      quickView: workingState.quickView,
-      lastPreset: workingState.lastPreset,
-      customSelections: workingState.quickView === 'custom' ? {
-        sports: workingState.selectedSports,
-        teams: workingState.selectedTeams,
-        services: workingState.selectedServices,
-      } : undefined,
-    });
-    onClose();
-  };
-
-  // Check if state has changed (dirty state)
-  const isDirty = () => {
-    if (filtersV2.quickView !== workingState.quickView) return true;
-    
-    // Check custom selections if in custom mode
-    if (workingState.quickView === 'custom' && filtersV2.customSelections) {
-      const currentSports = filtersV2.customSelections.sports || [];
-      const currentTeams = filtersV2.customSelections.teams || [];
-      const currentServices = filtersV2.customSelections.services || [];
-      
-      if (JSON.stringify(currentSports.sort()) !== JSON.stringify(workingState.selectedSports.sort())) return true;
-      if (JSON.stringify(currentTeams.sort()) !== JSON.stringify(workingState.selectedTeams.sort())) return true;
-      if (JSON.stringify(currentServices.sort()) !== JSON.stringify(workingState.selectedServices.sort())) return true;
-    }
-    
-    return false;
-  };
-
-  // Cancel (discard changes)
-  const handleCancel = () => {
-    if (isDirty()) {
-      // TODO: Show confirmation dialog
-      // For now, just close
-    }
-    onClose();
-  };
-
   return (
     <Modal
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={handleCancel}
+      onRequestClose={onClose}
     >
       {/* Backdrop */}
       <View style={styles.backdrop}>
         <TouchableOpacity
           style={styles.backdropTouchable}
           activeOpacity={1}
-          onPress={handleCancel}
+          onPress={onClose}
         />
         <View
           style={[
@@ -301,81 +255,73 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
             style={styles.keyboardView}
             keyboardVerticalOffset={0}
           >
-
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={[styles.title, { color: colors.text }]}>
-              Filters
-            </Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            {/* Header - FIXED, OUTSIDE scrollable area (like SettingsScreen) */}
+            <View style={[styles.header, { backgroundColor: colors.bg, borderBottomColor: colors.border }]}>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Text style={[styles.closeButtonText, { color: colors.text }]}>✕</Text>
+              </TouchableOpacity>
+              <Text style={[styles.title, { color: colors.text }]}>Filters</Text>
               {workingState.quickView === 'custom' && (
                 <View style={[styles.badge, { backgroundColor: colors.primary }]}>
                   <Text style={styles.badgeText}>Custom</Text>
                 </View>
               )}
-              <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Text style={[styles.doneButton, { color: colors.primary }]}>Done</Text>
-              </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Content - ALL SCROLLABLE: QuickViews through Services */}
-          <FlatList
-            ref={flatListRef}
-            style={styles.content}
-            contentContainerStyle={styles.contentContainer}
-            data={[]} // Empty data array - we use ListHeaderComponent for content
-            renderItem={null}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            bounces={true}
-            scrollToOverflowEnabled={true}
-            scrollEnabled={shouldScroll}
-            onContentSizeChange={(w, h) => setContentHeight(h)}
-            onLayout={(e) => setContainerHeight(e.nativeEvent.layout.height)}
-            ListHeaderComponent={() => (
-              <View>
-                {/* 1. Quick Views (2x2 grid) */}
-                <QuickViewsRadio
-                  selected={workingState.quickView}
-                  onSelect={handlePresetSelect}
-                  lastPreset={workingState.lastPreset}
-                />
+            {/* Content - SCROLLABLE area (FlatList below header) */}
+            <FlatList
+              ref={flatListRef}
+              style={styles.content}
+              contentContainerStyle={styles.contentContainer}
+              data={[]} // Empty data array - we use ListHeaderComponent for content
+              renderItem={null}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              bounces={true}
+              scrollToOverflowEnabled={true}
+              ListHeaderComponent={() => (
+                <View>
+                  {/* 1. Quick Views (2x2 grid) */}
+                  <QuickViewsRadio
+                    selected={workingState.quickView}
+                    onSelect={handlePresetSelect}
+                    lastPreset={workingState.lastPreset}
+                  />
 
-                {/* 2. Sports (grid with search) */}
-                <SportsSectionV3
-                  selectedSports={workingState.selectedSports}
-                  followedSportIds={workingState.followedSports}
-                  onToggleFollow={handleToggleSportFollow}
-                  onToggleInclude={handleToggleSportInclude}
-                  isExpanded={expandedSection === 'sports'}
-                  onToggleExpanded={() => setExpandedSection(expandedSection === 'sports' ? null : 'sports')}
-                />
+                  {/* 2. Sports (grid with search) */}
+                  <SportsSectionV3
+                    selectedSports={workingState.selectedSports}
+                    followedSportIds={workingState.followedSports}
+                    onToggleFollow={handleToggleSportFollow}
+                    onToggleInclude={handleToggleSportInclude}
+                    isExpanded={expandedSection === 'sports'}
+                    onToggleExpanded={() => setExpandedSection(expandedSection === 'sports' ? null : 'sports')}
+                  />
 
-                {/* 3. Teams (new grid design) */}
-                <TeamsSectionV3
-                  selectedTeams={workingState.selectedTeams}
-                  followedTeamIds={follows.map(f => f.team_id)}
-                  selectedSports={workingState.selectedSports}
-                  onToggleFollow={handleToggleFollow}
-                  onToggleInclude={handleToggleInclude}
-                  isExpanded={expandedSection === 'teams'}
-                  onToggleExpanded={() => setExpandedSection(expandedSection === 'teams' ? null : 'teams')}
-                />
+                  {/* 3. Teams (new grid design) */}
+                  <TeamsSectionV3
+                    selectedTeams={workingState.selectedTeams}
+                    followedTeamIds={follows.map(f => f.team_id)}
+                    selectedSports={workingState.selectedSports}
+                    onToggleFollow={handleToggleFollow}
+                    onToggleInclude={handleToggleInclude}
+                    isExpanded={expandedSection === 'teams'}
+                    onToggleExpanded={() => setExpandedSection(expandedSection === 'teams' ? null : 'teams')}
+                  />
 
-                {/* 4. Services (grid with owned toggles) */}
-                <ServicesSectionV3
-                  selectedServices={workingState.selectedServices}
-                  ownedServices={workingState.ownedServices}
-                  onToggleOwned={handleToggleServiceOwned}
-                  onToggleInclude={handleToggleServiceInclude}
-                  isExpanded={expandedSection === 'services'}
-                  onToggleExpanded={() => setExpandedSection(expandedSection === 'services' ? null : 'services')}
-                />
-              </View>
-            )}
-          />
+                  {/* 4. Services (grid with owned toggles) */}
+                  <ServicesSectionV3
+                    selectedServices={workingState.selectedServices}
+                    ownedServices={workingState.ownedServices}
+                    onToggleOwned={handleToggleServiceOwned}
+                    onToggleInclude={handleToggleServiceInclude}
+                    isExpanded={expandedSection === 'services'}
+                    onToggleExpanded={() => setExpandedSection(expandedSection === 'services' ? null : 'services')}
+                  />
+                </View>
+              )}
+            />
           </KeyboardAvoidingView>
         </View>
       </View>
@@ -399,9 +345,8 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingTop: 8,
     paddingBottom: 40,
-    height: '68%', // Compact initial size - adjusted up per user feedback
+    height: '68%', // Compact initial size
     maxHeight: '90%', // Can grow to 90% when sections expand
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
@@ -409,36 +354,34 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 24,
   },
-  dragHandleContainer: {
-    alignItems: 'center',
-    paddingTop: 12,
-    paddingBottom: 16,
-    width: '100%',
-  },
-  dragHandle: {
-    width: 48,
-    height: 6,
-    borderRadius: 3,
-  },
-  doneButton: {
-    fontSize: 17,
-    fontWeight: '600',
+  keyboardView: {
+    flex: 1,
+    flexDirection: 'column',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 24,
-    marginBottom: 20,
+    paddingTop: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
   },
-  headerLeft: {
-    flexDirection: 'row',
+  closeButton: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+  },
+  closeButtonText: {
+    fontSize: 24,
+    fontWeight: '400',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
+    flex: 1,
+    textAlign: 'center',
   },
   badge: {
     backgroundColor: '#00E5FF',
@@ -454,50 +397,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  closeButton: {
-    fontSize: 28,
-    fontWeight: '300',
-  },
   content: {
-    paddingHorizontal: 24,
+    flex: 1,
   },
   contentContainer: {
+    paddingHorizontal: 24,
     paddingTop: 8,
     paddingBottom: 20,
-  },
-  footer: {
-    paddingHorizontal: 24,
-    paddingTop: 16,
-    paddingBottom: 16,
-    borderTopWidth: 1,
-  },
-  footerButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  applyButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  keyboardView: {
-    flex: 1,
   },
 });
