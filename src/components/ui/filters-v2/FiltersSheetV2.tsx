@@ -86,6 +86,14 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     }
   }, [expandedSection]);
 
+  // Reset drag position when sheet opens
+  useEffect(() => {
+    if (visible) {
+      // Reset panY to 0 (top position)
+      panY.setValue(0);
+    }
+  }, [visible, panY]);
+
   // Initialize working state on open (ONLY when sheet becomes visible)
   useEffect(() => {
     if (visible) {
