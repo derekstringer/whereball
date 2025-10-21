@@ -297,12 +297,27 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
       showToastNotification(`${team?.market || 'Team'} removed from favorites`);
     } else {
       // Add follow (TODO: Get proper league from team data)
-      addFollow({
+      const newFollow = {
         user_id: 'current_user', // TODO: Get from auth
         team_id: teamId,
-        league: 'NHL', // TODO: Get from team data
+        league: 'NHL' as 'NHL' | 'NBA' | 'MLB' | 'NCAA', // TODO: Get from team data
         created_at: new Date().toISOString(),
-      });
+      };
+      addFollow(newFollow);
+      
+      // AUTO-STAR SPORT (Hierarchical consistency)
+      const sportId = newFollow.league.toLowerCase() as Sport;
+      if (!workingState.followedSports.includes(sportId)) {
+        setWorkingState(prev => {
+          const newState = {
+            ...prev,
+            followedSports: [...prev.followedSports, sportId],
+          };
+          setTimeout(() => autoSave(newState), 0);
+          return newState;
+        });
+      }
+      
       showToastNotification(`${team?.market || 'Team'} added to favorites`);
     }
     // Note: This updates the global follows array, which will trigger a re-render
