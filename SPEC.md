@@ -120,6 +120,34 @@
   - Admin override dashboard for bad data
   - Alert on 3+ consecutive ingestion failures
 
+### A-REVISED) Filter Behavior - Quick View Presets
+
+**MY_TEAMS_MY_SERVICES:**
+- Games only from user's followed teams
+- Only on user's subscribed services
+- Most restrictive view
+
+**MY_TEAMS_ANY_SERVICE:**
+- Games only from user's followed teams
+- On any service (user sees all options)
+- Medium restrictive
+
+**ALL_GAMES_MY_SERVICES:**
+- **CRITICAL:** ALL games from sports user has teams in (not literally all sports)
+- Example: User follows Dallas (NFL) + Yankees (MLB) → shows ALL NFL + ALL MLB games
+- Does NOT show Cricket/WNBA/Soccer if user has no teams in those sports
+- Uses user's subscribed services only
+
+**ALL_GAMES_ANY_SERVICE:**
+- All games from sports user has teams in
+- On any service (user sees all options)
+- Least restrictive
+
+**Why not "all sports":**
+- No realistic use case for football fan to see Cricket schedule
+- User implicitly defines scope by following teams
+- "All games" = "all games in my sports" not "all games on Earth"
+
 ### B) Blackout Heuristic v1 (Transparent)
 
 **Inputs:**

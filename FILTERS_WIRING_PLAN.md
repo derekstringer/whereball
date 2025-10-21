@@ -92,7 +92,7 @@ When a user taps a Quick View block:
 3. **Keep existing sports selection** as-is (independent)
 4. **Teams behavior:**
    - If preset starts with `MY_TEAMS` → `teamsMode = FOLLOWED`
-   - If preset starts with `ALL_GAMES` → `teamsMode = SPECIFIC` with `includeTeamIds = ∅` (all teams)
+   - If preset starts with `ALL_GAMES` → `teamsMode = SPECIFIC` with `includeTeamIds` = all teams in sports with followed teams (NOT all teams on Earth)
 5. **Services scope:**
    - `MY_SERVICES` → results limited to `ownedServiceIds` AND pass blackout rules
    - `ANY_SERVICE` → show all legal options (ownership not required)
@@ -134,7 +134,10 @@ buildMatchPredicate(filters, userContext) → (game) => boolean
   Include if (homeTeamId ∈ effectiveTeams) OR (awayTeamId ∈ effectiveTeams)
   ```
 - Else (`ALL_GAMES_*`):
-  - No team constraint (or if SPECIFIC has includeTeamIds, use that)
+  - CRITICAL: Include only teams from sports where user has followed teams
+  - Example: User follows Dallas (NFL) + Yankees (MLB) → include all NFL teams + all MLB teams
+  - Do NOT include Cricket/WNBA/Soccer teams (user has no teams in those sports)
+  - Reason: "All games" = "all games in my sports" not "all games on Earth"
 
 **Services (Availability):**
 - If `serviceScope="MY"`:

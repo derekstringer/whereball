@@ -49,38 +49,51 @@ When user selects the **ALL_GAMES_MY_SERVICES** or **ALL_GAMES_ANY_SERVICE** qui
 
 ### Behavior
 
-**Auto-check all teams:**
-- Iterate through all NHL/NBA/etc teams
-- Automatically check (include) every team
-- User sees all teams selected in the grid
+**CRITICAL CLARIFICATION:**
+- ALL_GAMES does NOT show all sports from all the world
+- ALL_GAMES shows all games from **ONLY the sports user has teams in**
+- Example: User follows Dallas (NFL) + Yankees (MLB)
+  - ALL_GAMES shows: ALL NFL games + ALL MLB games
+  - ALL_GAMES does NOT show: Cricket, WNBA, Soccer, NCAA Softball (no teams followed)
 
-**Auto-check all sports:**
-- Iterate through available sports
-- Automatically check (include) every sport
+**Auto-check all teams (in selected sports):**
+- Get list of sports user has followed/selected teams in
+- For each of those sports: check ALL teams
+- User sees all teams selected in the grid (but only for sports they care about)
+
+**Auto-check all sports (that have followed teams):**
+- Auto-check only the sports with followed teams
+- Do NOT check sports without followed teams
 - Sports **will NOT get starred** (no favorite icon)
-- Reason: User chose "all games" so we include all sports, but they're not favorites
 
 ### Implementation
 
 ```typescript
 // In handlePresetSelect or when ALL_GAMES preset selected
 if (preset.startsWith('ALL_GAMES')) {
-  // Auto-select all teams
-  const allTeamIds = NHL_TEAMS.map(t => t.id); // + NBA, MLB, etc when added
-  newState.selectedTeams = allTeamIds;
+  // Get sports that have followed teams
+  const sportsWithFollowedTeams = follows
+    .map(f => getTeamSport(f.team_id)) // or derive from team object
+    .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i); // unique
   
-  // Auto-select all sports
-  const allSports = SPORTS_CATALOG.map(s => s.id);
-  newState.selectedSports = allSports;
+  // Auto-select only teams in those sports
+  const teamIdsInFollowedSports = getAllTeamsInSports(sportsWithFollowedTeams);
+  newState.selectedTeams = teamIdsInFollowedSports;
   
-  // Do NOT star any sports (followedSports remains empty or unchanged)
-  // newState.followedSports = [] or keep existing stars
+  // Auto-select only sports with followed teams
+  newState.selectedSports = sportsWithFollowedTeams;
+  
+  // Do NOT star any sports
+  newState.followedSports = []; // or keep existing stars
 }
 ```
 
 ### Why This Way
 
-- User explicitly chose "see all games" → we show them all games
+- User explicitly chose "see all games" = "all games in sports I care about"
+- No one wants to see Cricket if they only follow NFL
+- Clear intent: "all games in my sports" not "all games on Earth"
 - Still respects their sport favorites (stars)
 - Clear distinction: "included for filtering" vs "starred as favorite"
 
