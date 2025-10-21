@@ -312,6 +312,10 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           const newState = {
             ...prev,
             followedSports: [...prev.followedSports, sportId],
+            // CRITICAL: Also auto-check the sport (add to selectedSports)
+            selectedSports: prev.selectedSports.includes(sportId)
+              ? prev.selectedSports
+              : [...prev.selectedSports, sportId],
           };
           setTimeout(() => autoSave(newState), 0);
           return newState;
