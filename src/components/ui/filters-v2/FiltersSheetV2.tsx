@@ -108,9 +108,16 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   useEffect(() => {
     if (visible) {
       const ownedServiceCodes = subscriptions.map(s => s.service_code);
-      // Derive followed sports from team follows (auto-star logic)
+      // Derive followed sports from team follows (auto-star logic - fallback only)
       const { getSportsFromFollows } = require('./presets');
       const followedSportsFromTeams = getSportsFromFollows(follows);
+      
+      // CRITICAL: Use saved followedSports if available, otherwise derive from team follows
+      // This ensures manual star/unstar changes persist across sheet reopen
+      const savedFollowedSports = filtersV2.followedSports;
+      const followedSports = savedFollowedSports && savedFollowedSports.length > 0
+        ? savedFollowedSports
+        : followedSportsFromTeams;
       
       // Load current state
       if (filtersV2.quickView !== 'custom') {
@@ -122,7 +129,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           selectedSports: presetState.selectedSports,
           selectedServices: presetState.selectedServices,
           ownedServices: ownedServiceCodes,
-          followedSports: followedSportsFromTeams, // Auto-starred from team follows
+          followedSports: followedSports, // Use saved or derived
         });
       } else {
         // Load custom selections
@@ -135,7 +142,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
           selectedSports: filtersV2.customSelections?.sports || [],
           selectedServices: filtersV2.customSelections?.services || [],
           ownedServices: ownedServiceCodes,
-          followedSports: followedSportsFromTeams, // Auto-starred from team follows
+          followedSports: followedSports, // Use saved or derived
         });
       }
     }
@@ -173,6 +180,7 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
     setFiltersV2({
       quickView: newState.quickView,
       lastPreset: newState.lastPreset,
+      followedSports: newState.followedSports, // CRITICAL: Persist manual star/unstar changes
       customSelections: newState.quickView === 'custom' ? {
         sports: newState.selectedSports,
         teams: newState.selectedTeams,

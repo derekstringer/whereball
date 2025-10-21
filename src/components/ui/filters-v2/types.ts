@@ -86,6 +86,9 @@ export interface FiltersV2State {
   quickView: QuickView;
   lastPreset: Exclude<QuickView, 'custom'>;
   
+  // Followed sports (user's star selections - persisted separately so manual changes don't get lost)
+  followedSports?: Sport[];
+  
   // Custom selections (only when quickView === 'custom')
   customSelections?: {
     sports: Sport[];
