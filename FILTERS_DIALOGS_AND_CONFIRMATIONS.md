@@ -6,10 +6,10 @@
 
 ---
 
-## I. SPORT UNFOLLOW CONFIRMATION DIALOG
+## I. SPORT UNFOLLOW CONFIRMATION DIALOG (HIERARCHICAL CASCADE)
 
 ### Scenario
-When user taps the star (unfollow) on a sport like **Tennis**, and they have followed teams within that sport (e.g., Borg, Lendl, Williams), show a graceful confirmation.
+When user taps the star (unfollow) on a sport like **Tennis**, and they have followed teams within that sport (e.g., Borg, Lendl, Williams), show a confirmation that explains the cascade.
 
 ### Dialog Content
 
@@ -17,28 +17,49 @@ When user taps the star (unfollow) on a sport like **Tennis**, and they have fol
 
 **Body:**
 ```
-You're unfavoriting Tennis, but you follow:
+This will also unfollow:
 • Borg
 • Lendl  
 • Williams
 
-They will still be followed, but Tennis won't be starred.
+Are you sure?
 ```
 
 **Buttons:**
-- [Cancel] - Dismiss, don't unfavorite
-- [OK] - Proceed with unfavoriting
+- [Cancel] - Keep everything
+- [Unfollow All] - Remove sport + all teams/players
 
-### Logic
+### Logic (Hierarchical Cascade)
 
 1. When user taps star to unfollow a sport
 2. Check if any followed teams belong to that sport
 3. If yes → Show dialog with list of teams
 4. If no → Just unfollow immediately (no dialog)
-5. On OK → Unfollow sport, leave teams followed
+5. On "Unfollow All" → Unfollow sport AND cascade-unfollow all teams in that sport
+
+### Why Cascade-Down?
+
+**Hierarchical Consistency:**
+- Sport contains Teams/Players
+- "I'm done with Tennis" = "I'm done with tennis players"
+- More intuitive than leaving orphaned follows
+
+**Auto-Star Still Works:**
+- Following Borg → Auto-stars Tennis ✓
+- Unfollowing Tennis → Auto-unfollows Borg ✓
+- Consistent bidirectional relationship
+
+**Edge Case (Rare):**
+If user wants to unfollow sport but keep specific players:
+1. Unfollow sport (cascades down, removes all)
+2. Immediately re-star desired players
+3. Sport auto-stars again (because players starred)
+
+This two-step is acceptable for rare edge case.
 
 ### Implementation Location
 `src/components/ui/filters-v2/SportsSectionV3.tsx` - `handleToggleFollow` function
+`src/components/ui/filters-v2/FiltersSheetV2.tsx` - `handleToggleSportFollow` function
 
 ---
 

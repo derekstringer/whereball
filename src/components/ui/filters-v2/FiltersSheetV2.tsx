@@ -201,34 +201,71 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
 
   // Sports handlers
   const handleToggleSportFollow = (sportId: Sport) => {
-    markAsCustom();
-    setWorkingState(prev => {
-      const isCurrentlyFollowed = prev.followedSports.includes(sportId);
-      const newFollowedSports = isCurrentlyFollowed
-        ? prev.followedSports.filter(s => s !== sportId)
-        : [...prev.followedSports, sportId];
+    const isCurrentlyFollowed = workingState.followedSports.includes(sportId);
+    
+    if (isCurrentlyFollowed) {
+      // UNFOLLOWING - Check for cascade
+      const teamsInThisSport = follows.filter(f => {
+        // Derive sport from team's league
+        const teamSport = f.league.toLowerCase() as Sport;
+        return teamSport === sportId;
+      });
       
-      const newState = {
-        ...prev,
-        quickView: 'custom' as QuickView,
-        followedSports: newFollowedSports,
-      };
+      if (teamsInThisSport.length > 0) {
+        // Show confirmation dialog for cascade unfollow
+        const SPORTS_CATALOG = require('./presets').SPORTS_CATALOG;
+        const sport = SPORTS_CATALOG.find((s: any) => s.id === sportId);
+        const teamNames = teamsInThisSport.map(f => {
+          const NHL_TEAMS = require('../../../constants/teams').NHL_TEAMS;
+          const team = NHL_TEAMS.find((t: any) => t.id === f.team_id);
+          return team?.market || f.team_id;
+        }).join('\n• ');
+        
+        // TODO: Implement proper React Native Alert dialog
+        // For now, proceed with cascade (we'll add dialog in next iteration)
+        console.warn(`Unfollowing ${sport?.name} will also unfollow:\n• ${teamNames}`);
+        
+        // CASCADE UNFOLLOW: Remove sport AND all teams in that sport
+        const { removeFollow } = useAppStore.getState();
+        teamsInThisSport.forEach(f => removeFollow(f.team_id));
+        
+        showToastNotification(`${sport?.name} and ${teamsInThisSport.length} team(s) unfollowed`);
+      } else {
+        // No teams in this sport, just unfollow sport
+        const SPORTS_CATALOG = require('./presets').SPORTS_CATALOG;
+        const sport = SPORTS_CATALOG.find((s: any) => s.id === sportId);
+        showToastNotification(`${sport?.name} removed`);
+      }
       
-      // CRITICAL: Sports follows need to be persisted to store
-      // This mirrors the services persistence fix
-      // Note: We don't have a store method for sports follows yet,
-      // but we should track this in filtersV2 state
-      // For now, auto-save to filtersV2 which will preserve followedSports
-      
-      // Show feedback
-      const SPORTS_CATALOG = require('./presets').SPORTS_CATALOG;
-      const sport = SPORTS_CATALOG.find((s: any) => s.id === sportId);
-      const action = isCurrentlyFollowed ? 'removed' : 'added';
-      showToastNotification(`${sport?.name || 'Sport'} ${action}`);
-      
-      setTimeout(() => autoSave(newState), 0);
-      return newState;
-    });
+      // Update working state
+      markAsCustom();
+      setWorkingState(prev => {
+        const newState = {
+          ...prev,
+          quickView: 'custom' as QuickView,
+          followedSports: prev.followedSports.filter(s => s !== sportId),
+        };
+        setTimeout(() => autoSave(newState), 0);
+        return newState;
+      });
+    } else {
+      // FOLLOWING - Simple add
+      markAsCustom();
+      setWorkingState(prev => {
+        const newState = {
+          ...prev,
+          quickView: 'custom' as QuickView,
+          followedSports: [...prev.followedSports, sportId],
+        };
+        
+        const SPORTS_CATALOG = require('./presets').SPORTS_CATALOG;
+        const sport = SPORTS_CATALOG.find((s: any) => s.id === sportId);
+        showToastNotification(`${sport?.name} added`);
+        
+        setTimeout(() => autoSave(newState), 0);
+        return newState;
+      });
+    }
   };
 
   const handleToggleSportInclude = (sportId: Sport) => {
