@@ -172,7 +172,7 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
     
     // Case 1: Nothing selected
     if (totalSelectedCount === 0) {
-      return [{ text: 'ALL' }];
+      return [{ text: 'None' }];
     }
     
     // Case 2: No followed teams (only checked)

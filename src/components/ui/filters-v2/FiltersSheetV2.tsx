@@ -195,13 +195,29 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   const handleToggleSportFollow = (sportId: Sport) => {
     markAsCustom();
     setWorkingState(prev => {
+      const isCurrentlyFollowed = prev.followedSports.includes(sportId);
+      const newFollowedSports = isCurrentlyFollowed
+        ? prev.followedSports.filter(s => s !== sportId)
+        : [...prev.followedSports, sportId];
+      
       const newState = {
         ...prev,
         quickView: 'custom' as QuickView,
-        followedSports: prev.followedSports.includes(sportId)
-          ? prev.followedSports.filter(s => s !== sportId)
-          : [...prev.followedSports, sportId],
+        followedSports: newFollowedSports,
       };
+      
+      // CRITICAL: Sports follows need to be persisted to store
+      // This mirrors the services persistence fix
+      // Note: We don't have a store method for sports follows yet,
+      // but we should track this in filtersV2 state
+      // For now, auto-save to filtersV2 which will preserve followedSports
+      
+      // Show feedback
+      const SPORTS_CATALOG = require('./presets').SPORTS_CATALOG;
+      const sport = SPORTS_CATALOG.find((s: any) => s.id === sportId);
+      const action = isCurrentlyFollowed ? 'removed' : 'added';
+      showToastNotification(`${sport?.name || 'Sport'} ${action}`);
+      
       setTimeout(() => autoSave(newState), 0);
       return newState;
     });
