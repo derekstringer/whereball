@@ -155,24 +155,28 @@ export const SportsSectionV3: React.FC<SportsSectionV3Props> = ({
 
       {/* Sports Grid */}
       <View style={styles.grid}>
-        {visibleSports.map((sport) => {
+        {visibleSports.map((sport, index) => {
           const isFollowed = followedSportIds.includes(sport.id);
           const isIncluded = selectedSports.includes(sport.id);
           const isPlaceholder = !sport.enabledForData;
 
+          // Check if this is the last followed sport (divider needed after)
+          const isLastFollowed = isFollowed && 
+            (index === visibleSports.length - 1 || !followedSportIds.includes(visibleSports[index + 1].id));
+
           return (
-            <View
-              key={sport.id}
-              style={[
-                styles.sportCard,
-                {
-                  width: CARD_WIDTH,
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-                isPlaceholder && { opacity: 0.6 },
-              ]}
-            >
+            <React.Fragment key={sport.id}>
+              <View
+                style={[
+                  styles.sportCard,
+                  {
+                    width: CARD_WIDTH,
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                  isPlaceholder && { opacity: 0.6 },
+                ]}
+              >
               {/* Rows 1-2: Sport name (2 lines max) */}
               <Text
                 style={[styles.sportName, { color: colors.text }]}
@@ -223,6 +227,14 @@ export const SportsSectionV3: React.FC<SportsSectionV3Props> = ({
                 </Text>
               )}
             </View>
+
+            {/* Divider after last followed sport */}
+            {isLastFollowed && (
+              <View style={styles.dividerContainer}>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              </View>
+            )}
+          </React.Fragment>
           );
         })}
       </View>
@@ -324,5 +336,15 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 20,
+  },
+  dividerContainer: {
+    width: '100%',
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  divider: {
+    width: '50%',
+    height: 1,
+    opacity: 0.3,
   },
 });

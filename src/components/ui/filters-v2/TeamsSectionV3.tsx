@@ -240,22 +240,26 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
 
       {/* Teams Grid */}
       <View style={styles.grid}>
-        {visibleTeams.map((team) => {
+        {visibleTeams.map((team, index) => {
           const isFollowed = followedTeamIds.includes(team.id);
           const isIncluded = selectedTeams.includes(team.id);
 
+          // Check if this is the last followed team (divider needed after)
+          const isLastFollowed = isFollowed && 
+            (index === visibleTeams.length - 1 || !followedTeamIds.includes(visibleTeams[index + 1].id));
+
           return (
-            <View
-              key={team.id}
-              style={[
-                styles.teamCard,
-                {
-                  width: CARD_WIDTH,
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
+            <React.Fragment key={team.id}>
+              <View
+                style={[
+                  styles.teamCard,
+                  {
+                    width: CARD_WIDTH,
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
               {/* Row 1: Abbreviation */}
               <Text style={[styles.abbr, { color: colors.text }]} numberOfLines={1}>
                 {team.abbr}
@@ -298,6 +302,14 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Divider after last followed team */}
+            {isLastFollowed && (
+              <View style={styles.dividerContainer}>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              </View>
+            )}
+          </React.Fragment>
           );
         })}
       </View>
@@ -395,5 +407,15 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 20,
+  },
+  dividerContainer: {
+    width: '100%',
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  divider: {
+    width: '50%',
+    height: 1,
+    opacity: 0.3,
   },
 });

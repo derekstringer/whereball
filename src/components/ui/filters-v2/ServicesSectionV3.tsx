@@ -144,22 +144,26 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
 
       {/* Services Grid */}
       <View style={styles.grid}>
-        {sortedServices.map((service) => {
+        {sortedServices.map((service, index) => {
           const isOwned = ownedServices.includes(service.code);
           const isIncluded = selectedServices.includes(service.code);
 
+          // Check if this is the last owned service (divider needed after)
+          const isLastOwned = isOwned && 
+            (index === sortedServices.length - 1 || !ownedServices.includes(sortedServices[index + 1].code));
+
           return (
-            <View
-              key={service.code}
-              style={[
-                styles.serviceCard,
-                {
-                  width: CARD_WIDTH,
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
+            <React.Fragment key={service.code}>
+              <View
+                style={[
+                  styles.serviceCard,
+                  {
+                    width: CARD_WIDTH,
+                    backgroundColor: colors.card,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
               {/* Row 1: Service name */}
               <Text style={[styles.serviceName, { color: colors.text }]} numberOfLines={1}>
                 {service.name}
@@ -197,6 +201,14 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
                 </TouchableOpacity>
               </View>
             </View>
+
+            {/* Divider after last owned service */}
+            {isLastOwned && (
+              <View style={styles.dividerContainer}>
+                <View style={[styles.divider, { backgroundColor: colors.border }]} />
+              </View>
+            )}
+          </React.Fragment>
           );
         })}
       </View>
@@ -268,5 +280,15 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 20,
+  },
+  dividerContainer: {
+    width: '100%',
+    paddingVertical: 8,
+    alignItems: 'center',
+  },
+  divider: {
+    width: '50%',
+    height: 1,
+    opacity: 0.3,
   },
 });
