@@ -1,6 +1,6 @@
 /**
- * Settings Screen
- * Manage user preferences, followed teams, services, and account
+ * Profile Screen - Modern, collapsible design
+ * World-class settings with Lucide icons
  */
 
 import React, { useState } from 'react';
@@ -13,13 +13,25 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
-  Appearance,
+  Switch,
+  Linking,
 } from 'react-native';
+import {
+  User,
+  Bell,
+  BellRing,
+  MapPin,
+  Settings as SettingsIcon,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  X,
+  HelpCircle,
+  Trash2,
+  LogOut,
+} from 'lucide-react-native';
 import { useAppStore } from '../../store/appStore';
 import { useTheme } from '../../hooks/useTheme';
-import { NHL_TEAMS } from '../../constants/teams';
-import { STREAMING_SERVICES } from '../../constants/services';
-import { Follow } from '../../types';
 import type { ColorMode } from '../../styles/tokens';
 
 interface SettingsScreenProps {
@@ -29,426 +41,448 @@ interface SettingsScreenProps {
 
 export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBottomSheet = false }) => {
   const { 
-    subscriptions, 
-    setSubscriptions, 
-    follows, 
-    setFollows, 
     colorMode, 
-    setColorMode, 
-    systemThemeUpdateTrigger,
-    preferredServices,
-    togglePreferredService
+    setColorMode,
+    alerts,
+    removeAlertsForGame,
   } = useAppStore();
-  const { colors, mode } = useTheme();
+  const { colors } = useTheme();
+  
+  // Collapsible sections state
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    account: false,
+    reminders: true, // Expanded by default if reminders exist
+    notifications: false,
+    settings: false,
+  });
+  
+  // Form state
   const [zip, setZip] = useState('75201'); // TODO: Get from store
-  const [selectedTeams, setSelectedTeams] = useState<string[]>(
-    follows.map(f => f.team_id)
-  );
-  const [selectedServices, setSelectedServices] = useState<string[]>(
-    subscriptions.map(s => s.service_code)
-  );
-  const [showAllTeams, setShowAllTeams] = useState(false);
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-
-  const showToastNotification = (message: string) => {
-    setToastMessage(message);
-    setShowToast(true);
-    setTimeout(() => setShowToast(false), 2000);
-  };
-
-  const handleTeamToggle = (teamId: string) => {
-    const isSelected = selectedTeams.includes(teamId);
-    const newTeams = isSelected
-      ? selectedTeams.filter(id => id !== teamId)
-      : [...selectedTeams, teamId];
-    
-    setSelectedTeams(newTeams);
-    
-    // Auto-save team selections
-    const newFollows: Follow[] = newTeams.map(id => ({
-      user_id: 'user-1', // TODO: Get from auth
-      team_id: id,
-      league: 'NHL',
-      created_at: new Date().toISOString(),
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [nationalFlipAlerts, setNationalFlipAlerts] = useState(false);
+  
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section],
     }));
-    setFollows(newFollows);
-    
-    const team = NHL_TEAMS.find(t => t.id === teamId);
-    const action = isSelected ? 'removed' : 'added';
-    showToastNotification(`${team?.market || 'Team'} ${action} (${newTeams.length} teams)`);
   };
-
-  const toggleService = (serviceCode: string) => {
-    const newServices = selectedServices.includes(serviceCode)
-      ? selectedServices.filter(s => s !== serviceCode)
-      : [...selectedServices, serviceCode];
-    
-    setSelectedServices(newServices);
-    
-    // Auto-save services
-    const newSubscriptions = newServices.map(code => ({
-      user_id: 'user-1', // TODO: Get from auth
-      service_code: code,
-      created_at: new Date().toISOString(),
-    }));
-    setSubscriptions(newSubscriptions);
-    
-    const service = STREAMING_SERVICES.find(s => s.code === serviceCode);
-    const action = selectedServices.includes(serviceCode) ? 'removed' : 'added';
-    showToastNotification(`${service?.name || 'Service'} ${action}`);
+  
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Sign Out', 
+          style: 'destructive',
+          onPress: () => {
+            // TODO: Implement sign out
+            console.log('Sign out');
+          },
+        },
+      ]
+    );
   };
+  
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This action cannot be undone. All your data will be permanently deleted.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive',
+          onPress: () => {
+            // TODO: Implement delete account
+            console.log('Delete account');
+          },
+        },
+      ]
+    );
+  };
+  
+  const handleClearAllReminders = () => {
+    Alert.alert(
+      'Clear All Reminders',
+      'Remove all active game reminders?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Clear All', 
+          style: 'destructive',
+          onPress: () => {
+            // TODO: Clear all reminders
+            console.log('Clear all reminders');
+          },
+        },
+      ]
+    );
+  };
+  
+  // Get unique game IDs with reminders
+  const gamesWithReminders = Array.from(new Set(alerts.map(a => a.game_id)));
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Header - Only show if not in bottom sheet mode */}
-      {!isBottomSheet && (
-        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
+      <ScrollView 
+        style={styles.scrollView} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Account Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('account')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <User size={20} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+            </View>
+            {expandedSections.account ? (
+              <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            )}
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-      )}
-
-      {/* Toast Notification */}
-      {showToast && (
-        <View style={styles.toastContainer}>
-          <View style={styles.toast}>
-            <Text style={styles.toastText}>{toastMessage}</Text>
-          </View>
-        </View>
-      )}
-
-      <ScrollView style={[styles.scrollView, { backgroundColor: colors.bg }]} contentContainerStyle={styles.scrollContent}>
-        {/* ZIP Code */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>📍 Your Location</Text>
-          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-            We use your ZIP to determine blackout rules
-          </Text>
-          <TextInput
-            style={[styles.input, { 
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-              color: colors.text
-            }]}
-            placeholderTextColor={colors.textSecondary}
-            value={zip}
-            onChangeText={setZip}
-            onBlur={() => {
-              // Auto-save ZIP on blur
-              if (zip.length === 5) {
-                // TODO: Save to store when ZIP is added
-                showToastNotification(`ZIP updated to ${zip}`);
-              }
-            }}
-            placeholder="Enter ZIP code"
-            keyboardType="number-pad"
-            maxLength={5}
-          />
-        </View>
-
-        {/* Followed Teams */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>⭐ Followed Teams</Text>
-          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-            {selectedTeams.length} team{selectedTeams.length !== 1 ? 's' : ''} selected • Free tier: 1 team • Premium: Unlimited
-          </Text>
-          <View style={styles.teamsGrid}>
-            {NHL_TEAMS
-              .sort((a, b) => {
-                // Selected teams first
-                const aSelected = selectedTeams.includes(a.id);
-                const bSelected = selectedTeams.includes(b.id);
-                if (aSelected && !bSelected) return -1;
-                if (!aSelected && bSelected) return 1;
-                // Then alphabetical by market name
-                return a.market.localeCompare(b.market);
-              })
-              .slice(0, showAllTeams ? NHL_TEAMS.length : 12)
-              .map(team => {
-                const isSelected = selectedTeams.includes(team.id);
-                return (
-                  <TouchableOpacity
-                    key={team.id}
-                    style={[
-                      styles.teamChip,
-                      { backgroundColor: colors.surface },
-                      isSelected && {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.primary,
-                      },
-                    ]}
-                    onPress={() => handleTeamToggle(team.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.teamChipText,
-                        { color: colors.textSecondary },
-                        isSelected && { color: colors.primary },
-                      ]}
-                    >
-                      {isSelected ? '✓ ' : ''}
-                      {team.short_code}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-          </View>
-          {NHL_TEAMS.length > 12 && (
-            <TouchableOpacity onPress={() => setShowAllTeams(!showAllTeams)}>
-              <Text style={[styles.moreTeams, { color: colors.primary }]}>
-                {showAllTeams ? '− Show less' : `+ ${NHL_TEAMS.length - 12} more teams`}
-              </Text>
-            </TouchableOpacity>
+          
+          {expandedSections.account && (
+            <View style={styles.sectionContent}>
+              <View style={styles.userInfo}>
+                <View style={[styles.avatar, { backgroundColor: colors.surface }]}>
+                  <User size={32} color={colors.textSecondary} strokeWidth={2} />
+                </View>
+                <View style={styles.userDetails}>
+                  <Text style={[styles.userName, { color: colors.text }]}>Guest User</Text>
+                  <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
+                    Not signed in
+                  </Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity 
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}
+              >
+                <Text style={[styles.menuButtonText, { color: colors.text }]}>
+                  Manage Subscription
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                onPress={() => {
+                  // TODO: RevenueCat restore
+                  Alert.alert('Restore Purchases', 'Checking for purchases...');
+                }}
+              >
+                <Text style={[styles.menuButtonText, { color: colors.text }]}>
+                  Restore Purchases
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                onPress={handleSignOut}
+              >
+                <LogOut size={18} color={colors.text} strokeWidth={2} style={styles.menuButtonIcon} />
+                <Text style={[styles.menuButtonText, { color: colors.text }]}>
+                  Sign Out
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                onPress={handleDeleteAccount}
+              >
+                <Trash2 size={18} color="#FF4D67" strokeWidth={2} style={styles.menuButtonIcon} />
+                <Text style={[styles.menuButtonText, { color: '#FF4D67' }]}>
+                  Delete Account
+                </Text>
+              </TouchableOpacity>
+            </View>
           )}
         </View>
 
-        {/* Services */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>📺 Your Streaming Services</Text>
-          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-            Select all services you subscribe to • {selectedServices.length} service{selectedServices.length !== 1 ? 's' : ''} connected
-          </Text>
-          <View style={styles.servicesGrid}>
-            {STREAMING_SERVICES
-              .sort((a, b) => {
-                // Selected services first
-                const aSelected = selectedServices.includes(a.code);
-                const bSelected = selectedServices.includes(b.code);
-                if (aSelected && !bSelected) return -1;
-                if (!aSelected && bSelected) return 1;
-                // Then alphabetical by name
-                return a.name.localeCompare(b.name);
-              })
-              .map(service => (
+        {/* My Reminders Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('reminders')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <Bell size={20} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>My Reminders</Text>
+              {gamesWithReminders.length > 0 && (
+                <View style={[styles.badge, { backgroundColor: colors.primary }]}>
+                  <Text style={styles.badgeText}>{gamesWithReminders.length}</Text>
+                </View>
+              )}
+            </View>
+            {expandedSections.reminders ? (
+              <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            )}
+          </TouchableOpacity>
+          
+          {expandedSections.reminders && (
+            <View style={styles.sectionContent}>
+              {gamesWithReminders.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Bell size={48} color={colors.textSecondary} strokeWidth={1.5} opacity={0.3} />
+                  <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+                    No active reminders
+                  </Text>
+                  <Text style={[styles.emptyStateSubtext, { color: colors.textSecondary }]}>
+                    Tap "Set Reminder" on any game card
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  {gamesWithReminders.map(gameId => (
+                    <View 
+                      key={gameId}
+                      style={[styles.reminderCard, { backgroundColor: colors.surface }]}
+                    >
+                      <View style={styles.reminderInfo}>
+                        <Text style={[styles.reminderGame, { color: colors.text }]}>
+                          Game {gameId}
+                        </Text>
+                        <Text style={[styles.reminderTime, { color: colors.textSecondary }]}>
+                          {alerts.filter(a => a.game_id === gameId).length} reminder
+                          {alerts.filter(a => a.game_id === gameId).length > 1 ? 's' : ''} set
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        onPress={() => removeAlertsForGame(gameId)}
+                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      >
+                        <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  
+                  <TouchableOpacity 
+                    style={[styles.clearAllButton, { borderColor: '#FF4D67' }]}
+                    onPress={handleClearAllReminders}
+                  >
+                    <Text style={styles.clearAllButtonText}>Clear All</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Notifications Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('notifications')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <BellRing size={20} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
+            </View>
+            {expandedSections.notifications ? (
+              <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            )}
+          </TouchableOpacity>
+          
+          {expandedSections.notifications && (
+            <View style={styles.sectionContent}>
+              <View style={styles.settingRow}>
+                <View style={styles.settingLabelContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    Enable Notifications
+                  </Text>
+                  <Text style={[styles.settingSubtext, { color: colors.textSecondary }]}>
+                    Master switch for all alerts
+                  </Text>
+                </View>
+                <Switch
+                  value={notificationsEnabled}
+                  onValueChange={setNotificationsEnabled}
+                  trackColor={{ false: colors.border, true: colors.primary }}
+                  thumbColor="#FFFFFF"
+                />
+              </View>
+              
+              <View style={styles.settingRow}>
+                <View style={styles.settingLabelContainer}>
+                  <Text style={[styles.settingLabel, { color: colors.text }]}>
+                    National Flip Alerts
+                  </Text>
+                  <Text style={[styles.settingSubtext, { color: colors.textSecondary }]}>
+                    Premium feature
+                  </Text>
+                </View>
+                <Switch
+                  value={nationalFlipAlerts}
+                  onValueChange={setNationalFlipAlerts}
+                  disabled={true}
+                  trackColor={{ false: colors.border, true: colors.border }}
+                  thumbColor="#CCCCCC"
+                />
+              </View>
+              
+              <View style={styles.infoBox}>
+                <Text style={[styles.infoText, { color: colors.textSecondary }]}>
+                  Default reminder times: 2 hours and 30 minutes before game
+                </Text>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* Location Section (Always visible, compact) */}
+        <View style={[styles.section, styles.sectionCompact, { borderBottomColor: colors.border }]}>
+          <View style={styles.sectionHeaderLeft}>
+            <MapPin size={20} color={colors.text} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
+          </View>
+          <View style={styles.inlineInputContainer}>
+            <TextInput
+              style={[styles.inlineInput, { 
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                color: colors.text
+              }]}
+              placeholderTextColor={colors.textSecondary}
+              value={zip}
+              onChangeText={setZip}
+              placeholder="ZIP"
+              keyboardType="number-pad"
+              maxLength={5}
+            />
+            <Text style={[styles.inlineHelper, { color: colors.textSecondary }]}>
+              For blackout rules
+            </Text>
+          </View>
+        </View>
+
+        {/* Settings Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('settings')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <SettingsIcon size={20} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
+            </View>
+            {expandedSections.settings ? (
+              <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            )}
+          </TouchableOpacity>
+          
+          {expandedSections.settings && (
+            <View style={styles.sectionContent}>
+              <Text style={[styles.subsectionTitle, { color: colors.text }]}>Appearance</Text>
+              <View style={styles.themeOptions}>
                 <TouchableOpacity
-                  key={service.code}
                   style={[
-                    styles.serviceChip,
-                    { backgroundColor: colors.surface },
-                    selectedServices.includes(service.code) && {
-                      backgroundColor: colors.surface,
-                      borderColor: colors.primary,
-                    },
+                    styles.themeOption,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    colorMode === 'dark' && { borderColor: colors.primary },
                   ]}
-                  onPress={() => toggleService(service.code)}
+                  onPress={() => setColorMode('dark')}
                   activeOpacity={0.7}
                 >
+                  <Text style={styles.themeOptionIcon}>🌙</Text>
                   <Text
                     style={[
-                      styles.serviceChipText,
+                      styles.themeOptionText,
                       { color: colors.textSecondary },
-                      selectedServices.includes(service.code) && {
-                        color: colors.primary,
-                      },
+                      colorMode === 'dark' && { color: colors.primary, fontWeight: '700' },
                     ]}
                   >
-                    {selectedServices.includes(service.code) ? '✓ ' : ''}
-                    {service.name}
+                    Dark
                   </Text>
                 </TouchableOpacity>
-              ))}
-          </View>
-        </View>
-
-        {/* Preferred Services */}
-        {selectedServices.length > 0 && (
-          <View style={[styles.section, { backgroundColor: colors.card }]}>
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>⭐ Preferred Services</Text>
-            <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>
-              Mark your favorite services to see them first in game cards • {preferredServices.length} preferred
-            </Text>
-            <View style={styles.servicesGrid}>
-              {STREAMING_SERVICES
-                .filter(service => selectedServices.includes(service.code))
-                .sort((a, b) => {
-                  // Preferred services first
-                  const aPreferred = preferredServices.includes(a.code);
-                  const bPreferred = preferredServices.includes(b.code);
-                  if (aPreferred && !bPreferred) return -1;
-                  if (!aPreferred && bPreferred) return 1;
-                  return a.name.localeCompare(b.name);
-                })
-                .map(service => (
-                  <TouchableOpacity
-                    key={service.code}
+                
+                <TouchableOpacity
+                  style={[
+                    styles.themeOption,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    colorMode === 'light' && { borderColor: colors.primary },
+                  ]}
+                  onPress={() => setColorMode('light')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.themeOptionIcon}>☀️</Text>
+                  <Text
                     style={[
-                      styles.serviceChip,
-                      { backgroundColor: colors.surface },
-                      preferredServices.includes(service.code) && {
-                        backgroundColor: colors.surface,
-                        borderColor: colors.accent,
-                      },
+                      styles.themeOptionText,
+                      { color: colors.textSecondary },
+                      colorMode === 'light' && { color: colors.primary, fontWeight: '700' },
                     ]}
-                    onPress={() => {
-                      togglePreferredService(service.code);
-                      const isPreferred = preferredServices.includes(service.code);
-                      const action = isPreferred ? 'removed from' : 'added to';
-                      showToastNotification(`${service.name} ${action} preferred services`);
-                    }}
-                    activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.serviceChipText,
-                        { color: colors.textSecondary },
-                        preferredServices.includes(service.code) && {
-                          color: colors.accent,
-                        },
-                      ]}
-                    >
-                      {preferredServices.includes(service.code) ? '⭐ ' : ''}
-                      {service.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                    Light
+                  </Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[
+                    styles.themeOption,
+                    { backgroundColor: colors.surface, borderColor: colors.border },
+                    colorMode === 'system' && { borderColor: colors.primary },
+                  ]}
+                  onPress={() => setColorMode('system')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.themeOptionIcon}>⚙️</Text>
+                  <Text
+                    style={[
+                      styles.themeOptionText,
+                      { color: colors.textSecondary },
+                      colorMode === 'system' && { color: colors.primary, fontWeight: '700' },
+                    ]}
+                  >
+                    System
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            {preferredServices.length === 0 && (
-              <Text style={[styles.hintText, { color: colors.textSecondary }]}>
-                Tap a service above to mark it as preferred
-              </Text>
-            )}
-          </View>
-        )}
-
-        {/* Appearance */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>🎨 Appearance</Text>
-          <Text style={[styles.sectionDescription, { color: colors.textSecondary }]}>Choose your theme</Text>
-          <View style={styles.themeOptions}>
-            <TouchableOpacity
-              style={[
-                styles.themeOption,
-                { backgroundColor: colors.surface },
-                colorMode === 'dark' && {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.primary,
-                },
-              ]}
-              onPress={() => {
-                setColorMode('dark');
-                showToastNotification('Dark mode enabled');
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.themeOptionIcon}>🌙</Text>
-              <Text
-                style={[
-                  styles.themeOptionText,
-                  { color: colors.textSecondary },
-                  colorMode === 'dark' && { color: colors.primary },
-                ]}
-              >
-                Dark
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.themeOption,
-                { backgroundColor: colors.surface },
-                colorMode === 'light' && {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.primary,
-                },
-              ]}
-              onPress={() => {
-                setColorMode('light');
-                showToastNotification('Light mode enabled');
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.themeOptionIcon}>☀️</Text>
-              <Text
-                style={[
-                  styles.themeOptionText,
-                  { color: colors.textSecondary },
-                  colorMode === 'light' && { color: colors.primary },
-                ]}
-              >
-                Light
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={[
-                styles.themeOption,
-                { backgroundColor: colors.surface },
-                colorMode === 'system' && {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.primary,
-                },
-              ]}
-              onPress={() => {
-                setColorMode('system');
-                const detectedMode = Appearance.getColorScheme() || 'dark';
-                showToastNotification(`System theme enabled (${detectedMode} detected)`);
-              }}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.themeOptionIcon}>⚙️</Text>
-              <Text
-                style={[
-                  styles.themeOptionText,
-                  { color: colors.textSecondary },
-                  colorMode === 'system' && { color: colors.primary },
-                ]}
-              >
-                System
-              </Text>
-            </TouchableOpacity>
-          </View>
+          )}
         </View>
 
-        {/* Notifications */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>🔔 Notifications</Text>
-          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.settingLabel, { color: colors.text }]}>Game start reminders</Text>
-            <View style={styles.toggle}>
-              <Text style={styles.toggleText}>ON</Text>
-            </View>
+        {/* About Section (Always visible, compact) */}
+        <View style={[styles.section, styles.sectionCompact, { borderBottomWidth: 0 }]}>
+          <View style={styles.sectionHeaderLeft}>
+            <Info size={20} color={colors.text} strokeWidth={2} />
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>About</Text>
           </View>
-          <View style={[styles.settingRow, { borderBottomColor: colors.border }]}>
-            <Text style={[styles.settingLabel, { color: colors.text }]}>
-              National flip alerts (Premium)
+          <View style={styles.aboutContent}>
+            <Text style={[styles.version, { color: colors.textSecondary }]}>
+              SportStream v1.0.0
             </Text>
-            <View style={[styles.toggle, styles.toggleDisabled]}>
-              <Text style={styles.toggleTextDisabled}>OFF</Text>
+            <View style={styles.aboutLinks}>
+              <TouchableOpacity onPress={() => Linking.openURL('https://sportstream.app/privacy')}>
+                <Text style={[styles.linkText, { color: colors.primary }]}>Privacy</Text>
+              </TouchableOpacity>
+              <Text style={[styles.linkDivider, { color: colors.textSecondary }]}>•</Text>
+              <TouchableOpacity onPress={() => Linking.openURL('https://sportstream.app/terms')}>
+                <Text style={[styles.linkText, { color: colors.primary }]}>Terms</Text>
+              </TouchableOpacity>
+              <Text style={[styles.linkDivider, { color: colors.textSecondary }]}>•</Text>
+              <TouchableOpacity onPress={() => Linking.openURL('https://sportstream.app/support')}>
+                <Text style={[styles.linkText, { color: colors.primary }]}>Support</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        </View>
-
-        {/* Account */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>👤 Account</Text>
-          <TouchableOpacity style={[styles.accountButton, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.accountButtonText, { color: colors.text }]}>Manage Subscription</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.accountButton, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.accountButtonText, { color: colors.text }]}>Restore Purchases</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.accountButton, { backgroundColor: colors.surface }]}>
-            <Text style={[styles.accountButtonText, { color: '#FF4D67' }]}>
-              Sign Out
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* About */}
-        <View style={[styles.section, { backgroundColor: colors.card }]}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>ℹ️ About</Text>
-          <Text style={[styles.aboutText, { color: colors.textSecondary }]}>SportStream v1.0.0</Text>
-          <TouchableOpacity>
-            <Text style={[styles.linkText, { color: colors.primary }]}>Privacy Policy</Text>
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Text style={[styles.linkText, { color: colors.primary }]}>Terms of Service</Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -459,176 +493,180 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-  },
-  closeButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeButtonText: {
-    fontSize: 24,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-  },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingVertical: 8,
   },
   section: {
-    padding: 24,
-    marginTop: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  sectionCompact: {
+    paddingVertical: 12,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
+  },
+  sectionContent: {
+    marginTop: 16,
+    gap: 12,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    marginLeft: 8,
+  },
+  badgeText: {
+    color: '#000000',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
     marginBottom: 8,
   },
-  sectionDescription: {
-    fontSize: 14,
-    marginBottom: 16,
-    lineHeight: 20,
+  avatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    fontSize: 16,
+  userDetails: {
+    flex: 1,
   },
-  teamsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  teamChip: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  teamChipActive: {
-    borderWidth: 2,
-  },
-  teamChipText: {
-    fontSize: 14,
+  userName: {
+    fontSize: 18,
     fontWeight: '700',
+    marginBottom: 2,
   },
-  teamChipTextActive: {
-  },
-  moreTeams: {
+  userEmail: {
     fontSize: 14,
-    marginTop: 12,
-    fontWeight: '600',
   },
-  servicesGrid: {
-    gap: 8,
-  },
-  serviceChip: {
+  menuButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    borderWidth: 2,
-    borderColor: 'transparent',
+    gap: 8,
   },
-  serviceChipActive: {
-    borderWidth: 2,
+  menuButtonIcon: {
+    marginRight: -4,
   },
-  serviceChipText: {
+  menuButtonText: {
     fontSize: 15,
     fontWeight: '600',
   },
-  serviceChipTextActive: {
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 8,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+  },
+  reminderCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 8,
+  },
+  reminderInfo: {
+    flex: 1,
+  },
+  reminderGame: {
+    fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  reminderTime: {
+    fontSize: 13,
+  },
+  clearAllButton: {
+    borderWidth: 2,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  clearAllButtonText: {
+    color: '#FF4D67',
+    fontSize: 14,
+    fontWeight: '700',
   },
   settingRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
+  settingLabelContainer: {
+    flex: 1,
+    marginRight: 16,
   },
   settingLabel: {
     fontSize: 15,
+    fontWeight: '600',
+    marginBottom: 2,
   },
-  toggle: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#4CAF50',
-    borderRadius: 12,
+  settingSubtext: {
+    fontSize: 13,
   },
-  toggleDisabled: {
-    backgroundColor: '#E0E0E0',
-  },
-  toggleText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  toggleTextDisabled: {
-    color: '#999999',
-  },
-  accountButton: {
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+  infoBox: {
+    padding: 12,
     borderRadius: 8,
-    marginBottom: 8,
+    backgroundColor: 'rgba(0, 229, 255, 0.1)',
   },
-  accountButtonDanger: {
+  infoText: {
+    fontSize: 13,
+    lineHeight: 18,
   },
-  accountButtonText: {
+  inlineInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 8,
+  },
+  inlineInput: {
+    height: 40,
+    width: 80,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
     fontSize: 15,
     fontWeight: '600',
-    textAlign: 'center',
   },
-  accountButtonTextDanger: {
+  inlineHelper: {
+    fontSize: 13,
   },
-  aboutText: {
+  subsectionTitle: {
     fontSize: 14,
-    marginBottom: 12,
-  },
-  linkText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  toastContainer: {
-    position: 'absolute',
-    top: 80,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    zIndex: 1000,
-  },
-  toast: {
-    backgroundColor: '#333333',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 5,
-  },
-  toastText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
+    marginBottom: 4,
   },
   themeOptions: {
     flexDirection: 'row',
@@ -637,29 +675,36 @@ const styles = StyleSheet.create({
   themeOption: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 14,
     paddingHorizontal: 12,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  themeOptionActive: {
+    borderRadius: 8,
     borderWidth: 2,
   },
   themeOptionIcon: {
-    fontSize: 28,
-    marginBottom: 8,
+    fontSize: 24,
+    marginBottom: 6,
   },
   themeOptionText: {
     fontSize: 13,
     fontWeight: '600',
   },
-  themeOptionTextActive: {
-  },
-  hintText: {
-    fontSize: 13,
-    fontStyle: 'italic',
+  aboutContent: {
     marginTop: 8,
-    textAlign: 'center',
+    gap: 8,
+  },
+  version: {
+    fontSize: 13,
+  },
+  aboutLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  linkText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  linkDivider: {
+    fontSize: 13,
   },
 });
