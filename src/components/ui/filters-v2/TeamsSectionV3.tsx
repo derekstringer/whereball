@@ -292,7 +292,7 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
                   activeOpacity={0.7}
                 >
                   <ListFilter 
-                    size={16} 
+                    size={14} 
                     color={isIncluded ? colors.primary : colors.textSecondary}
                   />
                 </TouchableOpacity>
