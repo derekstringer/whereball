@@ -262,8 +262,8 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
           </View>
         )}
 
-        {/* Gutter after TIME (and reminder if present) */}
-        <View style={styles.gutter} />
+        {/* Gutter after TIME - smaller when reminder present to maintain alignment */}
+        <View style={reminderSet && !isFinal ? styles.gutterSmall : styles.gutter} />
 
         {/* LEFT TEAM Column (flex) - Away Team */}
         <View style={styles.teamColLeft}>
@@ -378,9 +378,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Gutter spacing
+  // Gutter spacing - normal when no reminder
   gutter: {
     width: 12,
+  },
+  // Smaller gutter when reminder icon is present to compensate for icon width
+  gutterSmall: {
+    width: 0,
   },
   // Larger gutter before actions for breathing room
   actionsGutter: {
