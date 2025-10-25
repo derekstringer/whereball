@@ -375,14 +375,16 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         </View>
       )}
 
-      {/* Set Reminder - Full width, prominent */}
-      <TouchableOpacity
-        style={[styles.reminderButton, { backgroundColor: colors.primary }]}
-        onPress={() => {/* TODO: Set reminder */}}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.reminderButtonText}>Set Reminder</Text>
-      </TouchableOpacity>
+      {/* Set Reminder - Only show for upcoming games (not started yet) */}
+      {!isLive && !isFinal && (
+        <TouchableOpacity
+          style={[styles.reminderButton, { backgroundColor: colors.primary }]}
+          onPress={() => {/* TODO: Set reminder */}}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.reminderButtonText}>Set Reminder</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
