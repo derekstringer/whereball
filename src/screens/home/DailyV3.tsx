@@ -682,7 +682,7 @@ export const DailyV3: React.FC = () => {
           onPress={() => setShowFilters(true)}
           activeOpacity={0.7}
         >
-          <ListFilter size={24} color={colors.primary} />
+          <ListFilter size={24} color={showFilters ? colors.primary : colors.text} />
         </TouchableOpacity>
       </View>
 
