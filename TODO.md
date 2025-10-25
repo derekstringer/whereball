@@ -5,6 +5,54 @@
 
 ---
 
+## ✅ **COMPLETED - UI/UX Design System Overhaul (Oct 25, 2025)**
+
+### **Professional Icon System**
+- ✅ Migrated to Lucide React Native icons
+- ✅ Replaced emoji icons with professional Menu & ListFilter icons (24px)
+- ✅ Smart color states: White (inactive) → Cyan (active)
+- ✅ Consistent 28x28 status icons throughout (available, elsewhere, national)
+
+### **Bottom Sheet Presentations**
+- ✅ Converted Settings to native bottom sheet pattern
+- ✅ Added "Profile" title header
+- ✅ 85% height with drag handle for native iOS gesture
+- ✅ Matching design between Profile and Filters sheets
+
+### **Unified Cyan Design System**
+- ✅ Standardized all buttons: Cyan background + black text
+- ✅ Updated "Watch On" service buttons for better readability
+- ✅ Updated "Set Reminder" button text to black
+- ✅ Updated "Custom" filter badge text to black
+- ✅ Improved accessibility (WCAG contrast compliance)
+
+### **Visual Hierarchy Enhancements**
+- ✅ Venue text perfectly centered under clock/@/scoreboard
+- ✅ Subtle dividers after favorites in filter sections (50% width, 30% opacity)
+- ✅ Sports: Divider after last followed sport
+- ✅ Teams: Divider after last followed team
+- ✅ Services: Divider after last owned service
+
+### **Game State Intelligence**
+- ✅ "Set Reminder" button only shows for upcoming games
+- ✅ Hidden for live games (already started)
+- ✅ Hidden for finished games (no longer relevant)
+- ✅ "Watch On" buttons muted for finished games (40% opacity)
+- ✅ Finished game buttons non-clickable to prevent navigation away from app
+
+**Commits:** 19 total (a4a7510 → 5946cf8)
+
+**Files Updated:**
+- `src/screens/settings/SettingsSheet.tsx` - New bottom sheet
+- `src/components/daily-v2/VerticalGameCardExpanded.tsx` - Button colors, venue alignment, game state logic
+- `src/components/ui/filters-v2/FiltersSheetV2.tsx` - Custom badge color
+- `src/components/ui/filters-v2/SportsSectionV3.tsx` - Favorite dividers
+- `src/components/ui/filters-v2/TeamsSectionV3.tsx` - Favorite dividers
+- `src/components/ui/filters-v2/ServicesSectionV3.tsx` - Favorite dividers
+- `src/screens/home/DailyV3.tsx` - Icon updates
+
+---
+
 ## ✅ **COMPLETED - Core Scroll Infrastructure (Oct 13, 2025)**
 
 ### **DailyV3 - SectionList Implementation**
