@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Dimensions } from 'react-native';
+import { Search, ListFilter } from 'lucide-react-native';
 import { useTheme } from '../../../hooks/useTheme';
 import { CollapsibleSection } from './CollapsibleSection';
 import { SPORTS_CATALOG } from './presets';
@@ -137,7 +138,7 @@ export const SportsSectionV3: React.FC<SportsSectionV3Props> = ({
           { backgroundColor: colors.card, borderColor: colors.border },
         ]}
       >
-        <Text style={[styles.searchIcon, { color: colors.textSecondary }]}>🔍</Text>
+        <Search size={16} color={colors.textSecondary} style={styles.searchIcon} />
         <TextInput
           style={[styles.searchInput, { color: colors.text }]}
           placeholder="Search sports… (e.g., NHL, tennis)"
@@ -208,9 +209,11 @@ export const SportsSectionV3: React.FC<SportsSectionV3Props> = ({
                   activeOpacity={0.7}
                   disabled={isPlaceholder}
                 >
-                  <Text style={{ color: isIncluded ? colors.primary : colors.textSecondary }}>
-                    {isIncluded ? '✓' : '+'}
-                  </Text>
+                  <ListFilter 
+                    size={16} 
+                    color={isIncluded ? colors.primary : colors.textSecondary}
+                    opacity={isIncluded ? 1 : 0.4}
+                  />
                 </TouchableOpacity>
               </View>
 
