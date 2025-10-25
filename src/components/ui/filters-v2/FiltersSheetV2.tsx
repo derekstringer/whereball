@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 11,
     fontWeight: '700',
   },
