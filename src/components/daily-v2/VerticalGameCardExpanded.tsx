@@ -2,14 +2,16 @@
  * Vertical Game Card Expanded - Inline expansion maintaining layout
  */
 
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
+import { AlarmClockCheck } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { NHLGame } from '../../lib/nhl-api';
 import { getServicesForGameSplit, deepLinkToService, affiliateCTA } from '../../lib/service-helpers';
 import { useAppStore } from '../../store/appStore';
 import { STREAMING_SERVICES } from '../../constants/services';
 import { LiveClockWidget } from './LiveClockWidget';
+import { TimePickerBottomSheet } from '../ui/TimePickerBottomSheet';
 
 interface VerticalGameCardExpandedProps {
   game: NHLGame;
@@ -23,9 +25,13 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   onCollapse,
 }) => {
   const { colors } = useTheme();
-  const { filters, filtersV2 } = useAppStore();
+  const { filters, filtersV2, hasReminders, addAlert, removeAlertsForGame } = useAppStore();
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  
+  // Check if reminders are set for this game
+  const reminderSet = hasReminders(game.id);
 
   const showDiscovery = filters.showAllServices;
   const hasSubscribed = subscribed.length > 0;
@@ -125,6 +131,23 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
     } else {
       affiliateCTA(serviceCode);
     }
+  };
+
+  const handleReminderPress = () => {
+    if (reminderSet) {
+      // Remove all reminders for this game
+      removeAlertsForGame(game.id);
+    } else {
+      // Open time picker to set reminders
+      setShowTimePicker(true);
+    }
+  };
+
+  const handleSaveReminders = (offsets: number[]) => {
+    // Add each reminder
+    offsets.forEach(offset => {
+      addAlert(game.id, offset);
+    });
   };
 
   // Get service brand color
@@ -393,12 +416,24 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       {!isLive && !isFinal && (
         <TouchableOpacity
           style={[styles.reminderButton, { backgroundColor: colors.primary }]}
-          onPress={() => {/* TODO: Set reminder */}}
+          onPress={handleReminderPress}
           activeOpacity={0.8}
         >
-          <Text style={styles.reminderButtonText}>Set Reminder</Text>
+          {reminderSet && (
+            <AlarmClockCheck size={18} color="#000000" style={styles.reminderIcon} />
+          )}
+          <Text style={styles.reminderButtonText}>
+            {reminderSet ? 'Reminder Set' : 'Set Reminder'}
+          </Text>
         </TouchableOpacity>
       )}
+
+      {/* Time Picker Bottom Sheet */}
+      <TimePickerBottomSheet
+        visible={showTimePicker}
+        onClose={() => setShowTimePicker(false)}
+        onSave={handleSaveReminders}
+      />
     </View>
   );
 };
@@ -556,8 +591,14 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 16,
     borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     marginTop: 8,
+  },
+  reminderIcon: {
+    marginRight: -4,
   },
   reminderButtonText: {
     color: '#000000',

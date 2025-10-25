@@ -5,6 +5,7 @@
 
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
+import { AlarmClockCheck } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
 import { NHLGame } from '../../lib/nhl-api';
@@ -27,10 +28,13 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   onPress,
 }) => {
   const { colors } = useTheme();
-  const { filtersV2 } = useAppStore();
+  const { filtersV2, hasReminders } = useAppStore();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
+  
+  // Check if reminders are set for this game
+  const reminderSet = hasReminders(game.id);
   
   // Determine game state with robust detection
   const isFinal = game.gameState === 'FINAL' || game.gameState === 'OFF';
@@ -251,7 +255,14 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
           </View>
         </View>
 
-        {/* Gutter after TIME */}
+        {/* Reminder icon (if set) - between time and away team */}
+        {reminderSet && !isFinal && (
+          <View style={styles.reminderIconContainer}>
+            <AlarmClockCheck size={16} color={colors.primary} strokeWidth={2.5} />
+          </View>
+        )}
+
+        {/* Gutter after TIME (and reminder if present) */}
         <View style={styles.gutter} />
 
         {/* LEFT TEAM Column (flex) - Away Team */}
@@ -360,6 +371,12 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  // Reminder icon container
+  reminderIconContainer: {
+    marginLeft: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   // Gutter spacing
   gutter: {

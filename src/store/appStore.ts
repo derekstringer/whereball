@@ -3,7 +3,7 @@
  */
 
 import { create } from 'zustand';
-import { AppState, User, UserSubscription, Follow, ThemeState } from '../types';
+import { AppState, User, UserSubscription, Follow, ThemeState, Alert } from '../types';
 import { ColorMode } from '../styles/tokens';
 import { FiltersV2State, ElsewhereNudgeState } from '../components/ui/filters-v2/types';
 
@@ -29,6 +29,13 @@ export interface GameFilters {
 }
 
 interface AppStore extends AppState {
+  // Alerts (Reminders)
+  alerts: Alert[];
+  setAlerts: (alerts: Alert[]) => void;
+  addAlert: (gameId: string, offsetMinutes: number) => void;
+  removeAlertsForGame: (gameId: string) => void;
+  hasReminders: (gameId: string) => boolean;
+  
   // Color Mode
   colorMode: ColorMode;
   systemThemeUpdateTrigger: number;
@@ -101,8 +108,6 @@ const DEFAULT_FILTERS: GameFilters = {
 const DEFAULT_FILTERS_V2: FiltersV2State = {
   quickView: 'my_teams_my_services',
   lastPreset: 'my_teams_my_services',
-  showElsewhereBadges: true,
-  showNationalBadges: true,
   customSelections: undefined,
 };
 
@@ -124,14 +129,46 @@ const initialState: AppState = {
   theme: DEFAULT_THEME,
 };
 
-export const useAppStore = create<AppStore>((set) => ({
+export const useAppStore = create<AppStore>((set, get) => ({
   ...initialState,
+  alerts: [],
   filters: DEFAULT_FILTERS,
   filtersV2: DEFAULT_FILTERS_V2,
   elsewhereNudge: DEFAULT_ELSEWHERE_NUDGE,
   colorMode: 'dark', // Default to dark mode
   systemThemeUpdateTrigger: 0,
   expandedGameIdBySport: {},
+  
+  // Alert actions
+  setAlerts: (alerts) => set({ alerts }),
+  
+  addAlert: (gameId, offsetMinutes) =>
+    set((state) => {
+      // TODO: In real implementation, get game from API and calculate scheduled_ts
+      // For now, create a placeholder alert
+      const newAlert: Alert = {
+        id: `${gameId}-${offsetMinutes}-${Date.now()}`,
+        user_id: state.user?.id || 'temp-user',
+        game_id: gameId,
+        type: 'game_start',
+        scheduled_ts: new Date(Date.now() + offsetMinutes * 60000).toISOString(),
+        sent_ts: null,
+        status: 'pending',
+      };
+      return { alerts: [...state.alerts, newAlert] };
+    }),
+  
+  removeAlertsForGame: (gameId) =>
+    set((state) => ({
+      alerts: state.alerts.filter(alert => alert.game_id !== gameId),
+    })),
+  
+  hasReminders: (gameId) => {
+    const alerts = get().alerts;
+    return alerts.some(
+      alert => alert.game_id === gameId && alert.status === 'pending'
+    );
+  },
 
   setColorMode: (mode) => set({ colorMode: mode }),
 
