@@ -297,11 +297,11 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             {subscribed.map((service) => (
               <TouchableOpacity
                 key={service.code}
-                style={[styles.pill, { backgroundColor: getServiceColor(service.code) }]}
+                style={[styles.serviceButton, { backgroundColor: colors.primary }]}
                 onPress={() => handleServicePress(service.code, true)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.pillText}>{service.name}</Text>
+                <Text style={styles.serviceButtonText}>{service.name}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -500,6 +500,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
+  },
+  serviceButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  serviceButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   unsubscribedPill: {
     borderWidth: 1.5,
