@@ -455,7 +455,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           activeOpacity={0.8}
         >
           {reminderSet && (
-            <AlarmClockCheck size={18} color="#000000" style={styles.reminderIcon} />
+            <AlarmClockCheck size={22} color="#000000" style={styles.reminderIcon} />
           )}
           <Text style={styles.reminderButtonText}>
             {reminderSet ? 'Reminder Set' : 'Set Reminder'}
