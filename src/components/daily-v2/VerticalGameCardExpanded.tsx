@@ -483,8 +483,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionIcon: {
-    width: 20,
-    height: 20,
+    width: 28,
+    height: 28,
   },
   sectionTitle: {
     fontSize: 11,
