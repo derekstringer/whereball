@@ -90,12 +90,30 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
     return 0;
   }, [isFinal, isLive, startTime, now]);
 
-  // Time background color with red intensity
+  // Time background and border styling (matches collapsed card)
   const timeBackgroundColor = useMemo(() => {
+    // Reminder set: transparent background (will use border)
+    if (reminderSet && !isFinal) return 'transparent';
+    
     if (redIntensity === 0) return 'transparent';
     const alpha = Math.floor(redIntensity * 255).toString(16).padStart(2, '0');
     return `#FF3B30${alpha}`;
-  }, [redIntensity]);
+  }, [redIntensity, reminderSet, isFinal]);
+
+  const timeBorderColor = useMemo(() => {
+    // Cyan border when reminder is set
+    if (reminderSet && !isFinal) return colors.primary;
+    return 'transparent';
+  }, [reminderSet, isFinal, colors.primary]);
+
+  const timeTextColor = useMemo(() => {
+    // Cyan text when reminder is set
+    if (reminderSet && !isFinal) return colors.primary;
+    // White for red backgrounds
+    if (redIntensity > 0) return '#FFFFFF';
+    // Gray for normal
+    return colors.textSecondary;
+  }, [reminderSet, isFinal, redIntensity, colors.primary, colors.textSecondary]);
 
   // Shimmer animation for live games
   useEffect(() => {
@@ -238,10 +256,14 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           <View
             style={[
               styles.timePill,
-              { backgroundColor: timeBackgroundColor },
+              { 
+                backgroundColor: timeBackgroundColor,
+                borderWidth: reminderSet && !isFinal ? 2 : 0,
+                borderColor: timeBorderColor,
+              },
             ]}
           >
-            <Text style={[styles.timeText, { color: redIntensity > 0 ? '#FFFFFF' : colors.textSecondary }]}>
+            <Text style={[styles.timeText, { color: timeTextColor }]}>
               {new Date(game.startTime).toLocaleTimeString('en-US', {
                 hour: 'numeric',
                 minute: '2-digit',
