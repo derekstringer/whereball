@@ -19,6 +19,7 @@ import {
   Modal,
   AppState,
 } from 'react-native';
+import { ListFilter } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
 import { getGamesForDate, getLiveGameClock, type NHLGame } from '../../lib/nhl-api';
@@ -681,7 +682,7 @@ export const DailyV3: React.FC = () => {
           onPress={() => setShowFilters(true)}
           activeOpacity={0.7}
         >
-          <Text style={[styles.menuIcon, { color: colors.primary }]}>🔍</Text>
+          <ListFilter size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
