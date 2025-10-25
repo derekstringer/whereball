@@ -70,7 +70,7 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
     });
   }, [searchFilteredServices, ownedServices, selectedServices]);
 
-  // Badge logic: Show counts with icons (★ for owned, ✓ for total selected)
+  // Badge logic: Show counts with icons (★ for owned, ListFilter for total selected)
   const badges = useMemo(() => {
     const ownedCount = ownedServices.length;
     const totalSelectedCount = selectedServices.length;
@@ -82,15 +82,15 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
     
     // Case 2: No owned services (only checked)
     if (ownedCount === 0) {
-      return [{ text: String(totalSelectedCount), icon: '✓' }];
+      return [{ text: String(totalSelectedCount), icon: <ListFilter size={11} color={colors.primary} /> }];
     }
     
     // Case 3: Has owned services
     return [
       { text: String(ownedCount), icon: '★' },
-      { text: String(totalSelectedCount), icon: '✓' },
+      { text: String(totalSelectedCount), icon: <ListFilter size={11} color={colors.primary} /> },
     ];
-  }, [selectedServices, ownedServices]);
+  }, [selectedServices, ownedServices, colors.primary]);
 
   // Handle ownership toggle with auto-check behavior
   const handleOwnershipToggle = (serviceCode: string) => {

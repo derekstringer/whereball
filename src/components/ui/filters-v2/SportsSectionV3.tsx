@@ -81,7 +81,7 @@ export const SportsSectionV3: React.FC<SportsSectionV3Props> = ({
   const visibleSports = showAll ? sortedSports : sortedSports.slice(0, INITIAL_COUNT);
   const remainingCount = sortedSports.length - INITIAL_COUNT;
 
-  // Badge logic: Show counts with icons (★ for followed, ✓ for total selected)
+  // Badge logic: Show counts with icons (★ for followed, ListFilter for total selected)
   const badges = useMemo(() => {
     const followedCount = followedSportIds.length;
     const totalSelectedCount = selectedSports.length;
@@ -93,15 +93,15 @@ export const SportsSectionV3: React.FC<SportsSectionV3Props> = ({
     
     // Case 2: No followed sports (only checked)
     if (followedCount === 0) {
-      return [{ text: String(totalSelectedCount), icon: '✓' }];
+      return [{ text: String(totalSelectedCount), icon: <ListFilter size={11} color={colors.primary} /> }];
     }
     
     // Case 3: Has followed sports
     return [
       { text: String(followedCount), icon: '★' },
-      { text: String(totalSelectedCount), icon: '✓' },
+      { text: String(totalSelectedCount), icon: <ListFilter size={11} color={colors.primary} /> },
     ];
-  }, [selectedSports, followedSportIds]);
+  }, [selectedSports, followedSportIds, colors.primary]);
 
   // Handle follow toggle with auto-check behavior
   const handleFollowToggle = (sportId: Sport) => {

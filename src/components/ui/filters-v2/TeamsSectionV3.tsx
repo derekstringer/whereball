@@ -166,7 +166,7 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
   const visibleTeams = showAll ? sortedTeams : sortedTeams.slice(0, INITIAL_COUNT);
   const remainingCount = sortedTeams.length - INITIAL_COUNT;
 
-  // Badge logic: Show counts with icons (★ for followed, ✓ for total selected)
+  // Badge logic: Show counts with icons (★ for followed, ListFilter for total selected)
   const badges = useMemo(() => {
     const followedCount = followedTeamIds.length;
     const totalSelectedCount = selectedTeams.length;
@@ -178,15 +178,15 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
     
     // Case 2: No followed teams (only checked)
     if (followedCount === 0) {
-      return [{ text: String(totalSelectedCount), icon: '✓' }];
+      return [{ text: String(totalSelectedCount), icon: <ListFilter size={11} color={colors.primary} /> }];
     }
     
     // Case 3: Has followed teams
     return [
       { text: String(followedCount), icon: '★' },
-      { text: String(totalSelectedCount), icon: '✓' },
+      { text: String(totalSelectedCount), icon: <ListFilter size={11} color={colors.primary} /> },
     ];
-  }, [selectedTeams, followedTeamIds]);
+  }, [selectedTeams, followedTeamIds, colors.primary]);
 
   // Handle follow toggle with auto-check behavior
   const handleFollowToggle = (teamId: string) => {

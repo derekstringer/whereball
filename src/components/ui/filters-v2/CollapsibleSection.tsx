@@ -9,7 +9,7 @@ import { useTheme } from '../../../hooks/useTheme';
 
 interface Badge {
   text: string;
-  icon?: string; // Optional icon like "⭐" or "✓"
+  icon?: string | React.ReactNode; // Optional icon - emoji string or React component (e.g., Lucide icon)
 }
 
 interface CollapsibleSectionProps {
@@ -59,9 +59,15 @@ export const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
                 {badge.text}
               </Text>
               {badge.icon && (
-                <Text style={[styles.badgeIcon, { color: colors.primary }]}>
-                  {badge.icon}
-                </Text>
+                typeof badge.icon === 'string' ? (
+                  <Text style={[styles.badgeIcon, { color: colors.primary }]}>
+                    {badge.icon}
+                  </Text>
+                ) : (
+                  <View style={styles.badgeIconComponent}>
+                    {badge.icon}
+                  </View>
+                )
               )}
             </View>
           ))}
@@ -121,6 +127,9 @@ const styles = StyleSheet.create({
   badgeIcon: {
     fontSize: 12,
     fontWeight: '700',
+    marginLeft: 3,
+  },
+  badgeIconComponent: {
     marginLeft: 3,
   },
   chevron: {
