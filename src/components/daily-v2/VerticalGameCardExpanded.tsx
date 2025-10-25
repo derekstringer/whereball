@@ -296,14 +296,28 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           </View>
           <View style={styles.servicePills}>
             {subscribed.map((service) => (
-              <TouchableOpacity
-                key={service.code}
-                style={[styles.serviceButton, { backgroundColor: colors.primary }]}
-                onPress={() => handleServicePress(service.code, true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.serviceButtonText}>{service.name}</Text>
-              </TouchableOpacity>
+              isFinal ? (
+                // Finished games: muted, non-clickable button
+                <View
+                  key={service.code}
+                  style={[
+                    styles.serviceButton, 
+                    { backgroundColor: colors.primary, opacity: 0.4 }
+                  ]}
+                >
+                  <Text style={styles.serviceButtonText}>{service.name}</Text>
+                </View>
+              ) : (
+                // Live/upcoming games: normal clickable button
+                <TouchableOpacity
+                  key={service.code}
+                  style={[styles.serviceButton, { backgroundColor: colors.primary }]}
+                  onPress={() => handleServicePress(service.code, true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.serviceButtonText}>{service.name}</Text>
+                </TouchableOpacity>
+              )
             ))}
           </View>
         </View>
