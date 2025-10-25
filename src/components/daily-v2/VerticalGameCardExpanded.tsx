@@ -16,12 +16,14 @@ import { TimePickerBottomSheet } from '../ui/TimePickerBottomSheet';
 interface VerticalGameCardExpandedProps {
   game: NHLGame;
   userServiceCodes: string[];
+  currentTime?: Date;
   onCollapse: () => void;
 }
 
 export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> = ({
   game,
   userServiceCodes,
+  currentTime,
   onCollapse,
 }) => {
   const { colors } = useTheme();
@@ -43,7 +45,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   // Detect if game is live using multiple signals
   const hasScores = game.homeTeam.score !== undefined || game.awayTeam.score !== undefined;
   const startTime = new Date(game.startTime);
-  const now = new Date();
+  const now = currentTime || new Date();
   const minutesSinceStart = (now.getTime() - startTime.getTime()) / 60000;
   const startTimePassed = minutesSinceStart > 5; // 5 min grace period
   
@@ -105,13 +107,11 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   }, [reminderSet, isFinal]);
 
   const timeTextColor = useMemo(() => {
-    // Green text when reminder is set
-    if (reminderSet && !isFinal) return '#34C759';
-    // White for red backgrounds
+    // White for red backgrounds (urgency takes priority)
     if (redIntensity > 0) return '#FFFFFF';
-    // Gray for normal
+    // Gray for normal (including when reminder is set)
     return colors.textSecondary;
-  }, [reminderSet, isFinal, redIntensity, colors.textSecondary]);
+  }, [redIntensity, colors.textSecondary]);
 
   // Shimmer animation for live games
   useEffect(() => {

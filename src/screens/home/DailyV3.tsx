@@ -627,6 +627,7 @@ export const DailyV3: React.FC = () => {
         <VerticalGameCardExpanded
           game={item}
           userServiceCodes={userServiceCodes}
+          currentTime={currentTime}
           onCollapse={() => setExpandedGameId?.('NHL', null)}
         />
       );
