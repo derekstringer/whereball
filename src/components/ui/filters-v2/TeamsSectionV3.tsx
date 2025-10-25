@@ -17,6 +17,8 @@ interface TeamsSectionV3Props {
   onToggleInclude: (teamId: string) => void; // Check - this filter only
   isExpanded: boolean; // Accordion state from parent
   onToggleExpanded: () => void; // Accordion toggle from parent
+  showAll: boolean; // Show all items or limited (controlled from parent)
+  onToggleShowAll: (value: boolean) => void; // Toggle show all (controlled from parent)
 }
 
 interface Team {
@@ -41,10 +43,11 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
   onToggleInclude,
   isExpanded,
   onToggleExpanded,
+  showAll,
+  onToggleShowAll,
 }) => {
   const { colors } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
-  const [showAll, setShowAll] = useState(false);
 
   // All teams (in real app, import from constants/teams.ts)
   const allTeams: Team[] = useMemo(() => [
@@ -318,7 +321,7 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
       {!showAll && remainingCount > 0 && (
         <TouchableOpacity
           style={styles.showMoreButton}
-          onPress={() => setShowAll(true)}
+          onPress={() => onToggleShowAll(true)}
           activeOpacity={0.7}
         >
           <Text style={[styles.showMoreText, { color: colors.primary }]}>

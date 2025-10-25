@@ -68,6 +68,10 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
   // Accordion state: only one section open at a time
   const [expandedSection, setExpandedSection] = useState<'sports' | 'teams' | 'services' | null>(null);
 
+  // Show more/less state (persists across re-renders)
+  const [showAllSports, setShowAllSports] = useState(false);
+  const [showAllTeams, setShowAllTeams] = useState(false);
+
   // Toast state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -481,6 +485,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
                     onToggleInclude={handleToggleSportInclude}
                     isExpanded={expandedSection === 'sports'}
                     onToggleExpanded={() => setExpandedSection(expandedSection === 'sports' ? null : 'sports')}
+                    showAll={showAllSports}
+                    onToggleShowAll={setShowAllSports}
                   />
 
                   {/* 3. Teams (new grid design) */}
@@ -492,6 +498,8 @@ export const FiltersSheetV2: React.FC<FiltersSheetV2Props> = ({
                     onToggleInclude={handleToggleInclude}
                     isExpanded={expandedSection === 'teams'}
                     onToggleExpanded={() => setExpandedSection(expandedSection === 'teams' ? null : 'teams')}
+                    showAll={showAllTeams}
+                    onToggleShowAll={setShowAllTeams}
                   />
 
                   {/* 4. Services (grid with owned toggles) */}
