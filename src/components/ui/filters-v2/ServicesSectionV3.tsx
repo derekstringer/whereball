@@ -193,7 +193,6 @@ export const ServicesSectionV3: React.FC<ServicesSectionV3Props> = ({
                   <ListFilter 
                     size={16} 
                     color={isIncluded ? colors.primary : colors.textSecondary}
-                    opacity={isIncluded ? 1 : 0.4}
                   />
                 </TouchableOpacity>
               </View>

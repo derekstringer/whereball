@@ -294,7 +294,6 @@ export const TeamsSectionV3: React.FC<TeamsSectionV3Props> = ({
                   <ListFilter 
                     size={16} 
                     color={isIncluded ? colors.primary : colors.textSecondary}
-                    opacity={isIncluded ? 1 : 0.4}
                   />
                 </TouchableOpacity>
               </View>
