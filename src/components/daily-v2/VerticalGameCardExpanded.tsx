@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   serviceButtonText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   reminderButtonText: {
-    color: '#FFFFFF',
+    color: '#000000',
     fontSize: 16,
     fontWeight: '700',
   },
