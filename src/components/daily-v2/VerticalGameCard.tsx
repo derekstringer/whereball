@@ -196,10 +196,10 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   }, [redIntensity]);
 
   const timeBorderColor = useMemo(() => {
-    // Green border when reminder is set
-    if (reminderSet && !isFinal) return '#34C759';
+    // Cyan border when reminder is set
+    if (reminderSet && !isFinal) return colors.primary;
     return 'transparent';
-  }, [reminderSet, isFinal]);
+  }, [reminderSet, isFinal, colors.primary]);
 
   const timeTextColor = useMemo(() => {
     // White for red backgrounds (urgency takes priority)

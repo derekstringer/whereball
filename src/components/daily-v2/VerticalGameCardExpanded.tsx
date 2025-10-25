@@ -101,10 +101,10 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   }, [redIntensity]);
 
   const timeBorderColor = useMemo(() => {
-    // Green border when reminder is set
-    if (reminderSet && !isFinal) return '#34C759';
+    // Cyan border when reminder is set
+    if (reminderSet && !isFinal) return colors.primary;
     return 'transparent';
-  }, [reminderSet, isFinal]);
+  }, [reminderSet, isFinal, colors.primary]);
 
   const timeTextColor = useMemo(() => {
     // White for red backgrounds (urgency takes priority)
@@ -450,7 +450,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       {/* Set Reminder - Only show for upcoming games (not started yet) */}
       {!isLive && !isFinal && (
         <TouchableOpacity
-          style={[styles.reminderButton, { backgroundColor: reminderSet ? '#34C759' : colors.primary }]}
+          style={[styles.reminderButton, { backgroundColor: colors.primary }]}
           onPress={handleReminderPress}
           activeOpacity={0.8}
         >
