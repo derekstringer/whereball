@@ -255,15 +255,8 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
           </View>
         </View>
 
-        {/* Reminder icon (if set) - between time and away team */}
-        {reminderSet && !isFinal && (
-          <View style={styles.reminderIconContainer}>
-            <AlarmClockCheck size={16} color={colors.primary} strokeWidth={2.5} />
-          </View>
-        )}
-
-        {/* Gutter after TIME - smaller when reminder present to maintain alignment */}
-        <View style={reminderSet && !isFinal ? styles.gutterSmall : styles.gutter} />
+        {/* Gutter after TIME */}
+        <View style={styles.gutter} />
 
         {/* LEFT TEAM Column (flex) - Away Team */}
         <View style={styles.teamColLeft}>
@@ -284,7 +277,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
           </Text>
         </View>
 
-        {/* CENTER: Live Clock Widget, "Final", or "@" */}
+        {/* CENTER: Live Clock Widget, "Final", "@", or reminder icon above @ */}
         {isLive && clockData ? (
           <View style={styles.centerCol}>
             <LiveClockWidget clock={clockData} />
@@ -292,7 +285,18 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
         ) : isFinal ? (
           <Text style={[styles.atCol, { color: colors.textSecondary }]}>Final</Text>
         ) : (
-          <Text style={[styles.atCol, { color: colors.textSecondary }]}>@</Text>
+          <View style={styles.centerCol}>
+            {/* Reminder icon above @ if set */}
+            {reminderSet && (
+              <AlarmClockCheck 
+                size={14} 
+                color={colors.primary} 
+                strokeWidth={2.5}
+                style={styles.reminderIconAbove}
+              />
+            )}
+            <Text style={[styles.atText, { color: colors.textSecondary }]}>@</Text>
+          </View>
         )}
 
         {/* RIGHT TEAM Column (flex) - Home Team */}
@@ -372,19 +376,13 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  // Reminder icon container
-  reminderIconContainer: {
-    marginLeft: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  // Gutter spacing - normal when no reminder
+  // Gutter spacing
   gutter: {
     width: 12,
   },
-  // Smaller gutter when reminder icon is present to compensate for icon width
-  gutterSmall: {
-    width: 0,
+  // Reminder icon positioned above @
+  reminderIconAbove: {
+    marginBottom: 2,
   },
   // Larger gutter before actions for breathing room
   actionsGutter: {
@@ -407,6 +405,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 14,
     fontWeight: '400',
+  },
+  // AT text (used when in centerCol with reminder icon)
+  atText: {
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
   },
   // RIGHT TEAM Column (flex)
   teamColRight: {
