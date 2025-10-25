@@ -38,7 +38,10 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   // Detect if game is live using multiple signals
   const hasScores = game.homeTeam.score !== undefined || game.awayTeam.score !== undefined;
   const startTime = new Date(game.startTime);
+  
+  // Get current time (fresh on every render for accurate red intensity)
   const now = currentTime || new Date();
+  
   const minutesSinceStart = (now.getTime() - startTime.getTime()) / 60000;
   const startTimePassed = minutesSinceStart > 5; // 5 min grace period
   
@@ -72,9 +75,11 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
 
   // Calculate time display and red intensity
   const { timeDisplay, redIntensity } = useMemo(() => {
+    const startTime = new Date(game.startTime);
+    
     if (isFinal) {
       // Show game start time for final games, not "Final"
-      const time = new Date(game.startTime).toLocaleTimeString('en-US', {
+      const time = startTime.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
@@ -83,7 +88,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
     }
     
     if (isLive) {
-      const time = new Date(game.startTime).toLocaleTimeString('en-US', {
+      const time = startTime.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true,
@@ -92,8 +97,6 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
     }
 
     // Upcoming game - calculate time until start
-    const now = currentTime || new Date();
-    const startTime = new Date(game.startTime);
     const diffMs = startTime.getTime() - now.getTime();
     const diffMins = Math.floor(diffMs / 60000);
 
@@ -120,7 +123,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       hour12: true,
     });
     return { timeDisplay: time, redIntensity: intensity };
-  }, [game.startTime, isLive, isFinal, currentTime]);
+  }, [game.startTime, isLive, isFinal, now]);
 
   // Render status icons
   const renderStatusIcons = () => {
