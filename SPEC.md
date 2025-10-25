@@ -636,6 +636,8 @@ Stickiness via pride. Premium users set team-specific color themes that auto-app
 
 ## X. AI CONCIERGE — INTEGRATED CONTEXT, MEMORY & SCOPE
 
+**Architecture Decision:** See [ADR-0005: AI and Voice Stack](/docs/adr/0005-ai-and-voice-stack.md) for full technical rationale.
+
 ### A) LLM Router & Model Strategy
 
 **Primary Model:** Groq Llama 3.1 8B Instant
