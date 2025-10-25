@@ -90,15 +90,13 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
     return 0;
   }, [isFinal, isLive, startTime, now]);
 
-  // Time background and border styling (matches collapsed card)
+  // Time background and border styling (LAYERED APPROACH - matches collapsed card)
   const timeBackgroundColor = useMemo(() => {
-    // Reminder set: transparent background (will use border)
-    if (reminderSet && !isFinal) return 'transparent';
-    
+    // Red background always shows based on urgency (even with reminder)
     if (redIntensity === 0) return 'transparent';
     const alpha = Math.floor(redIntensity * 255).toString(16).padStart(2, '0');
     return `#FF3B30${alpha}`;
-  }, [redIntensity, reminderSet, isFinal]);
+  }, [redIntensity]);
 
   const timeBorderColor = useMemo(() => {
     // Cyan border when reminder is set
