@@ -138,7 +138,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       // Show confirmation dialog before removing
       Alert.alert(
         'Cancel Reminder',
-        'Are you sure you want to cancel the reminder for this game?',
+        'Are you sure you want to cancel your reminder for this game?',
         [
           {
             text: "No, Don't Cancel",
