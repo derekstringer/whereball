@@ -24,9 +24,10 @@ import type { ColorMode } from '../../styles/tokens';
 
 interface SettingsScreenProps {
   onClose: () => void;
+  isBottomSheet?: boolean;
 }
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBottomSheet = false }) => {
   const { 
     subscriptions, 
     setSubscriptions, 
@@ -100,14 +101,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      {/* Header - Only show if not in bottom sheet mode */}
+      {!isBottomSheet && (
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
+          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <Text style={[styles.closeButtonText, { color: colors.textSecondary }]}>✕</Text>
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>Settings</Text>
+          <View style={styles.headerSpacer} />
+        </View>
+      )}
 
       {/* Toast Notification */}
       {showToast && (

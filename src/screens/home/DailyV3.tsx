@@ -27,7 +27,7 @@ import { DateHeader } from '../../components/daily-v2/DateHeader';
 import { VerticalGameCard } from '../../components/daily-v2/VerticalGameCard';
 import { VerticalGameCardExpanded } from '../../components/daily-v2/VerticalGameCardExpanded';
 import { EmptyStateCard } from '../../components/daily-v2/EmptyStateCard';
-import { SettingsScreen } from '../settings/SettingsScreen';
+import { SettingsSheet } from '../settings/SettingsSheet';
 import { FiltersSheetV2 } from '../../components/ui/filters-v2/FiltersSheetV2';
 import { FEATURES } from '../../config/features';
 import { applyFilters, buildMatchPredicate, UserFilterContext } from '../../lib/filters-v2-engine';
@@ -754,15 +754,11 @@ export const DailyV3: React.FC = () => {
         />
       )}
 
-      {/* Settings Modal */}
-      <Modal
+      {/* Settings Sheet */}
+      <SettingsSheet 
         visible={showSettings}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowSettings(false)}
-      >
-        <SettingsScreen onClose={() => setShowSettings(false)} />
-      </Modal>
+        onClose={() => setShowSettings(false)}
+      />
 
       {/* Filters Modal */}
       {FEATURES.USE_FILTERS_V2 ? (
