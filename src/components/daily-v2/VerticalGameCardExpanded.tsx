@@ -272,8 +272,9 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           </View>
         </View>
 
-        {/* Venue - centered below scoreboard */}
-        <View style={styles.venueRow}>
+        {/* Venue - centered below clock/@ (between scores) */}
+        <View style={styles.venueContainer}>
+          <View style={styles.venueSpacerLeft} />
           <Text style={[styles.venue, { color: colors.textSecondary }]}>
             {game.venue}
           </Text>
@@ -472,6 +473,8 @@ const styles = StyleSheet.create({
   },
   venue: {
     fontSize: 13,
+    flex: 1,
+    textAlign: 'center',
   },
   section: {
     marginBottom: 16,
@@ -638,9 +641,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
   },
-  venueRow: {
+  venueContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 16,
+  },
+  venueSpacerLeft: {
+    width: 96, // Time pill (84px) + margin (12px) to align with scoreboard start
   },
 });
