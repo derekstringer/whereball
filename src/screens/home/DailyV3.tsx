@@ -667,7 +667,7 @@ export const DailyV3: React.FC = () => {
           onPress={() => setShowSettings(true)}
           activeOpacity={0.7}
         >
-          <Menu size={24} color={colors.text} />
+          <Menu size={24} color={showSettings ? colors.primary : colors.text} />
         </TouchableOpacity>
         
         <View style={styles.headerCenter}>
