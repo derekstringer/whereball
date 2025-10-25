@@ -3,7 +3,7 @@
  */
 
 import React, { useMemo, useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, Alert } from 'react-native';
 import { AlarmClockCheck } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { NHLGame } from '../../lib/nhl-api';
@@ -135,8 +135,23 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
 
   const handleReminderPress = () => {
     if (reminderSet) {
-      // Remove all reminders for this game
-      removeAlertsForGame(game.id);
+      // Show confirmation dialog before removing
+      Alert.alert(
+        'Cancel Reminder',
+        'Are you sure you want to cancel the reminder for this game?',
+        [
+          {
+            text: "No, Don't Cancel",
+            style: 'cancel',
+          },
+          {
+            text: 'Yes, Cancel',
+            style: 'destructive',
+            onPress: () => removeAlertsForGame(game.id),
+          },
+        ],
+        { cancelable: true }
+      );
     } else {
       // Open time picker to set reminders
       setShowTimePicker(true);
