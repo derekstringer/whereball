@@ -450,14 +450,22 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       {/* Set Reminder - Only show for upcoming games (not started yet) */}
       {!isLive && !isFinal && (
         <TouchableOpacity
-          style={[styles.reminderButton, { backgroundColor: colors.primary }]}
+          style={[
+            styles.reminderButton,
+            reminderSet 
+              ? { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary }
+              : { backgroundColor: colors.primary }
+          ]}
           onPress={handleReminderPress}
           activeOpacity={0.8}
         >
           {reminderSet && (
-            <AlarmClockCheck size={22} color="#000000" style={styles.reminderIcon} />
+            <AlarmClockCheck size={22} color={colors.primary} style={styles.reminderIcon} />
           )}
-          <Text style={styles.reminderButtonText}>
+          <Text style={[
+            styles.reminderButtonText,
+            reminderSet && { color: colors.primary }
+          ]}>
             {reminderSet ? 'Reminder Set' : 'Set Reminder'}
           </Text>
         </TouchableOpacity>
