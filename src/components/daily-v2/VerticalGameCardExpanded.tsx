@@ -272,7 +272,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           </View>
         </View>
 
-        {/* Venue - aligned with scoreboard width */}
+        {/* Venue - centered below scoreboard */}
         <View style={styles.venueRow}>
           <Text style={[styles.venue, { color: colors.textSecondary }]}>
             {game.venue}
@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   },
   venueRow: {
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
-    marginLeft: 96, // Time pill (84px) + gutter (12px) to align with scoreboard
   },
 });
