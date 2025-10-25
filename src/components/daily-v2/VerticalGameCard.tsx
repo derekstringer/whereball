@@ -196,19 +196,19 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   }, [redIntensity]);
 
   const timeBorderColor = useMemo(() => {
-    // Cyan border when reminder is set
-    if (reminderSet && !isFinal) return colors.primary;
+    // Green border when reminder is set
+    if (reminderSet && !isFinal) return '#34C759';
     return 'transparent';
-  }, [reminderSet, isFinal, colors.primary]);
+  }, [reminderSet, isFinal]);
 
   const timeTextColor = useMemo(() => {
-    // Cyan text when reminder is set
-    if (reminderSet && !isFinal) return colors.primary;
+    // Green text when reminder is set
+    if (reminderSet && !isFinal) return '#34C759';
     // White for red backgrounds
     if (redIntensity > 0) return '#FFFFFF';
     // Gray for normal
     return colors.textSecondary;
-  }, [reminderSet, isFinal, redIntensity, colors.primary, colors.textSecondary]);
+  }, [reminderSet, isFinal, redIntensity, colors.textSecondary]);
 
   // Shimmer animation for live games
   useEffect(() => {
