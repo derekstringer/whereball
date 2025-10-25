@@ -378,9 +378,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Gutter spacing
+  // Gutter spacing (reduced to keep teams aligned)
   gutter: {
-    width: 12,
+    width: 4,
   },
   // Larger gutter before actions for breathing room
   actionsGutter: {
