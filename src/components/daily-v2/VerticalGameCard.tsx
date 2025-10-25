@@ -290,7 +290,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
             {reminderSet && (
               <AlarmClockCheck 
                 size={14} 
-                color={colors.primary} 
+                color="#34C759"
                 strokeWidth={2.5}
                 style={styles.reminderIconAbove}
               />
