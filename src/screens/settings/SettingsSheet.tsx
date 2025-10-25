@@ -70,15 +70,24 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
           ]}
         >
           <SafeAreaView style={styles.safeArea}>
-            {/* Drag Handle - visual indicator at top center */}
+            {/* Header - DRAGGABLE for native iOS close gesture */}
             <View
-              style={styles.dragHandleContainer}
+              style={[
+                styles.header,
+                { backgroundColor: colors.bg, borderBottomColor: colors.border },
+              ]}
               {...panResponder.panHandlers}
             >
-              <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary }]} />
+              {/* Drag Handle - visual indicator at top center */}
+              <View style={styles.dragHandleContainer}>
+                <View style={[styles.dragHandle, { backgroundColor: colors.textSecondary }]} />
+              </View>
+              
+              {/* Title - centered */}
+              <Text style={[styles.title, { color: colors.text }]}>Profile</Text>
             </View>
 
-            {/* Settings Content (without its own header since we have drag handle) */}
+            {/* Settings Content (without its own header since we have drag handle + title) */}
             <SettingsScreen onClose={onClose} isBottomSheet />
           </SafeAreaView>
         </Animated.View>
@@ -114,14 +123,29 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    alignItems: 'center',
+    zIndex: 100,
+    position: 'relative',
+  },
   dragHandleContainer: {
     alignItems: 'center',
-    paddingVertical: 12,
+    marginBottom: 8,
   },
   dragHandle: {
     width: 40,
     height: 4,
     borderRadius: 2,
     opacity: 0.5,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
   },
 });
