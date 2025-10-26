@@ -47,7 +47,8 @@ export const DailyV3: React.FC = () => {
     follows,
     filtersV2,
     expandedGameIdBySport, 
-    setExpandedGameId 
+    setExpandedGameId,
+    alerts
   } = useAppStore();
   
   const [sections, setSections] = useState<GameSection[]>([]);
@@ -63,6 +64,25 @@ export const DailyV3: React.FC = () => {
   const userFollows = useMemo(() => follows.map(f => f.team_id), [follows]);
   const currentTime = useRef(new Date()).current;
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
+  
+  // Count pending reminders for FUT games
+  const reminderCount = useMemo(() => {
+    const uniqueGameIds = new Set(alerts.map(a => a.game_id));
+    let count = 0;
+    
+    uniqueGameIds.forEach(gameId => {
+      // Find the game in sections
+      const game = sections.flatMap(s => s.data).find(g => g.id === gameId);
+      if (game && game.gameState === 'FUT') {
+        const pendingAlerts = alerts.filter(a => a.game_id === gameId && a.status === 'pending');
+        if (pendingAlerts.length > 0) {
+          count++;
+        }
+      }
+    });
+    
+    return count;
+  }, [alerts, sections]);
 
   // Apply filters to sections AND skip empty dates
   const filteredSections = useMemo(() => {
@@ -543,7 +563,67 @@ export const DailyV3: React.FC = () => {
     } else {
       // Expand this game
       setExpandedGameId?.('NHL', gameId);
+      
+      // Scroll to ensure expanded card is visible after a short delay
+      setTimeout(() => {
+        // Find the section containing this game
+        let targetSectionIndex = -1;
+        let targetItemIndex = -1;
+        
+        for (let i = 0; i < filteredSections.length; i++) {
+          const itemIndex = filteredSections[i].data.findIndex(game => game.id === gameId);
+          if (itemIndex !== -1) {
+            targetSectionIndex = i;
+            targetItemIndex = itemIndex;
+            break;
+          }
+        }
+        
+        if (targetSectionIndex !== -1 && sectionListRef.current) {
+          sectionListRef.current.scrollToLocation({
+            sectionIndex: targetSectionIndex,
+            itemIndex: targetItemIndex,
+            animated: true,
+            viewPosition: 0.1, // Position near top with small margin
+            viewOffset: 0,
+          });
+        }
+      }, 100); // Small delay to let expansion start
     }
+  };
+
+  const navigateToGame = (gameId: string) => {
+    // Find the section containing this game
+    let targetSectionIndex = -1;
+    let targetItemIndex = -1;
+    
+    for (let i = 0; i < filteredSections.length; i++) {
+      const itemIndex = filteredSections[i].data.findIndex(game => game.id === gameId);
+      if (itemIndex !== -1) {
+        targetSectionIndex = i;
+        targetItemIndex = itemIndex;
+        break;
+      }
+    }
+    
+    if (targetSectionIndex === -1 || !sectionListRef.current) {
+      console.warn('Game not found in filtered sections:', gameId);
+      return;
+    }
+    
+    // Scroll to the game at top of screen to ensure expanded card is fully visible
+    sectionListRef.current.scrollToLocation({
+      sectionIndex: targetSectionIndex,
+      itemIndex: targetItemIndex,
+      animated: true,
+      viewPosition: 0, // Position at top of viewport
+      viewOffset: 20, // Small offset from top for breathing room
+    });
+    
+    // Expand the game after a short delay to ensure scroll completes
+    setTimeout(() => {
+      setExpandedGameId?.('NHL', gameId);
+    }, 600);
   };
 
   const scrollToToday = () => {
@@ -669,6 +749,11 @@ export const DailyV3: React.FC = () => {
           activeOpacity={0.7}
         >
           <Menu size={24} color={showSettings ? colors.primary : colors.text} />
+          {reminderCount > 0 && (
+            <View style={styles.reminderBadge}>
+              <Text style={styles.reminderBadgeText}>{reminderCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
         
         <View style={styles.headerCenter}>
@@ -760,6 +845,10 @@ export const DailyV3: React.FC = () => {
         visible={showSettings}
         onClose={() => setShowSettings(false)}
         games={sections.flatMap(s => s.data)}
+        onNavigateToGame={(gameId) => {
+          setShowSettings(false); // Close settings
+          setTimeout(() => navigateToGame(gameId), 300); // Navigate after close animation
+        }}
       />
 
       {/* Filters Modal */}
@@ -804,6 +893,24 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+  reminderBadge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    backgroundColor: '#00D9FF',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+  },
+  reminderBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
   menuIcon: {
     fontSize: 24,
