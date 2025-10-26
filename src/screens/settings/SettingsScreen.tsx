@@ -18,13 +18,13 @@ import {
 } from 'react-native';
 import {
   User,
-  Bell,
+  AlarmClockCheck,
   BellRing,
   MapPin,
   Settings as SettingsIcon,
   Info,
+  ChevronRight,
   ChevronDown,
-  ChevronUp,
   X,
   HelpCircle,
   Trash2,
@@ -53,6 +53,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
     account: false,
     reminders: true, // Expanded by default if reminders exist
     notifications: false,
+    location: false,
     settings: false,
   });
   
@@ -144,9 +145,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
             </View>
             {expandedSections.account ? (
-              <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
-            ) : (
               <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
             )}
           </TouchableOpacity>
           
@@ -216,7 +217,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
             activeOpacity={0.7}
           >
             <View style={styles.sectionHeaderLeft}>
-              <Bell size={20} color={colors.text} strokeWidth={2} />
+              <AlarmClockCheck size={20} color={colors.text} strokeWidth={2} />
               <Text style={[styles.sectionTitle, { color: colors.text }]}>My Reminders</Text>
               {gamesWithReminders.length > 0 && (
                 <View style={[styles.badge, { backgroundColor: colors.primary }]}>
@@ -225,9 +226,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
               )}
             </View>
             {expandedSections.reminders ? (
-              <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
-            ) : (
               <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
             )}
           </TouchableOpacity>
           
@@ -235,7 +236,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
             <View style={styles.sectionContent}>
               {gamesWithReminders.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Bell size={48} color={colors.textSecondary} strokeWidth={1.5} opacity={0.3} />
+                  <AlarmClockCheck size={48} color={colors.textSecondary} strokeWidth={1.5} opacity={0.3} />
                   <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
                     No active reminders
                   </Text>
@@ -292,9 +293,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Notifications</Text>
             </View>
             {expandedSections.notifications ? (
-              <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
-            ) : (
               <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
             )}
           </TouchableOpacity>
           
@@ -344,30 +345,46 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
           )}
         </View>
 
-        {/* Location Section (Always visible, compact) */}
-        <View style={[styles.section, styles.sectionCompact, { borderBottomColor: colors.border }]}>
-          <View style={styles.sectionHeaderLeft}>
-            <MapPin size={20} color={colors.text} strokeWidth={2} />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
-          </View>
-          <View style={styles.inlineInputContainer}>
-            <TextInput
-              style={[styles.inlineInput, { 
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-                color: colors.text
-              }]}
-              placeholderTextColor={colors.textSecondary}
-              value={zip}
-              onChangeText={setZip}
-              placeholder="ZIP"
-              keyboardType="number-pad"
-              maxLength={5}
-            />
-            <Text style={[styles.inlineHelper, { color: colors.textSecondary }]}>
-              For blackout rules
-            </Text>
-          </View>
+        {/* Location Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('location')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <MapPin size={20} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Location</Text>
+            </View>
+            {expandedSections.location ? (
+              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+            )}
+          </TouchableOpacity>
+          
+          {expandedSections.location && (
+            <View style={styles.sectionContent}>
+              <View style={styles.inlineInputContainer}>
+                <TextInput
+                  style={[styles.inlineInput, { 
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                    color: colors.text
+                  }]}
+                  placeholderTextColor={colors.textSecondary}
+                  value={zip}
+                  onChangeText={setZip}
+                  placeholder="ZIP"
+                  keyboardType="number-pad"
+                  maxLength={5}
+                />
+                <Text style={[styles.inlineHelper, { color: colors.textSecondary }]}>
+                  For blackout rules
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Settings Section */}
@@ -382,9 +399,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Settings</Text>
             </View>
             {expandedSections.settings ? (
-              <ChevronUp size={20} color={colors.textSecondary} strokeWidth={2} />
-            ) : (
               <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
             )}
           </TouchableOpacity>
           
