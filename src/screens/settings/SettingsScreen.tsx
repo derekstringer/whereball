@@ -15,6 +15,7 @@ import {
   Alert,
   Switch,
   Linking,
+  Image,
 } from 'react-native';
 import {
   User,
@@ -34,19 +35,22 @@ import { useAppStore } from '../../store/appStore';
 import { useTheme } from '../../hooks/useTheme';
 import type { ColorMode } from '../../styles/tokens';
 import type { NHLGame } from '../../lib/nhl-api';
+import { getServicesForGameSplit } from '../../lib/service-helpers';
 
 interface SettingsScreenProps {
   onClose: () => void;
   isBottomSheet?: boolean;
   games?: NHLGame[];
+  onNavigateToGame?: (gameId: string) => void;
 }
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBottomSheet = false, games = [] }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBottomSheet = false, games = [], onNavigateToGame }) => {
   const { 
     colorMode, 
     setColorMode,
     alerts,
     removeAlertsForGame,
+    subscriptions,
   } = useAppStore();
   const { colors } = useTheme();
   
@@ -356,10 +360,51 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                     const gameDate = new Date(game.startTime);
                     const gameTime = formatGameTime(gameDate);
                     
+                    // Get service badges for this game
+                    const userServiceCodes = subscriptions.map(s => s.service_code);
+                    const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
+                    
+                    // Render status icons (same logic as VerticalGameCard)
+                    const statusIcons = [];
+                    if (subscribed.length > 0) {
+                      statusIcons.push(
+                        <Image
+                          key="available"
+                          source={require('../../../assets/icons/available.png')}
+                          style={styles.statusIcon}
+                          resizeMode="contain"
+                        />
+                      );
+                    }
+                    if (unsubscribed.length > 0) {
+                      statusIcons.push(
+                        <Image
+                          key="elsewhere"
+                          source={require('../../../assets/icons/elsewhere.png')}
+                          style={styles.statusIcon}
+                          resizeMode="contain"
+                        />
+                      );
+                    }
+                    const hasNational = game.broadcasts.some((b: any) => b.type === 'national');
+                    if (hasNational) {
+                      statusIcons.push(
+                        <Image
+                          key="national"
+                          source={require('../../../assets/icons/national.png')}
+                          style={styles.statusIcon}
+                          resizeMode="contain"
+                        />
+                      );
+                    }
+                    
                     return (
-                      <View 
+                      <TouchableOpacity
                         key={game.id}
                         style={[styles.reminderCardContainer, { backgroundColor: colors.surface }]}
+                        onPress={() => onNavigateToGame?.(game.id)}
+                        activeOpacity={0.7}
+                        disabled={!onNavigateToGame}
                       >
                         {/* Row 1: Date Header + X Button (inside card) */}
                         <View style={styles.reminderHeader}>
@@ -419,13 +464,18 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                               {game.homeTeam.name.split(' ').pop()}
                             </Text>
                           </View>
+                          
+                          {/* Service Badges */}
+                          <View style={styles.serviceBadges}>
+                            {statusIcons}
+                          </View>
                         </View>
                         
                         {/* Row 3: Reminders (inside card) */}
                         <Text style={[styles.reminderTimes, { color: colors.textSecondary }]}>
                           Reminders: {reminders}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </>
@@ -954,5 +1004,16 @@ const styles = StyleSheet.create({
   },
   reminderTimes: {
     fontSize: 12,
+  },
+  statusIcon: {
+    width: 28,
+    height: 28,
+  },
+  serviceBadges: {
+    width: 96,
+    flexDirection: 'row',
+    gap: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
