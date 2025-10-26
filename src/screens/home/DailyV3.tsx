@@ -759,6 +759,7 @@ export const DailyV3: React.FC = () => {
       <SettingsSheet 
         visible={showSettings}
         onClose={() => setShowSettings(false)}
+        games={sections.flatMap(s => s.data)}
       />
 
       {/* Filters Modal */}

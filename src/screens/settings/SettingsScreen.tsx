@@ -33,13 +33,15 @@ import {
 import { useAppStore } from '../../store/appStore';
 import { useTheme } from '../../hooks/useTheme';
 import type { ColorMode } from '../../styles/tokens';
+import type { NHLGame } from '../../lib/nhl-api';
 
 interface SettingsScreenProps {
   onClose: () => void;
   isBottomSheet?: boolean;
+  games?: NHLGame[];
 }
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBottomSheet = false }) => {
+export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBottomSheet = false, games = [] }) => {
   const { 
     colorMode, 
     setColorMode,
@@ -123,8 +125,92 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
     );
   };
   
-  // Get unique game IDs with reminders
-  const gamesWithReminders = Array.from(new Set(alerts.map(a => a.game_id)));
+  // Helper to format date relative to today
+  const formatGameDate = (gameDate: Date): string => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const gameDay = new Date(gameDate.getFullYear(), gameDate.getMonth(), gameDate.getDate());
+    
+    if (gameDay.getTime() === today.getTime()) {
+      return 'Today';
+    } else if (gameDay.getTime() === tomorrow.getTime()) {
+      return 'Tomorrow';
+    } else {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${days[gameDate.getDay()]} ${months[gameDate.getMonth()]} ${gameDate.getDate()}`;
+    }
+  };
+  
+  // Helper to format time
+  const formatGameTime = (gameDate: Date): string => {
+    let hours = gameDate.getHours();
+    const minutes = gameDate.getMinutes();
+    const ampm = hours >= 12 ? 'pm' : 'am';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 should be 12
+    const minutesStr = minutes < 10 ? `0${minutes}` : minutes.toString();
+    return `${hours}:${minutesStr}${ampm}`;
+  };
+  
+  // Helper to parse reminder offset to readable format
+  const formatReminderOffset = (scheduledTs: string, gameStartTs: string): string => {
+    const scheduled = new Date(scheduledTs);
+    const gameStart = new Date(gameStartTs);
+    const diffMs = gameStart.getTime() - scheduled.getTime();
+    const diffMin = Math.round(diffMs / 60000);
+    
+    if (diffMin >= 60) {
+      const hours = Math.floor(diffMin / 60);
+      return `${hours} hr`;
+    } else {
+      return `${diffMin} min`;
+    }
+  };
+  
+  // Get unique game IDs with reminders and look up game data
+  const gamesWithReminders = Array.from(new Set(alerts.map(a => a.game_id)))
+    .map(gameId => {
+      const game = games.find(g => g.id === gameId);
+      const gameAlerts = alerts.filter(a => a.game_id === gameId);
+      
+      if (!game) {
+        // Fallback if game not found
+        return {
+          gameId,
+          sport: 'NHL',
+          matchup: `Game ${gameId}`,
+          dateTime: '',
+          reminders: gameAlerts.map(a => 'Unknown').join(', '),
+        };
+      }
+      
+      const gameDate = new Date(game.startTime);
+      const date = formatGameDate(gameDate);
+      const time = formatGameTime(gameDate);
+      const matchup = `${game.awayTeam.abbreviation} ${game.awayTeam.name} @ ${game.homeTeam.abbreviation} ${game.homeTeam.name}`;
+      
+      // Format reminder times
+      const reminderTimes = gameAlerts
+        .map(alert => formatReminderOffset(alert.scheduled_ts, game.startTime))
+        .sort((a, b) => {
+          // Sort by time (larger first)
+          const aNum = parseInt(a);
+          const bNum = parseInt(b);
+          return bNum - aNum;
+        })
+        .join(', ');
+      
+      return {
+        gameId,
+        sport: 'NHL',
+        matchup,
+        dateTime: `${date} ${time}`,
+        reminders: reminderTimes,
+      };
+    });
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -246,22 +332,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                 </View>
               ) : (
                 <>
-                  {gamesWithReminders.map(gameId => (
+                  {gamesWithReminders.map(gameInfo => (
                     <View 
-                      key={gameId}
+                      key={gameInfo.gameId}
                       style={[styles.reminderCard, { backgroundColor: colors.surface }]}
                     >
                       <View style={styles.reminderInfo}>
+                        <Text style={[styles.reminderSport, { color: colors.textSecondary }]}>
+                          {gameInfo.sport}
+                        </Text>
                         <Text style={[styles.reminderGame, { color: colors.text }]}>
-                          Game {gameId}
+                          {gameInfo.dateTime} {gameInfo.matchup}
                         </Text>
                         <Text style={[styles.reminderTime, { color: colors.textSecondary }]}>
-                          {alerts.filter(a => a.game_id === gameId).length} reminder
-                          {alerts.filter(a => a.game_id === gameId).length > 1 ? 's' : ''} set
+                          Reminder: {gameInfo.reminders} out
                         </Text>
                       </View>
                       <TouchableOpacity
-                        onPress={() => removeAlertsForGame(gameId)}
+                        onPress={() => removeAlertsForGame(gameInfo.gameId)}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                       >
                         <X size={20} color={colors.textSecondary} strokeWidth={2} />
@@ -615,13 +703,20 @@ const styles = StyleSheet.create({
   reminderInfo: {
     flex: 1,
   },
-  reminderGame: {
-    fontSize: 15,
-    fontWeight: '600',
+  reminderSport: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
     marginBottom: 2,
   },
+  reminderGame: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 2,
+    lineHeight: 18,
+  },
   reminderTime: {
-    fontSize: 13,
+    fontSize: 12,
   },
   clearAllButton: {
     borderWidth: 2,

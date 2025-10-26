@@ -7,15 +7,18 @@ import React from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, SafeAreaView, PanResponder, Animated } from 'react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { SettingsScreen } from './SettingsScreen';
+import type { NHLGame } from '../../lib/nhl-api';
 
 interface SettingsSheetProps {
   visible: boolean;
   onClose: () => void;
+  games?: NHLGame[];
 }
 
 export const SettingsSheet: React.FC<SettingsSheetProps> = ({
   visible,
   onClose,
+  games = [],
 }) => {
   const { colors } = useTheme();
 
@@ -88,7 +91,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
             </View>
 
             {/* Settings Content (without its own header since we have drag handle + title) */}
-            <SettingsScreen onClose={onClose} isBottomSheet />
+            <SettingsScreen onClose={onClose} isBottomSheet games={games} />
           </SafeAreaView>
         </Animated.View>
       </View>
