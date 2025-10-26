@@ -908,7 +908,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   reminderBadgeText: {
-    color: '#FFFFFF',
+    color: 'rgba(0, 0, 0, 0)',
     fontSize: 12,
     fontWeight: '700',
   },
