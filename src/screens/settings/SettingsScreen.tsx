@@ -896,14 +896,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 2,
-    marginRight: 16,
+    marginRight: 24,
   },
   timeText: {
     fontSize: 13,
     fontWeight: '600',
   },
   teamSectionCompact: {
-    marginRight: 12,
+    marginRight: 20,
   },
   teamRowCompact: {
     flexDirection: 'row',
@@ -950,7 +950,7 @@ const styles = StyleSheet.create({
   },
   atSymbol: {
     fontSize: 14,
-    marginRight: 12,
+    marginRight: 20,
   },
   reminderTimes: {
     fontSize: 12,
