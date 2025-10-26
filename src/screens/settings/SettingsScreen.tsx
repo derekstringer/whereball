@@ -57,7 +57,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
   // Collapsible sections state
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     account: false,
-    reminders: true, // Expanded by default if reminders exist
+    reminders: false, // Start collapsed
     notifications: false,
     location: false,
     settings: false,
@@ -159,18 +159,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
     return `${hours}:${minutesStr}${ampm}`;
   };
   
-  // Helper to parse reminder offset to readable format
-  const formatReminderOffset = (scheduledTs: string, gameStartTs: string): string => {
-    const scheduled = new Date(scheduledTs);
-    const gameStart = new Date(gameStartTs);
-    const diffMs = gameStart.getTime() - scheduled.getTime();
-    const diffMin = Math.round(diffMs / 60000);
-    
-    if (diffMin >= 60) {
-      const hours = Math.floor(diffMin / 60);
-      return `${hours} hr${hours > 1 ? 's' : ''} before`;
+  // Helper to format reminder offset using actual offset minutes stored in alert ID
+  const formatReminderOffset = (offsetMinutes: number): string => {
+    if (offsetMinutes >= 60) {
+      const hours = offsetMinutes / 60;
+      return hours === 1 ? '1 hr before' : `${hours} hrs before`;
     } else {
-      return `${diffMin} min before`;
+      return `${offsetMinutes} min before`;
     }
   };
   
@@ -206,22 +201,34 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
   };
   
   // Get games with reminders (with full game objects)
+  // Only show reminders for upcoming games (scheduled status)
   const gamesWithReminders = Array.from(new Set(alerts.map(a => a.game_id)))
     .map(gameId => {
       const game = games.find(g => g.id === gameId);
       if (!game) return null;
       
-      const gameAlerts = alerts.filter(a => a.game_id === gameId);
+      // FILTER OUT: Only show games that are scheduled (FUT = future/upcoming)
+      // Don't show LIVE or FINAL games
+      if (game.gameState !== 'FUT') return null;
+      
+      const gameAlerts = alerts.filter(a => a.game_id === gameId && a.status === 'pending');
+      
+      // If no pending alerts, don't show this game
+      if (gameAlerts.length === 0) return null;
+      
       const gameDate = new Date(game.startTime);
       
-      // Format reminder times
+      // Format reminder times using the actual offsets stored in alert IDs
+      // Alert IDs are in format: {gameId}-{offsetMinutes}-{timestamp}
       const reminderTimes = gameAlerts
-        .map(alert => formatReminderOffset(alert.scheduled_ts, game.startTime))
-        .sort((a, b) => {
-          const aNum = parseInt(a);
-          const bNum = parseInt(b);
-          return bNum - aNum;
+        .map(alert => {
+          // Extract offset from alert ID (format: gameId-offsetMinutes-timestamp)
+          const parts = alert.id.split('-');
+          const offsetMinutes = parseInt(parts[parts.length - 2]);
+          return { offset: offsetMinutes, formatted: formatReminderOffset(offsetMinutes) };
         })
+        .sort((a, b) => b.offset - a.offset) // Sort by offset descending (longest first)
+        .map(item => item.formatted)
         .join(', ');
       
       return {
@@ -230,7 +237,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
         reminders: reminderTimes,
       };
     })
-    .filter(item => item !== null) as Array<{
+    .filter(item => item !== null)
+    // Sort chronologically by game start time
+    .sort((a, b) => new Date(a!.game.startTime).getTime() - new Date(b!.game.startTime).getTime()) as Array<{
       game: NHLGame;
       dateHeader: string;
       reminders: string;
@@ -243,7 +252,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Account Section */}
+        {/* My Game Reminders Section - MOVED TO TOP */}
         <View style={[styles.section, { borderBottomColor: colors.border }]}>
           <TouchableOpacity 
             style={styles.sectionHeader}
@@ -319,7 +328,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
           )}
         </View>
 
-        {/* My Reminders Section */}
+        {/* Account Section */}
         <View style={[styles.section, { borderBottomColor: colors.border }]}>
           <TouchableOpacity 
             style={styles.sectionHeader}
@@ -328,18 +337,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
           >
             <View style={styles.sectionHeaderLeft}>
               <AlarmClockCheck size={20} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>My Reminders</Text>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>My Game Reminders</Text>
+            </View>
+            <View style={styles.sectionHeaderRight}>
               {gamesWithReminders.length > 0 && (
-                <View style={[styles.badge, { backgroundColor: colors.primary }]}>
-                  <Text style={styles.badgeText}>{gamesWithReminders.length}</Text>
+                <View style={[styles.countBadge, { backgroundColor: 'rgba(0, 217, 255, 0.15)', borderColor: colors.primary }]}>
+                  <Text style={[styles.countBadgeText, { color: colors.primary }]}>{gamesWithReminders.length}</Text>
                 </View>
               )}
+              {expandedSections.reminders ? (
+                <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+              ) : (
+                <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+              )}
             </View>
-            {expandedSections.reminders ? (
-              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
-            ) : (
-              <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-            )}
           </TouchableOpacity>
           
           {expandedSections.reminders && (
@@ -356,7 +367,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                 </View>
               ) : (
                 <>
-                  {gamesWithReminders.map(({ game, dateHeader, reminders }) => {
+                  {gamesWithReminders.map(({ game, dateHeader, reminders }, index) => {
                     const gameDate = new Date(game.startTime);
                     const gameTime = formatGameTime(gameDate);
                     
@@ -399,7 +410,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                     }
                     
                     return (
-                      <TouchableOpacity
+                      <View key={game.id}>
+                        {index > 0 && <View style={[styles.reminderDivider, { backgroundColor: colors.border }]} />}
+                        <TouchableOpacity
                         key={game.id}
                         style={[styles.reminderCardContainer, { backgroundColor: colors.surface }]}
                         onPress={() => onNavigateToGame?.(game.id)}
@@ -412,7 +425,20 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                             {dateHeader}
                           </Text>
                           <TouchableOpacity
-                            onPress={() => removeAlertsForGame(game.id)}
+                            onPress={() => {
+                              Alert.alert(
+                                'Cancel Reminder',
+                                'Are you sure you want to cancel your reminder for this game?',
+                                [
+                                  { text: 'Keep It', style: 'cancel' },
+                                  {
+                                    text: 'Cancel Reminder',
+                                    style: 'destructive',
+                                    onPress: () => removeAlertsForGame(game.id),
+                                  },
+                                ]
+                              );
+                            }}
                             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                           >
                             <X size={20} color={colors.textSecondary} strokeWidth={2} />
@@ -428,10 +454,10 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                             </Text>
                           </View>
                           
-                          {/* Away Team */}
-                          <View style={styles.teamSectionCompact}>
-                            <View style={styles.teamRowCompact}>
-                              <Text style={[styles.teamAbbrev, { color: colors.text }]}>
+                          {/* Away Team - LEFT JUSTIFIED */}
+                          <View style={styles.teamSectionLeft}>
+                            <View style={styles.teamRowLeft}>
+                              <Text style={[styles.teamAbbrev, styles.leftAlign, { color: colors.text }]}>
                                 {game.awayTeam.abbreviation}
                               </Text>
                               {game.awayTeam.score !== undefined && (
@@ -440,27 +466,27 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                                 </Text>
                               )}
                             </View>
-                            <Text style={[styles.teamName, { color: colors.textSecondary }]}>
+                            <Text style={[styles.teamName, styles.leftAlign, { color: colors.textSecondary }]}>
                               {game.awayTeam.name.split(' ').pop()}
                             </Text>
                           </View>
                           
-                          {/* @ Symbol */}
+                          {/* @ Symbol - centered between abbreviations */}
                           <Text style={[styles.atSymbol, { color: colors.textSecondary }]}>@</Text>
                           
-                          {/* Home Team */}
-                          <View style={styles.teamSectionCompact}>
-                            <View style={styles.teamRowCompact}>
+                          {/* Home Team - RIGHT JUSTIFIED */}
+                          <View style={styles.teamSectionRight}>
+                            <View style={styles.teamRowRight}>
                               {game.homeTeam.score !== undefined && (
                                 <Text style={[styles.teamScore, { color: colors.text }]}>
                                   {game.homeTeam.score}
                                 </Text>
                               )}
-                              <Text style={[styles.teamAbbrev, { color: colors.text }]}>
+                              <Text style={[styles.teamAbbrev, styles.rightAlign, { color: colors.text }]}>
                                 {game.homeTeam.abbreviation}
                               </Text>
                             </View>
-                            <Text style={[styles.teamName, { color: colors.textSecondary }]}>
+                            <Text style={[styles.teamName, styles.rightAlign, { color: colors.textSecondary }]}>
                               {game.homeTeam.name.split(' ').pop()}
                             </Text>
                           </View>
@@ -475,7 +501,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                         <Text style={[styles.reminderTimes, { color: colors.textSecondary }]}>
                           Reminders: {reminders}
                         </Text>
-                      </TouchableOpacity>
+                        </TouchableOpacity>
+                      </View>
                     );
                   })}
                 </>
@@ -737,8 +764,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
+  sectionHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
   sectionTitle: {
     fontSize: 16,
+    fontWeight: '700',
+  },
+  countBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+    borderWidth: 1.5,
+  },
+  countBadgeText: {
+    fontSize: 12,
     fontWeight: '700',
   },
   sectionContent: {
@@ -939,7 +981,10 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     gap: 8,
-    marginBottom: 12,
+  },
+  reminderDivider: {
+    height: 1,
+    marginVertical: 8,
   },
   timePill: {
     paddingHorizontal: 8,
@@ -960,6 +1005,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 2,
+  },
+  teamSectionLeft: {
+    marginRight: 20,
+    alignItems: 'flex-start',
+  },
+  teamRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  teamSectionRight: {
+    marginRight: 20,
+    alignItems: 'flex-end',
+  },
+  teamRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  leftAlign: {
+    textAlign: 'left',
+  },
+  rightAlign: {
+    textAlign: 'right',
   },
   reminderHeader: {
     flexDirection: 'row',
