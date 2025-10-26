@@ -896,13 +896,14 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 2,
+    marginRight: 16,
   },
   timeText: {
     fontSize: 13,
     fontWeight: '600',
   },
   teamSectionCompact: {
-    flex: 1,
+    marginRight: 12,
   },
   teamRowCompact: {
     flexDirection: 'row',
@@ -926,10 +927,9 @@ const styles = StyleSheet.create({
   scorecardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
   },
   teamSection: {
-    flex: 1,
+    marginRight: 12,
   },
   teamRow: {
     flexDirection: 'row',
@@ -950,7 +950,7 @@ const styles = StyleSheet.create({
   },
   atSymbol: {
     fontSize: 14,
-    marginHorizontal: 8,
+    marginRight: 12,
   },
   reminderTimes: {
     fontSize: 12,
