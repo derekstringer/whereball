@@ -334,7 +334,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                     }
                     
                     return (
-                      <View key={game.id} style={[styles.reminderCardContainer, { marginBottom: index < gamesWithReminders.length - 1 ? 5 : 0 }]}>
+                      <View key={game.id} style={[styles.reminderCardContainer, { backgroundColor: colors.surface, marginBottom: index < gamesWithReminders.length - 1 ? 8 : 0 }]}>
                         {/* Row 1: Date Header + X Button */}
                         <View style={styles.reminderHeader}>
                           <Text style={[styles.reminderDate, { color: colors.text }]}>
@@ -981,19 +981,20 @@ const styles = StyleSheet.create({
   // New 3-row reminder card styles
   reminderCardContainer: {
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     gap: 8,
   },
   timePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 12,
     borderWidth: 2,
-    marginRight: 24,
+    minWidth: 70,
   },
   timeText: {
     fontSize: 13,
     fontWeight: '600',
+    textAlign: 'center',
   },
   teamSectionCompact: {
     marginRight: 20,
@@ -1095,6 +1096,7 @@ const styles = StyleSheet.create({
     width: 84,
     alignItems: 'flex-start',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   gutter: {
     width: 12,
