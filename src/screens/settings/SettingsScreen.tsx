@@ -334,14 +334,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                     }
                     
                     return (
-                      <TouchableOpacity
-                        key={game.id}
-                        style={[styles.reminderCardContainer, { backgroundColor: colors.surface, marginBottom: index < gamesWithReminders.length - 1 ? 5 : 0 }]}
-                        onPress={() => onNavigateToGame?.(game.id)}
-                        activeOpacity={0.7}
-                        disabled={!onNavigateToGame}
-                      >
-                        {/* Row 1: Date Header + X Button (inside card) */}
+                      <View key={game.id} style={[styles.reminderCardContainer, { marginBottom: index < gamesWithReminders.length - 1 ? 5 : 0 }]}>
+                        {/* Row 1: Date Header + X Button */}
                         <View style={styles.reminderHeader}>
                           <Text style={[styles.reminderDate, { color: colors.text }]}>
                             {dateHeader}
@@ -367,63 +361,74 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                           </TouchableOpacity>
                         </View>
                         
-                        {/* Row 2: Time Pill + Scorecard */}
-                        <View style={styles.scorecardRow}>
-                          {/* Time pill */}
-                          <View style={[styles.timePill, { borderColor: colors.primary }]}>
-                            <Text style={[styles.timeText, { color: colors.textSecondary }]}>
-                              {gameTime}
-                            </Text>
+                        {/* Row 2: Game Card (EXACT VerticalGameCard layout) */}
+                        <TouchableOpacity
+                          style={styles.gameRow}
+                          onPress={() => onNavigateToGame?.(game.id)}
+                          activeOpacity={0.7}
+                          disabled={!onNavigateToGame}
+                        >
+                          {/* TIME Column (fixed 84px) */}
+                          <View style={styles.timeCol}>
+                            <View style={[styles.timePill, { borderColor: colors.primary, borderWidth: 2 }]}>
+                              <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+                                {gameTime}
+                              </Text>
+                            </View>
                           </View>
                           
-                          {/* Away Team - LEFT JUSTIFIED */}
-                          <View style={styles.teamSectionLeft}>
-                            <View style={styles.teamRowLeft}>
-                              <Text style={[styles.teamAbbrev, styles.leftAlign, { color: colors.text }]}>
+                          {/* Gutter */}
+                          <View style={styles.gutter} />
+                          
+                          {/* LEFT TEAM Column (flex) - Away */}
+                          <View style={styles.teamColLeft}>
+                            <View style={styles.abbrScoreRow}>
+                              <Text style={[styles.cityCode, styles.leftAlign, { color: colors.text }]}>
                                 {game.awayTeam.abbreviation}
                               </Text>
-                              {game.awayTeam.score !== undefined && (
-                                <Text style={[styles.teamScore, { color: colors.text }]}>
-                                  {game.awayTeam.score}
-                                </Text>
-                              )}
+                              <Text style={[styles.score, { color: colors.text }]}>
+                                {game.awayTeam.score !== undefined ? game.awayTeam.score : '-'}
+                              </Text>
                             </View>
-                            <Text style={[styles.teamName, styles.leftAlign, { color: colors.textSecondary }]}>
+                            <Text style={[styles.teamName, styles.leftAlign, { color: colors.textSecondary }]} numberOfLines={1}>
                               {game.awayTeam.name.split(' ').pop()}
                             </Text>
                           </View>
                           
-                          {/* @ Symbol - centered between abbreviations */}
-                          <Text style={[styles.atSymbol, { color: colors.textSecondary }]}>@</Text>
+                          {/* CENTER Column - @ */}
+                          <View style={styles.centerCol}>
+                            <Text style={[styles.atText, { color: colors.textSecondary }]}>@</Text>
+                          </View>
                           
-                          {/* Home Team - RIGHT JUSTIFIED */}
-                          <View style={styles.teamSectionRight}>
-                            <View style={styles.teamRowRight}>
-                              {game.homeTeam.score !== undefined && (
-                                <Text style={[styles.teamScore, { color: colors.text }]}>
-                                  {game.homeTeam.score}
-                                </Text>
-                              )}
-                              <Text style={[styles.teamAbbrev, styles.rightAlign, { color: colors.text }]}>
+                          {/* RIGHT TEAM Column (flex) - Home */}
+                          <View style={styles.teamColRight}>
+                            <View style={styles.abbrScoreRowRight}>
+                              <Text style={[styles.score, { color: colors.text }]}>
+                                {game.homeTeam.score !== undefined ? game.homeTeam.score : '-'}
+                              </Text>
+                              <Text style={[styles.cityCode, styles.rightAlign, { color: colors.text }]}>
                                 {game.homeTeam.abbreviation}
                               </Text>
                             </View>
-                            <Text style={[styles.teamName, styles.rightAlign, { color: colors.textSecondary }]}>
+                            <Text style={[styles.teamName, styles.rightAlign, { color: colors.textSecondary }]} numberOfLines={1}>
                               {game.homeTeam.name.split(' ').pop()}
                             </Text>
                           </View>
                           
-                          {/* Service Badges */}
-                          <View style={styles.serviceBadges}>
+                          {/* Actions Gutter */}
+                          <View style={styles.actionsGutter} />
+                          
+                          {/* ACTIONS Column (fixed 72px) */}
+                          <View style={styles.actionsCol}>
                             {statusIcons}
                           </View>
-                        </View>
+                        </TouchableOpacity>
                         
-                        {/* Row 3: Reminders (inside card) */}
+                        {/* Row 3: Reminders */}
                         <Text style={[styles.reminderTimes, { color: colors.textSecondary }]}>
                           Reminders: {reminders}
                         </Text>
-                      </TouchableOpacity>
+                      </View>
                     );
                   })}
                 </>
@@ -1080,5 +1085,68 @@ const styles = StyleSheet.create({
     gap: 0,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // VerticalGameCard layout styles
+  gameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  timeCol: {
+    width: 84,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  gutter: {
+    width: 12,
+  },
+  teamColLeft: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  centerCol: {
+    minWidth: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  atText: {
+    fontSize: 14,
+    fontWeight: '400',
+    textAlign: 'center',
+  },
+  teamColRight: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingRight: 2,
+  },
+  actionsGutter: {
+    width: 16,
+  },
+  actionsCol: {
+    width: 72,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 0,
+  },
+  abbrScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  abbrScoreRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    justifyContent: 'flex-end',
+  },
+  cityCode: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  score: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 18,
   },
 });
