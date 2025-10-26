@@ -334,7 +334,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                     }
                     
                     return (
-                      <View key={game.id} style={[styles.reminderCardContainer, { backgroundColor: colors.surface, marginBottom: index < gamesWithReminders.length - 1 ? 4 : 0 }]}>
+                      <View key={game.id} style={[styles.reminderCardContainer, { backgroundColor: colors.surface, marginBottom: index < gamesWithReminders.length - 1 ? 3 : 0 }]}>
                         {/* Row 1: Date Header + X Button */}
                         <View style={styles.reminderHeader}>
                           <Text style={[styles.reminderDate, { color: colors.text }]}>
