@@ -170,33 +170,50 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
     }
   };
   
-  // Get unique game IDs with reminders and look up game data
+  // Helper to format date for reminder card header
+  const formatReminderDate = (gameDate: Date): string => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const gameDay = new Date(gameDate.getFullYear(), gameDate.getMonth(), gameDate.getDate());
+    
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    const dayName = days[gameDate.getDay()];
+    const monthName = months[gameDate.getMonth()];
+    const date = gameDate.getDate();
+    
+    // Add ordinal suffix (st, nd, rd, th)
+    const getOrdinal = (n: number) => {
+      const s = ['th', 'st', 'nd', 'rd'];
+      const v = n % 100;
+      return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+    
+    if (gameDay.getTime() === today.getTime()) {
+      return `Today, ${monthName} ${getOrdinal(date)}`;
+    } else if (gameDay.getTime() === tomorrow.getTime()) {
+      return `Tomorrow, ${monthName} ${getOrdinal(date)}`;
+    } else {
+      return `${dayName}, ${monthName} ${getOrdinal(date)}`;
+    }
+  };
+  
+  // Get games with reminders (with full game objects)
   const gamesWithReminders = Array.from(new Set(alerts.map(a => a.game_id)))
     .map(gameId => {
       const game = games.find(g => g.id === gameId);
+      if (!game) return null;
+      
       const gameAlerts = alerts.filter(a => a.game_id === gameId);
-      
-      if (!game) {
-        // Fallback if game not found
-        return {
-          gameId,
-          sport: 'NHL',
-          matchup: `Game ${gameId}`,
-          dateTime: '',
-          reminders: gameAlerts.map(a => 'Unknown').join(', '),
-        };
-      }
-      
       const gameDate = new Date(game.startTime);
-      const date = formatGameDate(gameDate);
-      const time = formatGameTime(gameDate);
-      const matchup = `${game.awayTeam.abbreviation} ${game.awayTeam.name} @ ${game.homeTeam.abbreviation} ${game.homeTeam.name}`;
       
       // Format reminder times
       const reminderTimes = gameAlerts
         .map(alert => formatReminderOffset(alert.scheduled_ts, game.startTime))
         .sort((a, b) => {
-          // Sort by time (larger first)
           const aNum = parseInt(a);
           const bNum = parseInt(b);
           return bNum - aNum;
@@ -204,13 +221,16 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
         .join(', ');
       
       return {
-        gameId,
-        sport: 'NHL',
-        matchup,
-        dateTime: `${date} ${time}`,
+        game,
+        dateHeader: formatReminderDate(gameDate),
         reminders: reminderTimes,
       };
-    });
+    })
+    .filter(item => item !== null) as Array<{
+      game: NHLGame;
+      dateHeader: string;
+      reminders: string;
+    }>;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
@@ -332,37 +352,66 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                 </View>
               ) : (
                 <>
-                  {gamesWithReminders.map(gameInfo => (
+                  {gamesWithReminders.map(({ game, dateHeader, reminders }) => (
                     <View 
-                      key={gameInfo.gameId}
-                      style={[styles.reminderCard, { backgroundColor: colors.surface }]}
+                      key={game.id}
+                      style={styles.reminderCardContainer}
                     >
-                      <View style={styles.reminderInfo}>
-                        <Text style={[styles.reminderSport, { color: colors.textSecondary }]}>
-                          {gameInfo.sport}
+                      {/* Row 1: Date Header + X Button */}
+                      <View style={styles.reminderHeader}>
+                        <Text style={[styles.reminderDate, { color: colors.text }]}>
+                          {dateHeader}
                         </Text>
-                        <Text style={[styles.reminderGame, { color: colors.text }]}>
-                          {gameInfo.dateTime} {gameInfo.matchup}
-                        </Text>
-                        <Text style={[styles.reminderTime, { color: colors.textSecondary }]}>
-                          Reminder: {gameInfo.reminders} out
-                        </Text>
+                        <TouchableOpacity
+                          onPress={() => removeAlertsForGame(game.id)}
+                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                        >
+                          <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                        </TouchableOpacity>
                       </View>
-                      <TouchableOpacity
-                        onPress={() => removeAlertsForGame(gameInfo.gameId)}
-                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                      >
-                        <X size={20} color={colors.textSecondary} strokeWidth={2} />
-                      </TouchableOpacity>
+                      
+                      {/* Row 2: Scorecard (TODO: Will be tappable in Phase 4) */}
+                      <View style={[styles.reminderScorecard, { backgroundColor: colors.surface }]}>
+                        {/* Simplified scorecard layout */}
+                        <View style={styles.scorecardRow}>
+                          <View style={styles.teamSection}>
+                            <View style={styles.teamRow}>
+                              <Text style={[styles.teamAbbrev, { color: colors.text }]}>
+                                {game.awayTeam.abbreviation}
+                              </Text>
+                              <Text style={[styles.teamScore, { color: colors.text }]}>
+                                {game.awayTeam.score !== undefined ? game.awayTeam.score : ''}
+                              </Text>
+                            </View>
+                            <Text style={[styles.teamName, { color: colors.textSecondary }]}>
+                              {game.awayTeam.name.split(' ').pop()}
+                            </Text>
+                          </View>
+                          
+                          <Text style={[styles.atSymbol, { color: colors.textSecondary }]}>@</Text>
+                          
+                          <View style={styles.teamSection}>
+                            <View style={styles.teamRow}>
+                              <Text style={[styles.teamScore, { color: colors.text }]}>
+                                {game.homeTeam.score !== undefined ? game.homeTeam.score : ''}
+                              </Text>
+                              <Text style={[styles.teamAbbrev, { color: colors.text }]}>
+                                {game.homeTeam.abbreviation}
+                              </Text>
+                            </View>
+                            <Text style={[styles.teamName, { color: colors.textSecondary }]}>
+                              {game.homeTeam.name.split(' ').pop()}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      
+                      {/* Row 3: Reminders */}
+                      <Text style={[styles.reminderTimes, { color: colors.textSecondary }]}>
+                        Reminders: {reminders} out
+                      </Text>
                     </View>
                   ))}
-                  
-                  <TouchableOpacity 
-                    style={[styles.clearAllButton, { borderColor: '#FF4D67' }]}
-                    onPress={handleClearAllReminders}
-                  >
-                    <Text style={styles.clearAllButtonText}>Clear All</Text>
-                  </TouchableOpacity>
                 </>
               )}
             </View>
@@ -818,5 +867,54 @@ const styles = StyleSheet.create({
   },
   linkDivider: {
     fontSize: 13,
+  },
+  // New 3-row reminder card styles
+  reminderCardContainer: {
+    gap: 8,
+  },
+  reminderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  reminderDate: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reminderScorecard: {
+    padding: 12,
+    borderRadius: 8,
+  },
+  scorecardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  teamSection: {
+    flex: 1,
+  },
+  teamRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  teamAbbrev: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  teamScore: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  teamName: {
+    fontSize: 12,
+  },
+  atSymbol: {
+    fontSize: 14,
+    marginHorizontal: 12,
+  },
+  reminderTimes: {
+    fontSize: 12,
   },
 });
