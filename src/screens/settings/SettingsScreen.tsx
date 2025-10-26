@@ -256,82 +256,6 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
         <View style={[styles.section, { borderBottomColor: colors.border }]}>
           <TouchableOpacity 
             style={styles.sectionHeader}
-            onPress={() => toggleSection('account')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.sectionHeaderLeft}>
-              <User size={20} color={colors.text} strokeWidth={2} />
-              <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
-            </View>
-            {expandedSections.account ? (
-              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
-            ) : (
-              <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
-            )}
-          </TouchableOpacity>
-          
-          {expandedSections.account && (
-            <View style={styles.sectionContent}>
-              <View style={styles.userInfo}>
-                <View style={[styles.avatar, { backgroundColor: colors.surface }]}>
-                  <User size={32} color={colors.textSecondary} strokeWidth={2} />
-                </View>
-                <View style={styles.userDetails}>
-                  <Text style={[styles.userName, { color: colors.text }]}>Guest User</Text>
-                  <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
-                    Not signed in
-                  </Text>
-                </View>
-              </View>
-              
-              <TouchableOpacity 
-                style={[styles.menuButton, { backgroundColor: colors.surface }]}
-                onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}
-              >
-                <Text style={[styles.menuButtonText, { color: colors.text }]}>
-                  Manage Subscription
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.menuButton, { backgroundColor: colors.surface }]}
-                onPress={() => {
-                  // TODO: RevenueCat restore
-                  Alert.alert('Restore Purchases', 'Checking for purchases...');
-                }}
-              >
-                <Text style={[styles.menuButtonText, { color: colors.text }]}>
-                  Restore Purchases
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.menuButton, { backgroundColor: colors.surface }]}
-                onPress={handleSignOut}
-              >
-                <LogOut size={18} color={colors.text} strokeWidth={2} style={styles.menuButtonIcon} />
-                <Text style={[styles.menuButtonText, { color: colors.text }]}>
-                  Sign Out
-                </Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.menuButton, { backgroundColor: colors.surface }]}
-                onPress={handleDeleteAccount}
-              >
-                <Trash2 size={18} color="#FF4D67" strokeWidth={2} style={styles.menuButtonIcon} />
-                <Text style={[styles.menuButtonText, { color: '#FF4D67' }]}>
-                  Delete Account
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-
-        {/* Account Section */}
-        <View style={[styles.section, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity 
-            style={styles.sectionHeader}
             onPress={() => toggleSection('reminders')}
             activeOpacity={0.7}
           >
@@ -410,11 +334,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                     }
                     
                     return (
-                      <View key={game.id}>
-                        {index > 0 && <View style={[styles.reminderDivider, { backgroundColor: colors.border }]} />}
-                        <TouchableOpacity
+                      <TouchableOpacity
                         key={game.id}
-                        style={[styles.reminderCardContainer, { backgroundColor: colors.surface }]}
+                        style={[styles.reminderCardContainer, { backgroundColor: colors.surface, marginBottom: index < gamesWithReminders.length - 1 ? 5 : 0 }]}
                         onPress={() => onNavigateToGame?.(game.id)}
                         activeOpacity={0.7}
                         disabled={!onNavigateToGame}
@@ -501,12 +423,87 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                         <Text style={[styles.reminderTimes, { color: colors.textSecondary }]}>
                           Reminders: {reminders}
                         </Text>
-                        </TouchableOpacity>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </>
               )}
+            </View>
+          )}
+        </View>
+
+        {/* Account Section */}
+        <View style={[styles.section, { borderBottomColor: colors.border }]}>
+          <TouchableOpacity 
+            style={styles.sectionHeader}
+            onPress={() => toggleSection('account')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.sectionHeaderLeft}>
+              <User size={20} color={colors.text} strokeWidth={2} />
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Account</Text>
+            </View>
+            {expandedSections.account ? (
+              <ChevronDown size={20} color={colors.textSecondary} strokeWidth={2} />
+            ) : (
+              <ChevronRight size={20} color={colors.textSecondary} strokeWidth={2} />
+            )}
+          </TouchableOpacity>
+          
+          {expandedSections.account && (
+            <View style={styles.sectionContent}>
+              <View style={styles.userInfo}>
+                <View style={[styles.avatar, { backgroundColor: colors.surface }]}>
+                  <User size={32} color={colors.textSecondary} strokeWidth={2} />
+                </View>
+                <View style={styles.userDetails}>
+                  <Text style={[styles.userName, { color: colors.text }]}>Guest User</Text>
+                  <Text style={[styles.userEmail, { color: colors.textSecondary }]}>
+                    Not signed in
+                  </Text>
+                </View>
+              </View>
+              
+              <TouchableOpacity 
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                onPress={() => Linking.openURL('https://apps.apple.com/account/subscriptions')}
+              >
+                <Text style={[styles.menuButtonText, { color: colors.text }]}>
+                  Manage Subscription
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                onPress={() => {
+                  // TODO: RevenueCat restore
+                  Alert.alert('Restore Purchases', 'Checking for purchases...');
+                }}
+              >
+                <Text style={[styles.menuButtonText, { color: colors.text }]}>
+                  Restore Purchases
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                onPress={handleSignOut}
+              >
+                <LogOut size={18} color={colors.text} strokeWidth={2} style={styles.menuButtonIcon} />
+                <Text style={[styles.menuButtonText, { color: colors.text }]}>
+                  Sign Out
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.menuButton, { backgroundColor: colors.surface }]}
+                onPress={handleDeleteAccount}
+              >
+                <Trash2 size={18} color="#FF4D67" strokeWidth={2} style={styles.menuButtonIcon} />
+                <Text style={[styles.menuButtonText, { color: '#FF4D67' }]}>
+                  Delete Account
+                </Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -982,10 +979,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     gap: 8,
   },
-  reminderDivider: {
-    height: 1,
-    marginVertical: 8,
-  },
   timePill: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -1007,23 +1000,24 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   teamSectionLeft: {
-    marginRight: 20,
-    alignItems: 'flex-start',
+    minWidth: 80,
+    marginRight: 10,
   },
   teamRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     marginBottom: 2,
   },
   teamSectionRight: {
-    marginRight: 20,
+    minWidth: 80,
+    marginRight: 10,
     alignItems: 'flex-end',
   },
   teamRowRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
     marginBottom: 2,
   },
   leftAlign: {
@@ -1081,7 +1075,7 @@ const styles = StyleSheet.create({
     height: 28,
   },
   serviceBadges: {
-    width: 96,
+    flex: 1,
     flexDirection: 'row',
     gap: 0,
     alignItems: 'center',
