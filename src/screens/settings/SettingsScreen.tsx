@@ -164,9 +164,9 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
     
     if (diffMin >= 60) {
       const hours = Math.floor(diffMin / 60);
-      return `${hours} hr`;
+      return `${hours} hr${hours > 1 ? 's' : ''} before`;
     } else {
-      return `${diffMin} min`;
+      return `${diffMin} min before`;
     }
   };
   
@@ -352,49 +352,65 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                 </View>
               ) : (
                 <>
-                  {gamesWithReminders.map(({ game, dateHeader, reminders }) => (
-                    <View 
-                      key={game.id}
-                      style={styles.reminderCardContainer}
-                    >
-                      {/* Row 1: Date Header + X Button */}
-                      <View style={styles.reminderHeader}>
-                        <Text style={[styles.reminderDate, { color: colors.text }]}>
-                          {dateHeader}
-                        </Text>
-                        <TouchableOpacity
-                          onPress={() => removeAlertsForGame(game.id)}
-                          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                        >
-                          <X size={20} color={colors.textSecondary} strokeWidth={2} />
-                        </TouchableOpacity>
-                      </View>
-                      
-                      {/* Row 2: Scorecard (TODO: Will be tappable in Phase 4) */}
-                      <View style={[styles.reminderScorecard, { backgroundColor: colors.surface }]}>
-                        {/* Simplified scorecard layout */}
+                  {gamesWithReminders.map(({ game, dateHeader, reminders }) => {
+                    const gameDate = new Date(game.startTime);
+                    const gameTime = formatGameTime(gameDate);
+                    
+                    return (
+                      <View 
+                        key={game.id}
+                        style={[styles.reminderCardContainer, { backgroundColor: colors.surface }]}
+                      >
+                        {/* Row 1: Date Header + X Button (inside card) */}
+                        <View style={styles.reminderHeader}>
+                          <Text style={[styles.reminderDate, { color: colors.text }]}>
+                            {dateHeader}
+                          </Text>
+                          <TouchableOpacity
+                            onPress={() => removeAlertsForGame(game.id)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                          >
+                            <X size={20} color={colors.textSecondary} strokeWidth={2} />
+                          </TouchableOpacity>
+                        </View>
+                        
+                        {/* Row 2: Time Pill + Scorecard */}
                         <View style={styles.scorecardRow}>
-                          <View style={styles.teamSection}>
-                            <View style={styles.teamRow}>
+                          {/* Time pill */}
+                          <View style={[styles.timePill, { borderColor: colors.primary }]}>
+                            <Text style={[styles.timeText, { color: colors.textSecondary }]}>
+                              {gameTime}
+                            </Text>
+                          </View>
+                          
+                          {/* Away Team */}
+                          <View style={styles.teamSectionCompact}>
+                            <View style={styles.teamRowCompact}>
                               <Text style={[styles.teamAbbrev, { color: colors.text }]}>
                                 {game.awayTeam.abbreviation}
                               </Text>
-                              <Text style={[styles.teamScore, { color: colors.text }]}>
-                                {game.awayTeam.score !== undefined ? game.awayTeam.score : ''}
-                              </Text>
+                              {game.awayTeam.score !== undefined && (
+                                <Text style={[styles.teamScore, { color: colors.text }]}>
+                                  {game.awayTeam.score}
+                                </Text>
+                              )}
                             </View>
                             <Text style={[styles.teamName, { color: colors.textSecondary }]}>
                               {game.awayTeam.name.split(' ').pop()}
                             </Text>
                           </View>
                           
+                          {/* @ Symbol */}
                           <Text style={[styles.atSymbol, { color: colors.textSecondary }]}>@</Text>
                           
-                          <View style={styles.teamSection}>
-                            <View style={styles.teamRow}>
-                              <Text style={[styles.teamScore, { color: colors.text }]}>
-                                {game.homeTeam.score !== undefined ? game.homeTeam.score : ''}
-                              </Text>
+                          {/* Home Team */}
+                          <View style={styles.teamSectionCompact}>
+                            <View style={styles.teamRowCompact}>
+                              {game.homeTeam.score !== undefined && (
+                                <Text style={[styles.teamScore, { color: colors.text }]}>
+                                  {game.homeTeam.score}
+                                </Text>
+                              )}
                               <Text style={[styles.teamAbbrev, { color: colors.text }]}>
                                 {game.homeTeam.abbreviation}
                               </Text>
@@ -404,14 +420,14 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                             </Text>
                           </View>
                         </View>
+                        
+                        {/* Row 3: Reminders (inside card) */}
+                        <Text style={[styles.reminderTimes, { color: colors.textSecondary }]}>
+                          Reminders: {reminders}
+                        </Text>
                       </View>
-                      
-                      {/* Row 3: Reminders */}
-                      <Text style={[styles.reminderTimes, { color: colors.textSecondary }]}>
-                        Reminders: {reminders} out
-                      </Text>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </>
               )}
             </View>
@@ -870,7 +886,30 @@ const styles = StyleSheet.create({
   },
   // New 3-row reminder card styles
   reminderCardContainer: {
+    padding: 12,
+    borderRadius: 8,
     gap: 8,
+    marginBottom: 12,
+  },
+  timePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 2,
+    marginRight: 12,
+  },
+  timeText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  teamSectionCompact: {
+    flex: 1,
+  },
+  teamRowCompact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
   },
   reminderHeader: {
     flexDirection: 'row',
