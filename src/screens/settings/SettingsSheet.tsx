@@ -13,12 +13,14 @@ interface SettingsSheetProps {
   visible: boolean;
   onClose: () => void;
   games?: NHLGame[];
+  onNavigateToGame?: (gameId: string) => void;
 }
 
 export const SettingsSheet: React.FC<SettingsSheetProps> = ({
   visible,
   onClose,
   games = [],
+  onNavigateToGame,
 }) => {
   const { colors } = useTheme();
 
@@ -91,7 +93,7 @@ export const SettingsSheet: React.FC<SettingsSheetProps> = ({
             </View>
 
             {/* Settings Content (without its own header since we have drag handle + title) */}
-            <SettingsScreen onClose={onClose} isBottomSheet games={games} />
+            <SettingsScreen onClose={onClose} isBottomSheet games={games} onNavigateToGame={onNavigateToGame} />
           </SafeAreaView>
         </Animated.View>
       </View>

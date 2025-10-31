@@ -101,10 +101,10 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   }, [redIntensity]);
 
   const timeBorderColor = useMemo(() => {
-    // Cyan border when reminder is set
-    if (reminderSet && !isFinal) return colors.primary;
+    // Cyan border when reminder is set (only for upcoming games)
+    if (reminderSet && !isFinal && !isLive) return colors.primary;
     return 'transparent';
-  }, [reminderSet, isFinal, colors.primary]);
+  }, [reminderSet, isFinal, isLive, colors.primary]);
 
   const timeTextColor = useMemo(() => {
     // White for red backgrounds (urgency takes priority)
@@ -156,17 +156,13 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         'Cancel Reminder',
         'Are you sure you want to cancel your reminder for this game?',
         [
+          { text: 'Keep It', style: 'cancel' },
           {
-            text: "No, Don't Cancel",
-            style: 'cancel',
-          },
-          {
-            text: 'Yes, Cancel',
+            text: 'Cancel Reminder',
             style: 'destructive',
             onPress: () => removeAlertsForGame(game.id),
           },
-        ],
-        { cancelable: true }
+        ]
       );
     } else {
       // Open time picker to set reminders
@@ -256,7 +252,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
               styles.timePill,
               { 
                 backgroundColor: timeBackgroundColor,
-                borderWidth: reminderSet && !isFinal ? 2 : 0,
+                borderWidth: reminderSet && !isFinal && !isLive ? 2 : 0,
                 borderColor: timeBorderColor,
               },
             ]}
