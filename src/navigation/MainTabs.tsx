@@ -78,23 +78,23 @@ export const MainTabs: React.FC = () => {
           tabBarLabel: 'Just Ask',
           tabBarIcon: ({ focused }) => (
             <View style={styles.centerButtonContainer}>
-              <View style={[styles.centerButton, styles.centerButtonShadow]}>
-                <MessageCircle size={28} color="#FFFFFF" strokeWidth={2} />
+              <View style={styles.centerButtonOutline}>
+                <MessageCircle size={31} color="#00d9ff" strokeWidth={2.5} fill="none" />
               </View>
             </View>
           ),
           tabBarIconStyle: {
-            marginTop: -15, // Raise the button
+            marginTop: -8, // Raise slightly
           },
         }}
       />
       
-      {/* 4. My Reminders */}
+      {/* 4. Reminders */}
       <Tab.Screen
         name="MyReminders"
         component={MyRemindersScreen}
         options={{
-          tabBarLabel: 'My Reminders',
+          tabBarLabel: 'Reminders',
           tabBarIcon: ({ color }) => (
             <View style={{ position: 'relative' }}>
               <Bell size={24} color={color} strokeWidth={2} />
@@ -128,23 +128,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  centerButton: {
+  centerButtonOutline: {
     width: 56,
     height: 56,
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#00d9ff', // Cyan gradient placeholder
-  },
-  centerButtonShadow: {
-    shadowColor: '#00d9ff',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: '#00d9ff',
   },
   badge: {
     position: 'absolute',
