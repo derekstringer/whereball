@@ -19,9 +19,10 @@ import {
   Modal,
   AppState,
 } from 'react-native';
-import { ListFilter, Menu } from 'lucide-react-native';
+import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
+import { ViewDropdownPopover } from '../../components/ui/ViewDropdownPopover';
 import { getGamesForDate, getLiveGameClock, type NHLGame } from '../../lib/nhl-api';
 import { DateHeader } from '../../components/daily-v2/DateHeader';
 import { VerticalGameCard } from '../../components/daily-v2/VerticalGameCard';
@@ -40,7 +41,11 @@ interface GameSection {
   data: NHLGame[];
 }
 
-export const DailyV3: React.FC = () => {
+interface DailyV3Props {
+  viewMode?: 'my-teams' | 'explore' | 'reminders';
+}
+
+export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
   const { colors } = useTheme();
   const { 
     subscriptions, 
@@ -56,6 +61,7 @@ export const DailyV3: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
   const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
   const [dateRange, setDateRange] = useState({ start: -30, end: 60 });
   const isScrollingToToday = useRef(false);
@@ -739,28 +745,47 @@ export const DailyV3: React.FC = () => {
     );
   }
 
+  // Dynamic view title
+  const viewTitle = viewMode === 'my-teams' ? 'My Teams' : viewMode === 'explore' ? 'Explore' : 'Reminders';
+  const showDropdownCaret = viewMode !== 'reminders'; // Hide caret on reminders
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Header - Phase 4: Dropdown Added */}
+      {/* Header - Phase 4: Dropdown with proper wiring */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
           <Text style={[styles.logo, { color: colors.text }]}>SportStream</Text>
           <Text style={[styles.tagline, { color: colors.textSecondary }]}>Find Your Game</Text>
         </View>
         
-        <TouchableOpacity 
-          style={styles.viewDropdown}
-          onPress={() => setShowFilters(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.viewText, { color: colors.text }]}>All Games</Text>
-          <Text style={styles.dropdownIcon}>▼</Text>
-        </TouchableOpacity>
+        {showDropdownCaret ? (
+          <TouchableOpacity 
+            style={styles.viewDropdown}
+            onPress={() => setShowDropdown(!showDropdown)}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.viewText, { color: colors.text }]}>{viewTitle}</Text>
+            {showDropdown ? (
+              <ChevronUp size={14} color={colors.primary} strokeWidth={3} />
+            ) : (
+              <ChevronDown size={14} color={colors.textSecondary} strokeWidth={3} />
+            )}
+          </TouchableOpacity>
+        ) : (
+          <Text style={[styles.viewText, { color: colors.text }]}>{viewTitle}</Text>
+        )}
         
         <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7} style={styles.todayButton}>
           <Text style={styles.todayButtonText}>Today</Text>
         </TouchableOpacity>
       </View>
+
+      {/* ViewDropdownPopover */}
+      <ViewDropdownPopover
+        visible={showDropdown}
+        onClose={() => setShowDropdown(false)}
+        mode={viewMode === 'my-teams' ? 'my-teams' : 'explore'}
+      />
 
       {emptyStateInfo ? (
         <View style={styles.emptyStateContainer}>

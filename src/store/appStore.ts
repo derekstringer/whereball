@@ -62,6 +62,14 @@ interface AppStore extends AppState {
   expandedGameIdBySport: Record<string, string | null>;
   setExpandedGameId: (sport: string, gameId: string | null) => void;
   
+  // Phase 4: Dropdown Session State
+  hiddenTeamsInMyTeams: string[]; // Team IDs hidden via dropdown (session only)
+  exploreSelections: string[]; // Team IDs selected in Explore (session only)
+  toggleTeamVisibilityInMyTeams: (teamId: string) => void;
+  addToExplore: (teamId: string) => void;
+  removeFromExplore: (teamId: string) => void;
+  clearExploreSelections: () => void;
+  
   // Actions
   setUser: (user: User | null) => void;
   setAuthenticated: (isAuthenticated: boolean) => void;
@@ -138,6 +146,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   colorMode: 'dark', // Default to dark mode
   systemThemeUpdateTrigger: 0,
   expandedGameIdBySport: {},
+  hiddenTeamsInMyTeams: [],
+  exploreSelections: [],
   
   // Alert actions
   setAlerts: (alerts) => set({ alerts }),
@@ -182,6 +192,28 @@ export const useAppStore = create<AppStore>((set, get) => ({
         [sport]: gameId,
       },
     })),
+  
+  // Phase 4: Dropdown Session State Actions
+  toggleTeamVisibilityInMyTeams: (teamId) =>
+    set((state) => ({
+      hiddenTeamsInMyTeams: state.hiddenTeamsInMyTeams.includes(teamId)
+        ? state.hiddenTeamsInMyTeams.filter(id => id !== teamId)
+        : [...state.hiddenTeamsInMyTeams, teamId],
+    })),
+  
+  addToExplore: (teamId) =>
+    set((state) => ({
+      exploreSelections: state.exploreSelections.includes(teamId)
+        ? state.exploreSelections
+        : [...state.exploreSelections, teamId],
+    })),
+  
+  removeFromExplore: (teamId) =>
+    set((state) => ({
+      exploreSelections: state.exploreSelections.filter(id => id !== teamId),
+    })),
+  
+  clearExploreSelections: () => set({ exploreSelections: [] }),
 
   setFilters: (filters) => set({ filters }),
   
