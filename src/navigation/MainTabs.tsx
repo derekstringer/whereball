@@ -77,7 +77,7 @@ export const MainTabs: React.FC = () => {
         options={{
           tabBarLabel: 'Just Ask',
           tabBarIcon: ({ focused }) => (
-            <View style={[styles.centerButtonContainer, { marginTop: -25 }]}>
+            <View style={[styles.centerButtonContainer, { marginTop: -35 }]}>
               <View style={styles.centerButtonOutline}>
                 <MessageCircle size={31} color="#00d9ff" strokeWidth={2.5} fill="#00d9ff" />
               </View>
