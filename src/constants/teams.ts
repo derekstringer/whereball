@@ -552,12 +552,142 @@ export const NHL_TEAMS: Team[] = [
   },
 ];
 
+// NBA Teams (Sample for testing)
+export const NBA_TEAMS: Team[] = [
+  {
+    id: 'nba_bos',
+    league: 'NBA',
+    name: 'Boston Celtics',
+    market: 'Boston',
+    short_code: 'BOS',
+    rsn_strings: ['NBC Sports Boston'],
+    primary_colors: { light: '#007A33', dark: '#007A33' },
+    secondary_colors: { light: '#BA9653', dark: '#BA9653' },
+    logo_url: null,
+  },
+  {
+    id: 'nba_lal',
+    league: 'NBA',
+    name: 'Los Angeles Lakers',
+    market: 'Los Angeles',
+    short_code: 'LAL',
+    rsn_strings: ['Spectrum SportsNet'],
+    primary_colors: { light: '#552583', dark: '#552583' },
+    secondary_colors: { light: '#FDB927', dark: '#FDB927' },
+    logo_url: null,
+  },
+  {
+    id: 'nba_gsw',
+    league: 'NBA',
+    name: 'Golden State Warriors',
+    market: 'Golden State',
+    short_code: 'GSW',
+    rsn_strings: ['NBC Sports Bay Area'],
+    primary_colors: { light: '#1D428A', dark: '#1D428A' },
+    secondary_colors: { light: '#FFC72C', dark: '#FFC72C' },
+    logo_url: null,
+  },
+  {
+    id: 'nba_dal',
+    league: 'NBA',
+    name: 'Dallas Mavericks',
+    market: 'Dallas',
+    short_code: 'DAL',
+    rsn_strings: ['Bally Sports Southwest'],
+    primary_colors: { light: '#00538C', dark: '#00538C' },
+    secondary_colors: { light: '#002B5E', dark: '#002B5E' },
+    logo_url: null,
+  },
+];
+
+// NFL Teams (Sample for testing)
+export const NFL_TEAMS: Team[] = [
+  {
+    id: 'nfl_dal',
+    league: 'NCAA',
+    name: 'Dallas Cowboys',
+    market: 'Dallas',
+    short_code: 'DAL',
+    rsn_strings: [],
+    primary_colors: { light: '#003594', dark: '#003594' },
+    secondary_colors: { light: '#869397', dark: '#869397' },
+    logo_url: null,
+  },
+  {
+    id: 'nfl_sf',
+    league: 'NCAA',
+    name: 'San Francisco 49ers',
+    market: 'San Francisco',
+    short_code: 'SFO',
+    rsn_strings: [],
+    primary_colors: { light: '#AA0000', dark: '#AA0000' },
+    secondary_colors: { light: '#B3995D', dark: '#B3995D' },
+    logo_url: null,
+  },
+  {
+    id: 'nfl_gb',
+    league: 'NCAA',
+    name: 'Green Bay Packers',
+    market: 'Green Bay',
+    short_code: 'GRB',
+    rsn_strings: [],
+    primary_colors: { light: '#203731', dark: '#203731' },
+    secondary_colors: { light: '#FFB612', dark: '#FFB612' },
+    logo_url: null,
+  },
+];
+
+// MLB Teams (Sample for testing)
+export const MLB_TEAMS: Team[] = [
+  {
+    id: 'mlb_nyy',
+    league: 'MLB',
+    name: 'New York Yankees',
+    market: 'New York',
+    short_code: 'NYY',
+    rsn_strings: ['YES Network'],
+    primary_colors: { light: '#003087', dark: '#003087' },
+    secondary_colors: { light: '#E4002B', dark: '#E4002B' },
+    logo_url: null,
+  },
+  {
+    id: 'mlb_bos',
+    league: 'MLB',
+    name: 'Boston Red Sox',
+    market: 'Boston',
+    short_code: 'BOS',
+    rsn_strings: ['NESN'],
+    primary_colors: { light: '#BD3039', dark: '#BD3039' },
+    secondary_colors: { light: '#0C2340', dark: '#0C2340' },
+    logo_url: null,
+  },
+  {
+    id: 'mlb_lad',
+    league: 'MLB',
+    name: 'Los Angeles Dodgers',
+    market: 'Los Angeles',
+    short_code: 'LAD',
+    rsn_strings: ['Spectrum SportsNet LA'],
+    primary_colors: { light: '#005A9C', dark: '#005A9C' },
+    secondary_colors: { light: '#EF3E42', dark: '#EF3E42' },
+    logo_url: null,
+  },
+];
+
+// All teams combined
+export const ALL_TEAMS: Team[] = [
+  ...NHL_TEAMS,
+  ...NBA_TEAMS,
+  ...NFL_TEAMS,
+  ...MLB_TEAMS,
+];
+
 // Helper function to get team by ID
 export const getTeamById = (id: string): Team | undefined => {
-  return NHL_TEAMS.find((team) => team.id === id);
+  return ALL_TEAMS.find((team) => team.id === id);
 };
 
 // Helper function to get teams by league
 export const getTeamsByLeague = (league: string): Team[] => {
-  return NHL_TEAMS.filter((team) => team.league === league);
+  return ALL_TEAMS.filter((team) => team.league === league);
 };
