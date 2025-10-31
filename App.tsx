@@ -13,7 +13,7 @@ import { SignInScreen } from './src/screens/onboarding/SignInScreen';
 import { ZipEntryScreen } from './src/screens/onboarding/ZipEntryScreen';
 import { ServicesSelectorScreen } from './src/screens/onboarding/ServicesSelectorScreen';
 import { TeamPickerScreen } from './src/screens/onboarding/TeamPickerScreen';
-import { TonightScreen } from './src/screens/home/TonightScreen';
+import { MainTabs } from './src/navigation/MainTabs';
 
 // Auth & Store
 import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
@@ -102,7 +102,7 @@ export default function App() {
           <Stack.Screen name="TeamPicker" component={TeamPickerScreen} />
           <Stack.Screen 
             name="Main" 
-            component={TonightScreen}
+            component={MainTabs}
             options={{
               gestureEnabled: false, // Disable swipe back gesture
             }}
