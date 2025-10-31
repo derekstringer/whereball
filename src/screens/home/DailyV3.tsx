@@ -66,6 +66,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
   const [dateRange, setDateRange] = useState({ start: -30, end: 60 });
   const isScrollingToToday = useRef(false);
   
+  const { hiddenTeamsInMyTeams, exploreSelections } = useAppStore();
   const userServiceCodes = useMemo(() => subscriptions.map(s => s.service_code), [subscriptions]);
   const userFollows = useMemo(() => follows.map(f => f.team_id), [follows]);
   const currentTime = useRef(new Date()).current;
@@ -90,33 +91,55 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
     return count;
   }, [alerts, sections]);
 
-  // Apply filters to sections AND skip empty dates
+  // Phase 5: Apply viewMode filtering (ignoring old filters system)
   const filteredSections = useMemo(() => {
-    if (!FEATURES.USE_FILTERS_V2) {
-      return sections;
-    }
-
-    const filterContext: UserFilterContext = {
-      follows,
-      subscriptions,
-    };
-    
     return sections
       .map(section => {
-        // Convert NHLGames to FilterableGames format
-        const filterableGames = mapNHLGamesToFilterable(section.data);
-        // Apply filters
-        const filtered = applyFilters(filterableGames, filtersV2, filterContext);
-        // Extract original game IDs that passed the filter
-        const passedIds = new Set(filtered.map(g => g.id));
-        // Return only the original games that passed
+        let filteredGames = section.data;
+
+        if (viewMode === 'my-teams') {
+          // Show games from followed teams only
+          const visibleTeamIds = userFollows.filter(
+            teamId => !hiddenTeamsInMyTeams.includes(teamId)
+          );
+          
+          filteredGames = section.data.filter(game => {
+            // Check if either team is in the user's followed teams (and visible)
+            // Convert number IDs to strings for comparison
+            return visibleTeamIds.includes(String(game.awayTeam.id)) || 
+                   visibleTeamIds.includes(String(game.homeTeam.id));
+          });
+        } else if (viewMode === 'explore') {
+          // Show games only from teams selected in Explore session
+          if (exploreSelections.length === 0) {
+            filteredGames = []; // Nothing selected yet
+          } else {
+            filteredGames = section.data.filter(game => {
+              // Convert number IDs to strings for comparison
+              return exploreSelections.includes(String(game.awayTeam.id)) || 
+                     exploreSelections.includes(String(game.homeTeam.id));
+            });
+          }
+        } else if (viewMode === 'reminders') {
+          // Show only games with reminders set
+          const gameIdsWithReminders = new Set(
+            alerts
+              .filter(alert => alert.status === 'pending')
+              .map(alert => alert.game_id)
+          );
+          
+          filteredGames = section.data.filter(game => 
+            gameIdsWithReminders.has(game.id)
+          );
+        }
+
         return {
           ...section,
-          data: section.data.filter(game => passedIds.has(game.id)),
+          data: filteredGames,
         };
       })
       .filter(section => section.data.length > 0); // SKIP EMPTY DATES
-  }, [sections, filtersV2, userFollows, userServiceCodes, follows, subscriptions]);
+  }, [sections, viewMode, userFollows, hiddenTeamsInMyTeams, exploreSelections, alerts]);
 
   // Detect empty state scenarios
   const hasAnyGames = useMemo(() => {

@@ -7,7 +7,5 @@ import React from 'react';
 import { DailyV3 } from './DailyV3';
 
 export const MyTeamsScreen: React.FC = () => {
-  // For now, just show DailyV3
-  // TODO: In Phase 5, we'll add filtering logic to show only followed teams' games
-  return <DailyV3 />;
+  return <DailyV3 viewMode="my-teams" />;
 };
