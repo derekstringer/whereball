@@ -70,7 +70,7 @@ export const MainTabs: React.FC = () => {
         }}
       />
       
-      {/* 3. Just Ask (Center) */}
+      {/* 3. Just Ask (Center, Elevated Icon) */}
       <Tab.Screen
         name="JustAsk"
         component={JustAskScreen}
@@ -83,6 +83,9 @@ export const MainTabs: React.FC = () => {
               </View>
             </View>
           ),
+          tabBarIconStyle: {
+            marginTop: -15, // Elevate the icon only, not the label
+          },
         }}
       />
       
