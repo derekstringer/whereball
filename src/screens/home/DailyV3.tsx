@@ -741,26 +741,25 @@ export const DailyV3: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* New Header - Phase 3 */}
+      {/* Header - Phase 4: Dropdown Added */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
           <Text style={[styles.logo, { color: colors.text }]}>SportStream</Text>
           <Text style={[styles.tagline, { color: colors.textSecondary }]}>Find Your Game</Text>
         </View>
         
-        <View style={styles.headerRight}>
-          <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7} style={styles.todayButton}>
-            <Text style={styles.todayButtonText}>Today</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setShowFilters(true)}
-            activeOpacity={0.7}
-          >
-            <ListFilter size={22} color={showFilters ? colors.primary : colors.text} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity 
+          style={styles.viewDropdown}
+          onPress={() => setShowFilters(true)}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.viewText, { color: colors.text }]}>All Games</Text>
+          <Text style={styles.dropdownIcon}>▼</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7} style={styles.todayButton}>
+          <Text style={styles.todayButtonText}>Today</Text>
+        </TouchableOpacity>
       </View>
 
       {emptyStateInfo ? (
@@ -896,6 +895,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
+  viewDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    gap: 6,
+  },
+  viewText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  dropdownIcon: {
+    fontSize: 10,
+    color: '#666666',
+  },
   todayButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -906,12 +922,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#00D9FF',
-  },
-  filterButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,
