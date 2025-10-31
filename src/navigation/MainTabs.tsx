@@ -70,7 +70,7 @@ export const MainTabs: React.FC = () => {
         }}
       />
       
-      {/* 3. Just Ask (Center, Elevated) */}
+      {/* 3. Just Ask (Center) */}
       <Tab.Screen
         name="JustAsk"
         component={JustAskScreen}
@@ -79,13 +79,10 @@ export const MainTabs: React.FC = () => {
           tabBarIcon: ({ focused }) => (
             <View style={styles.centerButtonContainer}>
               <View style={styles.centerButtonOutline}>
-                <MessageCircle size={31} color="#00d9ff" strokeWidth={2.5} fill="none" />
+                <MessageCircle size={31} color="#00d9ff" strokeWidth={2.5} fill="#00d9ff" />
               </View>
             </View>
           ),
-          tabBarIconStyle: {
-            marginTop: -8, // Raise slightly
-          },
         }}
       />
       
