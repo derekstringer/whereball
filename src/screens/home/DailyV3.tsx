@@ -741,35 +741,26 @@ export const DailyV3: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Simple Header */}
+      {/* New Header - Phase 3 */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setShowSettings(true)}
-          activeOpacity={0.7}
-        >
-          <Menu size={24} color={showSettings ? colors.primary : colors.text} />
-          {reminderCount > 0 && (
-            <View style={styles.reminderBadge}>
-              <Text style={styles.reminderBadgeText}>{reminderCount}</Text>
-            </View>
-          )}
-        </TouchableOpacity>
-        
-        <View style={styles.headerCenter}>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>SportStream</Text>
-          <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7}>
-            <Text style={styles.goToToday}>Go To Today</Text>
-          </TouchableOpacity>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.logo, { color: colors.text }]}>WhereBall</Text>
+          <Text style={[styles.tagline, { color: colors.textSecondary }]}>Find Your Game</Text>
         </View>
         
-        <TouchableOpacity
-          style={styles.menuButton}
-          onPress={() => setShowFilters(true)}
-          activeOpacity={0.7}
-        >
-          <ListFilter size={24} color={showFilters ? colors.primary : colors.text} />
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7} style={styles.todayButton}>
+            <Text style={styles.todayButtonText}>Today</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setShowFilters(true)}
+            activeOpacity={0.7}
+          >
+            <ListFilter size={22} color={showFilters ? colors.primary : colors.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {emptyStateInfo ? (
@@ -888,46 +879,39 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  menuButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+  headerLeft: {
+    flex: 1,
   },
-  reminderBadge: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    backgroundColor: '#00D9FF',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-  },
-  reminderBadgeText: {
-    color: '#000000',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  menuIcon: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  headerCenter: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
+  logo: {
+    fontSize: 22,
     fontWeight: '700',
     marginBottom: 2,
   },
-  goToToday: {
+  tagline: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  todayButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0, 217, 255, 0.1)',
+  },
+  todayButtonText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#00D9FF',
+  },
+  filterButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,
