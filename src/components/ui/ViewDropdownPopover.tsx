@@ -164,7 +164,14 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
 
               {/* Content */}
               <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {sportKeys.map((league) => {
+                {sportKeys.length === 0 ? (
+                  <View style={styles.emptyState}>
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                      {mode === 'my-teams' ? 'No teams followed yet' : 'No teams selected'}
+                    </Text>
+                  </View>
+                ) : (
+                  sportKeys.map((league) => {
                   const isExpanded = hasSingleSport || expandedSports.has(league);
                   const teamCount = teamsBySport[league].length;
 
@@ -237,7 +244,8 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                       })}
                     </View>
                   );
-                })}
+                  })
+                )}
               </ScrollView>
             </View>
           </TouchableOpacity>
@@ -260,7 +268,8 @@ const styles = StyleSheet.create({
   },
   popover: {
     width: 320,
-    maxHeight: '50%',
+    minHeight: 150,
+    maxHeight: 500,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#333333',
@@ -269,6 +278,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 32,
     elevation: 10,
+    paddingBottom: 16,
   },
   header: {
     fontSize: 12,
@@ -279,8 +289,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   scrollContent: {
-    maxHeight: 400,
-    paddingBottom: 16,
+    flexGrow: 0,
   },
   sportHeader: {
     flexDirection: 'row',
@@ -328,5 +337,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
+  },
+  emptyState: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
