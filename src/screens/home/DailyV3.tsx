@@ -744,7 +744,7 @@ export const DailyV3: React.FC = () => {
       {/* New Header - Phase 3 */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.logo, { color: colors.text }]}>WhereBall</Text>
+          <Text style={[styles.logo, { color: colors.text }]}>SportStream</Text>
           <Text style={[styles.tagline, { color: colors.textSecondary }]}>Find Your Game</Text>
         </View>
         
