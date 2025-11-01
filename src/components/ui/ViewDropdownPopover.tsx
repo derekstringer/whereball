@@ -95,13 +95,13 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
     const isFollowed = follows.some(f => f.team_id === teamId);
     
     if (isFollowed) {
-      // Show unfavorite confirmation
-      const team = follows.find(f => f.team_id === teamId);
-      const teamName = team?.team_id || 'this team'; // TODO: Get actual team name
+      // Show unfavorite confirmation with properly formatted team name
+      const teamDisplay = getTeamName(teamId);
+      const formattedName = `${teamDisplay.cityCode} ${teamDisplay.teamName}`;
       
       Alert.alert(
         'Remove from My Teams?',
-        `${teamName} will no longer appear in your schedule view.`,
+        `${formattedName} will no longer appear in your My Teams schedule view.`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
