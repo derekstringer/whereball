@@ -3,7 +3,7 @@
  * Phase 6: Search interface appears when tab is active
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { DailyV3 } from './DailyV3';
@@ -14,13 +14,22 @@ export const ExploreScreen: React.FC = () => {
   const isFocused = useIsFocused();
   const { exploreSelections } = useAppStore();
   const [showSearch, setShowSearch] = useState(false);
+  const hasHandledInitialFocus = useRef(false);
 
-  // Show search when tab becomes focused AND no selections
+  // Show search ONCE when tab first focuses with no selections
   useEffect(() => {
-    if (isFocused && exploreSelections.length === 0) {
-      setShowSearch(true);
+    if (isFocused && !hasHandledInitialFocus.current) {
+      hasHandledInitialFocus.current = true;
+      if (exploreSelections.length === 0) {
+        setShowSearch(true);
+      }
     }
-  }, [isFocused, exploreSelections.length]);
+    
+    // Reset flag when tab loses focus
+    if (!isFocused) {
+      hasHandledInitialFocus.current = false;
+    }
+  }, [isFocused]); // Only depend on isFocused, not exploreSelections.length
 
   return (
     <View style={styles.container}>

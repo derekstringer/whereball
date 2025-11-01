@@ -72,6 +72,11 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
   const currentTime = useRef(new Date()).current;
   const expandedGameId = expandedGameIdBySport?.['NHL'] || null;
   
+  // Helper: Convert NHL API numeric ID + abbreviation to our string format "nhl_xxx"
+  const getTeamStringId = (apiId: number, abbrev: string): string => {
+    return `nhl_${abbrev.toLowerCase()}`;
+  };
+  
   // Count pending reminders for FUT games
   const reminderCount = useMemo(() => {
     const uniqueGameIds = new Set(alerts.map(a => a.game_id));
@@ -104,10 +109,11 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
           );
           
           filteredGames = section.data.filter(game => {
-            // Check if either team is in the user's followed teams (and visible)
-            // Convert number IDs to strings for comparison
-            return visibleTeamIds.includes(String(game.awayTeam.id)) || 
-                   visibleTeamIds.includes(String(game.homeTeam.id));
+            // Convert NHL API numeric IDs to our string format for comparison
+            const awayStringId = getTeamStringId(game.awayTeam.id, game.awayTeam.abbreviation);
+            const homeStringId = getTeamStringId(game.homeTeam.id, game.homeTeam.abbreviation);
+            
+            return visibleTeamIds.includes(awayStringId) || visibleTeamIds.includes(homeStringId);
           });
         } else if (viewMode === 'explore') {
           // Show games only from teams selected in Explore session
@@ -115,9 +121,11 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
             filteredGames = []; // Nothing selected yet
           } else {
             filteredGames = section.data.filter(game => {
-              // Convert number IDs to strings for comparison
-              return exploreSelections.includes(String(game.awayTeam.id)) || 
-                     exploreSelections.includes(String(game.homeTeam.id));
+              // Convert NHL API numeric IDs to our string format for comparison
+              const awayStringId = getTeamStringId(game.awayTeam.id, game.awayTeam.abbreviation);
+              const homeStringId = getTeamStringId(game.homeTeam.id, game.homeTeam.abbreviation);
+              
+              return exploreSelections.includes(awayStringId) || exploreSelections.includes(homeStringId);
             });
           }
         } else if (viewMode === 'reminders') {
@@ -141,118 +149,59 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
       .filter(section => section.data.length > 0); // SKIP EMPTY DATES
   }, [sections, viewMode, userFollows, hiddenTeamsInMyTeams, exploreSelections, alerts]);
 
-  // Detect empty state scenarios
+  // Detect empty state scenarios (NO SERVICE LOGIC - viewMode only)
   const hasAnyGames = useMemo(() => {
     return filteredSections.some(section => section.data.length > 0);
   }, [filteredSections]);
 
   const emptyStateInfo = useMemo(() => {
-    if (hasAnyGames || !FEATURES.USE_FILTERS_V2) return null;
+    if (hasAnyGames) return null;
 
-    // Scenario 1: MY_TEAMS but no followed teams
-    if (filtersV2.quickView.startsWith('my_teams') && follows.length === 0) {
+    // Scenario 1: MY TEAMS but no followed teams
+    if (viewMode === 'my-teams' && follows.length === 0) {
       return {
-        message: "You're not following any teams yet",
-        description: "Follow some teams to see their games, or switch to see all games.",
+        message: "No teams followed yet",
+        description: "Follow some teams to see their schedule here.",
         actions: [
-          {
-            label: 'See All Games',
-            primary: true,
-            onPress: () => {
-              // Switch to ALL_GAMES with same service scope
-              const newPreset = filtersV2.quickView.endsWith('my_services')
-                ? 'all_games_my_services' as const
-                : 'all_games_any_service' as const;
-              useAppStore.getState().setFiltersV2({ ...filtersV2, quickView: newPreset, lastPreset: newPreset });
-            },
-          },
           {
             label: 'Follow Teams',
-            onPress: () => setShowFilters(true),
-          },
-        ],
-      };
-    }
-
-    // Scenario 2: ALL_GAMES ON MY_SERVICES but nothing watchable
-    if (filtersV2.quickView === 'all_games_my_services') {
-      return {
-        message: "No games on your services right now",
-        description: "Try expanding to any service, or manage your service subscriptions.",
-        actions: [
-          {
-            label: "Turn On 'Any Service'",
             primary: true,
             onPress: () => {
-              useAppStore.getState().setFiltersV2({
-                ...filtersV2,
-                quickView: 'all_games_any_service',
-                lastPreset: 'all_games_any_service',
-              });
+              // TODO: Navigate to team selection or show search
+              console.log('Follow teams pressed');
             },
-          },
-          {
-            label: 'My Teams',
-            onPress: () => {
-              useAppStore.getState().setFiltersV2({
-                ...filtersV2,
-                quickView: 'my_teams_my_services',
-                lastPreset: 'my_teams_my_services',
-              });
-            },
-          },
-          {
-            label: 'Manage Services',
-            onPress: () => setShowFilters(true),
           },
         ],
       };
     }
 
-    // Scenario 3: MY_TEAMS ON MY_SERVICES but nothing watchable
-    if (filtersV2.quickView === 'my_teams_my_services') {
+    // Scenario 2: EXPLORE but nothing selected
+    if (viewMode === 'explore' && exploreSelections.length === 0) {
       return {
-        message: "Your teams aren't playing on your services",
-        description: "Try expanding to any service to see where they're available.",
-        actions: [
-          {
-            label: "Turn On 'Any Service'",
-            primary: true,
-            onPress: () => {
-              useAppStore.getState().setFiltersV2({
-                ...filtersV2,
-                quickView: 'my_teams_any_service',
-                lastPreset: 'my_teams_any_service',
-              });
-            },
-          },
-          {
-            label: 'See All Games',
-            onPress: () => {
-              useAppStore.getState().setFiltersV2({
-                ...filtersV2,
-                quickView: 'all_games_my_services',
-                lastPreset: 'all_games_my_services',
-              });
-            },
-          },
-        ],
+        message: "No teams selected",
+        description: "Search for teams to view their schedule.",
+        actions: [], // Search overlay should already be open
       };
     }
 
-    // Generic empty state
+    // Scenario 3: REMINDERS but no reminders set
+    if (viewMode === 'reminders') {
+      return {
+        message: "No reminders set",
+        description: "Set reminders on upcoming games to see them here.",
+        actions: [],
+      };
+    }
+
+    // Generic empty state (games filtered out by dropdown)
     return {
-      message: "No games match your filters",
-      description: "Try adjusting your filter settings.",
-      actions: [
-        {
-          label: 'Adjust Filters',
-          primary: true,
-          onPress: () => setShowFilters(true),
-        },
-      ],
+      message: "No games to show",
+      description: viewMode === 'my-teams' 
+        ? "Check your team visibility in the dropdown above." 
+        : "Try selecting different teams.",
+      actions: [],
     };
-  }, [hasAnyGames, filtersV2, follows.length, setShowFilters]);
+  }, [hasAnyGames, viewMode, follows.length, exploreSelections.length]);
 
   // Get today's date key
   const getTodayDateKey = (): string => {
@@ -270,45 +219,6 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
     loadInitialData();
   }, []);
 
-  // When filters change, scroll to first matching date
-  useEffect(() => {
-    // Skip on initial mount (initialScrollIndex handles that)
-    if (loading) return;
-    
-    // Skip if no sections loaded yet
-    if (filteredSections.length === 0) return;
-    
-    // Find first future date with matching games
-    const todayDate = new Date(todayDateKey);
-    todayDate.setHours(0, 0, 0, 0);
-    
-    let targetSectionIndex = filteredSections.findIndex(s => s.isToday);
-    
-    // If today has no matching games, find first FUTURE section
-    if (targetSectionIndex === -1) {
-      const futureSection = filteredSections.find(s => s.dateObj > todayDate);
-      if (futureSection) {
-        targetSectionIndex = filteredSections.indexOf(futureSection);
-      } else {
-        // No future games, show last section
-        targetSectionIndex = filteredSections.length - 1;
-      }
-    }
-    
-    // Scroll to target section
-    if (targetSectionIndex !== -1 && sectionListRef.current) {
-      // Small delay to ensure filteredSections has been rendered
-      setTimeout(() => {
-        sectionListRef.current?.scrollToLocation({
-          sectionIndex: targetSectionIndex,
-          itemIndex: 0,
-          animated: true,
-          viewPosition: 0,
-          viewOffset: 0,
-        });
-      }, 100);
-    }
-  }, [filtersV2, filteredSections.length]); // Re-run when filters change
 
   // Live polling: Refresh games every 15 seconds when app is active
   useEffect(() => {

@@ -562,3 +562,103 @@ Per User:        ~$0.12/month
 ---
 
 **Remember:** This document exists because we learned the hard way. Read it before major decisions.
+
+---
+
+## DEVELOPMENT WORKFLOW
+
+### Git Commit Rules
+
+**CRITICAL:** Commit and push to GitHub after EVERY successful fix or feature completion.
+
+**Why:**
+1. Version control safety net - can always revert bad changes
+2. ChatGPT can review work via GitHub links
+3. Professional workflow standard
+4. Tracks progress and decisions
+
+**When to Commit:**
+
+**After User Confirms Changes Work:**
+```bash
+git add <modified-files>
+git commit -m "fix: descriptive message"
+git push origin main
+```
+
+**Before Risky Refactors:**
+- Commit current working state FIRST
+- Then attempt risky changes
+- Can always `git reset --hard` if needed
+
+**Natural Checkpoints:**
+- ✅ Bug fix complete → commit
+- ✅ Feature complete → commit
+- ✅ End of work session → commit
+- ✅ Before switching to different task → commit
+
+**Commit Message Format:**
+```
+fix: team ID mapping for NHL API numeric IDs
+feat: add team name formatting to dropdown
+refactor: revert scroll position changes
+docs: update architecture with git workflow
+chore: update dependencies
+```
+
+**What NOT to Commit:**
+- Work-in-progress code that breaks the app
+- Commented-out debugging code
+- Credentials or API keys (.env files)
+- node_modules or build artifacts
+
+**Verification:**
+After pushing, verify commit appears on GitHub:
+```bash
+git log -1 --oneline  # Shows latest commit
+```
+
+**Recovery:**
+If you break something:
+```bash
+git log --oneline  # Find good commit
+git reset --hard <commit-hash>  # Revert to that point
+git push -f origin main  # Force push (use carefully!)
+```
+
+### Code Review Pattern
+
+**After Each Commit:**
+1. Share GitHub commit link with user
+2. User can review changes in browser
+3. ChatGPT can analyze via link
+4. Maintains clear audit trail
+
+### File Editing Rules
+
+**CRITICAL:** When editing a file multiple times in a session:
+
+**After replace_in_file or write_to_file:**
+1. Tool response includes `final_file_content` with auto-formatting applied
+2. ALWAYS use THIS exact content for subsequent edits
+3. NEVER use memory or previous versions
+
+**Why:**
+- Auto-formatter changes quotes, spacing, line breaks
+- SEARCH blocks must match EXACTLY
+- Using old content = failed SEARCH = bugs
+
+**Example:**
+```typescript
+// After first edit, tool shows final_file_content with:
+const myFunc = () => {
+  return "value";  // Double quotes from formatter
+};
+
+// DON'T craft SEARCH from memory:
+const myFunc = () => {
+  return 'value';  // Single quote - WON'T MATCH!
+}
+
+// DO use exact final_file_content for SEARCH block
+```

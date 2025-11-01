@@ -66,12 +66,12 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
   const sportKeys = Object.keys(teamsBySport);
   const hasSingleSport = sportKeys.length === 1;
 
-  // Auto-expand if single sport
+  // Auto-expand if single sport (only once on mount or when visible changes)
   React.useEffect(() => {
-    if (hasSingleSport && sportKeys.length > 0) {
+    if (visible && hasSingleSport && sportKeys.length > 0) {
       setExpandedSports(new Set([sportKeys[0]]));
     }
-  }, [hasSingleSport, sportKeys]);
+  }, [visible]); // Only run when visibility changes
 
   const toggleSport = (sport: string) => {
     const newExpanded = new Set(expandedSports);
@@ -124,8 +124,19 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
   };
 
   const getTeamName = (teamId: string): string => {
-    // TODO: Look up actual team name from teams constant
-    return teamId;
+    // Import teams constant to look up team data
+    const { ALL_TEAMS } = require('../../constants/teams');
+    const team = ALL_TEAMS.find((t: any) => t.id === teamId);
+    
+    if (team) {
+      // Format as "ABBREV Name" (e.g., "DAL Stars", "BOS Bruins")
+      // Extract just the team name part (remove market/city)
+      const nameParts = team.name.split(' ');
+      const teamNameOnly = nameParts.slice(1).join(' '); // Remove first word (market)
+      return `${team.short_code} ${teamNameOnly}`;
+    }
+    
+    return teamId; // Fallback to ID if not found
   };
 
   const getSportName = (league: string): string => {
