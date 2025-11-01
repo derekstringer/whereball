@@ -13,7 +13,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { CircleCheckBig, Circle, Heart, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { Eye, EyeOff, Heart, ChevronRight, ChevronDown } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
 import { SPORTS } from '../../constants/sports';
@@ -131,9 +131,9 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
     if (team) {
       // Use EXACT same logic as VerticalGameCard:
       // - abbreviation for city code (3 letters)
-      // - last word of name for team name
-      const cityCode = team.short_code; // e.g., "LAK"
-      const teamName = team.name.split(' ').pop() || ''; // e.g., "Kings" (last word only)
+      // - remove first word from name to get team nickname (handles multi-word nicknames like "Red Wings")
+      const cityCode = team.short_code; // e.g., "LAK", "DET"
+      const teamName = team.name.replace(/^[^ ]+ /, ''); // e.g., "Kings", "Red Wings" (removes market)
       return { cityCode, teamName };
     }
     
@@ -225,15 +225,15 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                         
                         return (
                           <View key={teamId} style={styles.teamRow}>
-                            {/* Circle Icon */}
+                            {/* Eye Icon */}
                             <TouchableOpacity
                               style={styles.iconButton}
                               onPress={() => handleCircleTap(teamId)}
                             >
                               {isVisible ? (
-                                <CircleCheckBig size={20} color={colors.primary} />
+                                <Eye size={20} color={colors.primary} />
                               ) : (
-                                <Circle size={20} color={colors.textSecondary} />
+                                <EyeOff size={20} color={colors.textSecondary} />
                               )}
                             </TouchableOpacity>
 

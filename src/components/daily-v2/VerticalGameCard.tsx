@@ -291,7 +291,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {game.awayTeam.name.split(' ').pop()}
+            {game.awayTeam.name.replace(/^[^ ]+ /, '')}
           </Text>
         </View>
 
@@ -324,7 +324,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {game.homeTeam.name.split(' ').pop()}
+            {game.homeTeam.name.replace(/^[^ ]+ /, '')}
           </Text>
         </View>
 
