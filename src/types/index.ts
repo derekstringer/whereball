@@ -26,6 +26,7 @@ export interface Team {
   id: string;
   league: 'NHL' | 'NBA' | 'MLB' | 'NCAA';
   name: string;
+  mascot: string; // Team mascot name only (e.g., "Kings", "Bruins", "Cowboys")
   market: string;
   short_code: string;
   rsn_strings: string[];

@@ -588,3 +588,21 @@ Per User:        ~$0.12/month
 git add -A && git commit -m "feat: <what changed>" && git push
 git log --oneline
 git reset --hard <good-commit> && git push -f
+
+### File Editing Rules (Lean + Token-Safe)
+
+**Hard rules to keep context small and fast:**
+- ❌ Do NOT paste entire files back into chat for any reason.
+- ✅ Show only minimal diffs or focused snippets (10–30 lines max) around the change.
+- ✅ Prefer “describe intent + file path + line range” over echoing contents.
+- ✅ For multi-file work: list touched files with a 1–2 line purpose each; don’t dump their bodies.
+- ✅ If a tool returns `final_file_content`, acknowledge it but DO NOT reprint it into chat.
+- ✅ When a file is long (>500 lines), reference by path and exact anchors/ranges, include at most ±20 lines context.
+- ✅ Summarize large sections instead of quoting them; link to the GitHub commit for full diff.
+
+**Commit etiquette (unchanged):**
+- Commit after each successful fix/feature; before risky refactors.
+- Use short conventional messages (`fix: …`, `feat: …`, `refactor: …`, `docs: …`).
+- Share the GitHub commit link; let reviewers open the full diff there.
+
+---

@@ -36,6 +36,7 @@ import { useTheme } from '../../hooks/useTheme';
 import type { ColorMode } from '../../styles/tokens';
 import type { NHLGame } from '../../lib/nhl-api';
 import { getServicesForGameSplit } from '../../lib/service-helpers';
+import { NHL_TEAMS } from '../../constants/teams';
 
 interface SettingsScreenProps {
   onClose: () => void;
@@ -391,7 +392,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                               </Text>
                             </View>
                             <Text style={[styles.teamName, styles.leftAlign, { color: colors.textSecondary }]} numberOfLines={1}>
-                              {game.awayTeam.name.split(' ').pop()}
+                              {NHL_TEAMS.find(t => t.short_code === game.awayTeam.abbreviation)?.mascot || game.awayTeam.name.split(' ').pop()}
                             </Text>
                           </View>
                           
@@ -411,7 +412,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({ onClose, isBotto
                               </Text>
                             </View>
                             <Text style={[styles.teamName, styles.rightAlign, { color: colors.textSecondary }]} numberOfLines={1}>
-                              {game.homeTeam.name.split(' ').pop()}
+                              {NHL_TEAMS.find(t => t.short_code === game.homeTeam.abbreviation)?.mascot || game.homeTeam.name.split(' ').pop()}
                             </Text>
                           </View>
                           

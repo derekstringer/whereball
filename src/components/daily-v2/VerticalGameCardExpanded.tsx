@@ -12,6 +12,7 @@ import { useAppStore } from '../../store/appStore';
 import { STREAMING_SERVICES } from '../../constants/services';
 import { LiveClockWidget } from './LiveClockWidget';
 import { TimePickerBottomSheet } from '../ui/TimePickerBottomSheet';
+import { NHL_TEAMS } from '../../constants/teams';
 
 interface VerticalGameCardExpandedProps {
   game: NHLGame;
@@ -134,6 +135,16 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
     inputRange: [0, 1],
     outputRange: [-150, 150],
   });
+
+  // Helper to get team mascot from constants (fallback to last word if not found)
+  const getTeamMascot = (abbreviation: string, fullName: string): string => {
+    const team = NHL_TEAMS.find(t => t.short_code === abbreviation);
+    if (team?.mascot) {
+      return team.mascot;
+    }
+    // Fallback to taking last word (for cases where team data isn't in constants yet)
+    return fullName.split(' ').pop() || fullName;
+  };
 
   const handleWatchNow = () => {
     if (subscribed.length > 0) {
@@ -294,7 +305,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
                 </Text>
               </View>
               <Text style={[styles.teamNameInline, { color: colors.textSecondary }]}>
-                {game.awayTeam.name.split(' ').pop()}
+                {getTeamMascot(game.awayTeam.abbreviation, game.awayTeam.name)}
               </Text>
             </View>
 
@@ -320,7 +331,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
                 </Text>
               </View>
               <Text style={[styles.teamNameInline, styles.rightAlign, { color: colors.textSecondary }]}>
-                {game.homeTeam.name.split(' ').pop()}
+                {getTeamMascot(game.homeTeam.abbreviation, game.homeTeam.name)}
               </Text>
             </View>
           </View>

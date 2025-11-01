@@ -18,8 +18,9 @@ import {
   TouchableOpacity,
   Modal,
   AppState,
+  Animated,
 } from 'react-native';
-import { ChevronDown, ChevronUp } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, ArrowDownToLine, ArrowUpToLine } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
 import { ViewDropdownPopover } from '../../components/ui/ViewDropdownPopover';
@@ -65,6 +66,11 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
   const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
   const [dateRange, setDateRange] = useState({ start: -30, end: 60 });
   const isScrollingToToday = useRef(false);
+  const currentScrollDate = useRef<string | null>(null);
+  const currentScrollGameId = useRef<string | null>(null);
+  const hasInitiallyScrolled = useRef(false);
+  const [scrollPosition, setScrollPosition] = useState<'past' | 'today' | 'future'>('today');
+  const fadeAnim = useRef(new Animated.Value(0)).current;
   
   const { hiddenTeamsInMyTeams, exploreSelections } = useAppStore();
   const userServiceCodes = useMemo(() => subscriptions.map(s => s.service_code), [subscriptions]);
@@ -461,7 +467,11 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
   };
 
   // Calculate initial scroll index (flat item index to today's header or first future game)
+  // ONLY used on initial mount, not on subsequent re-renders
   const initialScrollIndex = useMemo(() => {
+    // Don't use initialScrollIndex after initial mount
+    if (hasInitiallyScrolled.current) return undefined;
+    
     let targetSectionIndex = filteredSections.findIndex(s => s.isToday);
     
     // If today has no games, find first FUTURE section
@@ -483,6 +493,11 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
     
     if (targetSectionIndex === -1) return 0;
     
+    // Store the initial date we're scrolling to
+    if (filteredSections[targetSectionIndex]) {
+      currentScrollDate.current = filteredSections[targetSectionIndex].title;
+    }
+    
     // Calculate total flat items before target section
     let flatIndex = 0;
     for (let i = 0; i < targetSectionIndex; i++) {
@@ -494,6 +509,120 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
     console.log('Target section:', targetSectionIndex, 'Flat index (header):', flatIndex);
     return flatIndex;
   }, [filteredSections, todayDateKey]);
+
+  // Preserve scroll position when filteredSections changes
+  useEffect(() => {
+    if (!hasInitiallyScrolled.current || !currentScrollDate.current || !sectionListRef.current) {
+      return;
+    }
+    
+    // Don't interfere if we're in the middle of scrolling to today
+    if (isScrollingToToday.current) {
+      return;
+    }
+    
+    // Find the section with the date we were viewing
+    const targetSectionIndex = filteredSections.findIndex(s => s.title === currentScrollDate.current);
+    
+    if (targetSectionIndex !== -1) {
+      // Only try to find the specific game if it still exists in the filtered data
+      let targetItemIndex = 0;
+      
+      if (currentScrollGameId.current) {
+        const gameIndex = filteredSections[targetSectionIndex].data.findIndex(
+          g => g.id === currentScrollGameId.current
+        );
+        // Only use the game index if we found it, otherwise default to section start
+        if (gameIndex !== -1) {
+          targetItemIndex = gameIndex;
+        }
+      }
+      
+      // Small delay to let React finish rendering before scrolling
+      setTimeout(() => {
+        if (sectionListRef.current) {
+          sectionListRef.current.scrollToLocation({
+            sectionIndex: targetSectionIndex,
+            itemIndex: targetItemIndex,
+            animated: false,
+            viewPosition: 0,
+            viewOffset: 0,
+          });
+        }
+      }, 50);
+    }
+  }, [filteredSections]);
+
+  // Track which date and game is currently visible
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems && viewableItems.length > 0) {
+      // Find the first visible game item
+      const firstGameItem = viewableItems.find((item: any) => item.item && !item.isViewable === false);
+      
+      if (firstGameItem?.item) {
+        // Store both the game ID and its section date
+        currentScrollGameId.current = firstGameItem.item.id;
+        if (firstGameItem.section) {
+          currentScrollDate.current = firstGameItem.section.title;
+        }
+      } else {
+        // If no game item, find the first section header
+        const firstSection = viewableItems.find((item: any) => item.section);
+        if (firstSection?.section) {
+          currentScrollDate.current = firstSection.section.title;
+          currentScrollGameId.current = null; // No specific game
+        }
+      }
+      
+      // Update scroll position for "Return to Today" icon
+      if (currentScrollDate.current) {
+        const visibleDate = new Date(currentScrollDate.current);
+        const todayDate = new Date(todayDateKey);
+        todayDate.setHours(0, 0, 0, 0);
+        visibleDate.setHours(0, 0, 0, 0);
+        
+        const diffTime = visibleDate.getTime() - todayDate.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < -1) {
+          setScrollPosition('past');
+        } else if (diffDays > 1) {
+          setScrollPosition('future');
+        } else {
+          setScrollPosition('today');
+        }
+      }
+      
+      // Mark that we've scrolled at least once
+      if (!hasInitiallyScrolled.current) {
+        hasInitiallyScrolled.current = true;
+      }
+    }
+  }).current;
+
+  const viewabilityConfig = useRef({
+    itemVisiblePercentThreshold: 50,
+    minimumViewTime: 100,
+  }).current;
+
+  // Animation effects for the Return to Today icon
+  useEffect(() => {
+    if (scrollPosition === 'today') {
+      // Fade out when at today
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      // Fade in when away from today
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [scrollPosition, fadeAnim]);
 
   const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
@@ -596,7 +725,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
     }
     
     if (todaySectionIndex !== -1 && sectionListRef.current) {
-      // Set flag to prevent handleScroll from triggering loads
+      // Set flag to prevent handleScroll from triggering loads during scroll
       isScrollingToToday.current = true;
       
       // Use scrollToLocation with viewOffset to ensure proper positioning
@@ -614,23 +743,10 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
         console.log(fallbackMessage);
       }
       
-      // Fallback: If still not visible after animation, try again
+      // Clear the flag quickly so user can interact
       setTimeout(() => {
-        if (sectionListRef.current) {
-          sectionListRef.current.scrollToLocation({
-            sectionIndex: todaySectionIndex,
-            itemIndex: 0,
-            animated: false,
-            viewPosition: 0,
-            viewOffset: 0,
-          });
-        }
-        
-        // Clear flag after scroll is complete
-        setTimeout(() => {
-          isScrollingToToday.current = false;
-        }, 100);
-      }, 500);
+        isScrollingToToday.current = false;
+      }, 300);
     }
   };
 
@@ -687,30 +803,52 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
       {/* Header - Phase 4: Dropdown with proper wiring */}
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
-          <Text style={[styles.logo, { color: colors.text }]}>SportStream</Text>
+          <View style={styles.logoStack}>
+            <Text style={[styles.logoLine1, { color: colors.text }]}>Sport</Text>
+            <Text style={[styles.logoLine2, { color: colors.text }]}>Stream</Text>
+          </View>
           <Text style={[styles.tagline, { color: colors.textSecondary }]}>Find Your Game</Text>
         </View>
         
-        {showDropdownCaret ? (
-          <TouchableOpacity 
-            style={styles.viewDropdown}
-            onPress={() => setShowDropdown(!showDropdown)}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.viewText, { color: colors.text }]}>{viewTitle}</Text>
-            {showDropdown ? (
-              <ChevronUp size={14} color={colors.primary} strokeWidth={3} />
-            ) : (
-              <ChevronDown size={14} color={colors.textSecondary} strokeWidth={3} />
-            )}
-          </TouchableOpacity>
-        ) : (
-          <Text style={[styles.viewText, { color: colors.text }]}>{viewTitle}</Text>
-        )}
+        <View style={styles.headerCenter}>
+          {showDropdownCaret ? (
+            <TouchableOpacity 
+              style={styles.viewDropdownCenter}
+              onPress={() => setShowDropdown(!showDropdown)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.viewTitle, { color: colors.text }]}>{viewTitle}</Text>
+              {showDropdown ? (
+                <ChevronUp size={18} color={colors.primary} strokeWidth={2.5} />
+              ) : (
+                <ChevronDown size={18} color={colors.textSecondary} strokeWidth={2.5} />
+              )}
+            </TouchableOpacity>
+          ) : (
+            <Text style={[styles.viewTitle, { color: colors.text }]}>{viewTitle}</Text>
+          )}
+        </View>
         
-        <TouchableOpacity onPress={scrollToToday} activeOpacity={0.7} style={styles.todayButton}>
-          <Text style={styles.todayButtonText}>Today</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          {scrollPosition !== 'today' && (
+            <Animated.View style={{ opacity: fadeAnim }}>
+              <TouchableOpacity 
+                onPress={scrollToToday} 
+                activeOpacity={0.7} 
+                style={styles.returnTodayButton}
+                accessibilityLabel={scrollPosition === 'past' ? 'Return to today. Scrolls forward to today\'s games.' : 'Return to today. Scrolls backward to today\'s games.'}
+                accessibilityHint="Double-tap to scroll to today"
+                accessibilityRole="button"
+              >
+                {scrollPosition === 'past' ? (
+                  <ArrowDownToLine size={24} color="#00D9FF" strokeWidth={2.5} />
+                ) : (
+                  <ArrowUpToLine size={24} color="#00D9FF" strokeWidth={2.5} />
+                )}
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+        </View>
       </View>
 
       {/* ViewDropdownPopover */}
@@ -738,6 +876,8 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
           keyExtractor={(item) => item.id}
           stickySectionHeadersEnabled={true}
           initialScrollIndex={initialScrollIndex}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={viewabilityConfig}
         removeClippedSubviews={false}
         windowSize={10}
         initialNumToRender={20}
@@ -837,49 +977,53 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerLeft: {
+    minWidth: 100,
+  },
+  headerCenter: {
     flex: 1,
-  },
-  logo: {
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 2,
-  },
-  tagline: {
-    fontSize: 12,
-    fontWeight: '500',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerRight: {
+    minWidth: 100,
+    alignItems: 'flex-end',
+  },
+  logoStack: {
+    marginBottom: 2,
+  },
+  logoLine1: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  logoLine2: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 18,
+  },
+  tagline: {
+    fontSize: 9,
+    fontWeight: '500',
+  },
+  viewDropdownCenter: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    gap: 8,
   },
-  viewDropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    gap: 6,
-  },
-  viewText: {
-    fontSize: 14,
-    fontWeight: '600',
+  viewTitle: {
+    fontSize: 20,
+    fontWeight: '700',
   },
   dropdownIcon: {
     fontSize: 10,
     color: '#666666',
   },
-  todayButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
-    backgroundColor: 'rgba(0, 217, 255, 0.1)',
-  },
-  todayButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#00D9FF',
+  returnTodayButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   loadingContainer: {
     flex: 1,

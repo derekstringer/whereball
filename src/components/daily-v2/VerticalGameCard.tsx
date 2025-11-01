@@ -11,6 +11,7 @@ import { useAppStore } from '../../store/appStore';
 import { NHLGame } from '../../lib/nhl-api';
 import { getServicesForGameSplit } from '../../lib/service-helpers';
 import { LiveClockWidget } from './LiveClockWidget';
+import { NHL_TEAMS } from '../../constants/teams';
 
 interface VerticalGameCardProps {
   game: NHLGame;
@@ -233,6 +234,16 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
     outputRange: [-150, 150],
   });
 
+  // Helper to get team mascot from constants (fallback to regex if not found)
+  const getTeamMascot = (abbreviation: string, fullName: string): string => {
+    const team = NHL_TEAMS.find(t => t.short_code === abbreviation);
+    if (team?.mascot) {
+      return team.mascot;
+    }
+    // Fallback to removing first word (for cases where team data isn't in constants yet)
+    return fullName.replace(/^[^ ]+ /, '');
+  };
+
   return (
     <TouchableOpacity
       style={[styles.container, isFinal && styles.dimmed]}
@@ -291,7 +302,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {game.awayTeam.name.replace(/^[^ ]+ /, '')}
+            {getTeamMascot(game.awayTeam.abbreviation, game.awayTeam.name)}
           </Text>
         </View>
 
@@ -324,7 +335,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
             numberOfLines={1}
             ellipsizeMode="tail"
           >
-            {game.homeTeam.name.replace(/^[^ ]+ /, '')}
+            {getTeamMascot(game.homeTeam.abbreviation, game.homeTeam.name)}
           </Text>
         </View>
 

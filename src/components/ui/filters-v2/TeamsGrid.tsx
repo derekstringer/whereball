@@ -77,7 +77,7 @@ export const TeamsGrid: React.FC<TeamsGridProps> = ({
           style={[styles.teamName, { color: colors.textSecondary }]}
           numberOfLines={1}
         >
-          {team.name.split(' ').pop()}
+          {team.mascot}
         </Text>
         {isFollowed && (
           <View style={[styles.followedBadge, { backgroundColor: colors.primary }]}>

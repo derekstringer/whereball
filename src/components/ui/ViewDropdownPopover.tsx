@@ -129,11 +129,8 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
     const team = ALL_TEAMS.find((t: any) => t.id === teamId);
     
     if (team) {
-      // Use EXACT same logic as VerticalGameCard:
-      // - abbreviation for city code (3 letters)
-      // - remove first word from name to get team nickname (handles multi-word nicknames like "Red Wings")
       const cityCode = team.short_code; // e.g., "LAK", "DET"
-      const teamName = team.name.replace(/^[^ ]+ /, ''); // e.g., "Kings", "Red Wings" (removes market)
+      const teamName = team.mascot || team.name.split(' ').pop(); // Use mascot field, fallback to last word
       return { cityCode, teamName };
     }
     
@@ -286,7 +283,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   popover: {
-    width: 320,
+    width: 290,
     minHeight: 150,
     maxHeight: 500,
     borderRadius: 12,
@@ -343,7 +340,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 8,
     gap: 12,
   },
   iconButton: {
