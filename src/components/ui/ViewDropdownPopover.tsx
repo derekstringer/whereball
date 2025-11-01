@@ -123,20 +123,21 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
     }
   };
 
-  const getTeamName = (teamId: string): string => {
+  const getTeamName = (teamId: string): { cityCode: string; teamName: string } => {
     // Import teams constant to look up team data
     const { ALL_TEAMS } = require('../../constants/teams');
     const team = ALL_TEAMS.find((t: any) => t.id === teamId);
     
     if (team) {
-      // Format as "ABBREV Name" (e.g., "DAL Stars", "BOS Bruins")
-      // Extract just the team name part (remove market/city)
-      const nameParts = team.name.split(' ');
-      const teamNameOnly = nameParts.slice(1).join(' '); // Remove first word (market)
-      return `${team.short_code} ${teamNameOnly}`;
+      // Use EXACT same logic as VerticalGameCard:
+      // - abbreviation for city code (3 letters)
+      // - last word of name for team name
+      const cityCode = team.short_code; // e.g., "LAK"
+      const teamName = team.name.split(' ').pop() || ''; // e.g., "Kings" (last word only)
+      return { cityCode, teamName };
     }
     
-    return teamId; // Fallback to ID if not found
+    return { cityCode: teamId, teamName: '' }; // Fallback
   };
 
   const getSportName = (league: string): string => {
@@ -220,6 +221,8 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                           : true;
                         const isFollowed = follows.some(f => f.team_id === teamId);
 
+                        const teamDisplay = getTeamName(teamId);
+                        
                         return (
                           <View key={teamId} style={styles.teamRow}>
                             {/* Circle Icon */}
@@ -234,10 +237,15 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                               )}
                             </TouchableOpacity>
 
-                            {/* Team Name */}
-                            <Text style={[styles.teamName, { color: colors.text }]}>
-                              {getTeamName(teamId)}
-                            </Text>
+                            {/* Team Name - City code larger, team name smaller */}
+                            <View style={styles.teamNameContainer}>
+                              <Text style={[styles.cityCode, { color: colors.text }]}>
+                                {teamDisplay.cityCode}
+                              </Text>
+                              <Text style={[styles.teamName, { color: colors.textSecondary }]}>
+                                {teamDisplay.teamName}
+                              </Text>
+                            </View>
 
                             {/* Heart Icon */}
                             <TouchableOpacity
@@ -344,10 +352,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  teamName: {
+  teamNameContainer: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cityCode: {
+    fontSize: 17, // 2 sizes larger than team name (15 + 2 = 17)
+    fontWeight: '700',
+  },
+  teamName: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '400',
   },
   emptyState: {
     paddingVertical: 40,
