@@ -367,16 +367,16 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
                   key={service.code}
                   style={[
                     styles.serviceButton, 
-                    { backgroundColor: colors.primary, opacity: 0.4 }
+                    { backgroundColor: getServiceColor(service.code), opacity: 0.4 }
                   ]}
                 >
                   <Text style={styles.serviceButtonText}>{service.name}</Text>
                 </View>
               ) : (
-                // Live/upcoming games: normal clickable button
+                // Live/upcoming games: normal clickable button with brand colors
                 <TouchableOpacity
                   key={service.code}
-                  style={[styles.serviceButton, { backgroundColor: colors.primary }]}
+                  style={[styles.serviceButton, { backgroundColor: getServiceColor(service.code) }]}
                   onPress={() => handleServicePress(service.code, true)}
                   activeOpacity={0.7}
                 >
@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   serviceButtonText: {
-    color: '#000000',
+    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -755,5 +755,11 @@ const styles = StyleSheet.create({
   },
   venueSpacerLeft: {
     width: 96, // Time pill (84px) + margin (12px) to align with scoreboard start
+  },
+  statusIconsRight: {
+    position: 'absolute',
+    right: 0,
+    flexDirection: 'row',
+    gap: 0,
   },
 });

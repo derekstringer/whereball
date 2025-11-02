@@ -13,7 +13,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
-import { Eye, EyeOff, Heart, ChevronRight, ChevronDown } from 'lucide-react-native';
+import { CircleCheckBig, Circle, Heart, ChevronRight, ChevronDown } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
 import { SPORTS } from '../../constants/sports';
@@ -81,6 +81,25 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
       newExpanded.add(sport);
     }
     setExpandedSports(newExpanded);
+  };
+
+  const handleSportVisibilityToggle = (league: string) => {
+    if (mode !== 'my-teams') return; // Only works in my-teams mode
+    
+    const teamsInSport = teamsBySport[league];
+    const allVisible = teamsInSport.every(teamId => !hiddenTeamsInMyTeams.includes(teamId));
+    
+    // Toggle all teams in this sport
+    teamsInSport.forEach(teamId => {
+      const isCurrentlyVisible = !hiddenTeamsInMyTeams.includes(teamId);
+      if (allVisible && isCurrentlyVisible) {
+        // Hide all
+        toggleTeamVisibilityInMyTeams(teamId);
+      } else if (!allVisible && !isCurrentlyVisible) {
+        // Show all
+        toggleTeamVisibilityInMyTeams(teamId);
+      }
+    });
   };
 
   const handleCircleTap = (teamId: string) => {
@@ -155,24 +174,24 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
       onRequestClose={onClose}
     >
       {/* Semi-transparent overlay */}
-      <TouchableOpacity
-        style={styles.overlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <View style={styles.popoverContainer}>
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={[styles.popover, { backgroundColor: colors.surface }]}>
-              {/* Header */}
-              <Text style={[styles.header, { color: colors.textSecondary }]}>
-                {mode === 'my-teams' ? 'MY TEAMS' : 'EXPLORE'}
-              </Text>
+      <View style={styles.overlay}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+        <View style={styles.popoverContainer} pointerEvents="box-none">
+          <View style={[styles.popover, { backgroundColor: colors.surface }]} pointerEvents="auto">
+            {/* Header */}
+            <Text style={[styles.header, { color: colors.textSecondary }]}>
+              {mode === 'my-teams' ? 'MY TEAMS' : 'EXPLORE'}
+            </Text>
 
-              {/* Content */}
-              <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* Content */}
+            <ScrollView 
+              style={styles.scrollContent} 
+              showsVerticalScrollIndicator={false}
+            >
                 {sportKeys.length === 0 ? (
                   <View style={styles.emptyState}>
                     <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
@@ -187,29 +206,45 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                   return (
                     <View key={league}>
                       {/* Sport Header */}
-                      <TouchableOpacity
-                        style={styles.sportHeader}
-                        onPress={() => !hasSingleSport && toggleSport(league)}
-                        disabled={hasSingleSport}
-                      >
-                        <Text style={[styles.sportName, { color: colors.textSecondary }]}>
-                          {getSportEmoji(league)} {getSportName(league)}
-                        </Text>
+                      <View style={styles.sportHeader}>
+                        <TouchableOpacity
+                          style={styles.sportHeaderLeft}
+                          onPress={() => !hasSingleSport && toggleSport(league)}
+                          disabled={hasSingleSport}
+                        >
+                          <Text style={[styles.sportName, { color: colors.textSecondary }]}>
+                            {getSportEmoji(league)} {getSportName(league)}
+                          </Text>
+                        </TouchableOpacity>
                         <View style={styles.sportHeaderRight}>
                           {!hasSingleSport && (
-                            <>
-                              <View style={[styles.countBadge, { backgroundColor: colors.primary }]}>
-                                <Text style={styles.countBadgeText}>{teamCount}</Text>
-                              </View>
+                            <View style={[styles.countBadge, { backgroundColor: colors.primary }]}>
+                              <Text style={styles.countBadgeText}>{teamCount}</Text>
+                            </View>
+                          )}
+                          {mode === 'my-teams' && (
+                            <TouchableOpacity
+                              style={styles.sportEyeButton}
+                              onPress={() => handleSportVisibilityToggle(league)}
+                            >
+                              {teamsBySport[league].every(teamId => !hiddenTeamsInMyTeams.includes(teamId)) ? (
+                                <CircleCheckBig size={20} color="#22c55e" />
+                              ) : (
+                                <Circle size={20} color={colors.textSecondary} />
+                              )}
+                            </TouchableOpacity>
+                          )}
+                          {!hasSingleSport && (
+                            <TouchableOpacity onPress={() => toggleSport(league)}>
                               {isExpanded ? (
                                 <ChevronDown size={16} color={colors.textSecondary} />
                               ) : (
                                 <ChevronRight size={16} color={colors.textSecondary} />
                               )}
-                            </>
+                            </TouchableOpacity>
                           )}
                         </View>
-                      </TouchableOpacity>
+                      </View>
 
                       {/* Team Rows */}
                       {isExpanded && teamsBySport[league].map((teamId) => {
@@ -221,19 +256,12 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                         const teamDisplay = getTeamName(teamId);
                         
                         return (
-                          <View key={teamId} style={styles.teamRow}>
-                            {/* Eye Icon */}
-                            <TouchableOpacity
-                              style={styles.iconButton}
-                              onPress={() => handleCircleTap(teamId)}
-                            >
-                              {isVisible ? (
-                                <Eye size={20} color={colors.primary} />
-                              ) : (
-                                <EyeOff size={20} color={colors.textSecondary} />
-                              )}
-                            </TouchableOpacity>
-
+                          <TouchableOpacity
+                            key={teamId}
+                            style={styles.teamRow}
+                            onPress={() => handleCircleTap(teamId)}
+                            activeOpacity={0.7}
+                          >
                             {/* Team Name - City code larger, team name smaller */}
                             <View style={styles.teamNameContainer}>
                               <Text style={[styles.cityCode, { color: colors.text }]}>
@@ -244,10 +272,22 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                               </Text>
                             </View>
 
-                            {/* Heart Icon */}
+                            {/* Circle Icon */}
+                            <View style={styles.circleIconContainer}>
+                              {isVisible ? (
+                                <CircleCheckBig size={20} color="#22c55e" />
+                              ) : (
+                                <Circle size={20} color={colors.textSecondary} />
+                              )}
+                            </View>
+
+                            {/* Heart Icon - separate touchable to prevent propagation */}
                             <TouchableOpacity
                               style={styles.iconButton}
-                              onPress={() => handleHeartTap(teamId)}
+                              onPress={(e) => {
+                                e.stopPropagation();
+                                handleHeartTap(teamId);
+                              }}
                             >
                               {isFollowed ? (
                                 <Heart size={20} color="#ff4444" fill="#ff4444" />
@@ -255,18 +295,17 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                                 <Heart size={20} color="#666666" />
                               )}
                             </TouchableOpacity>
-                          </View>
+                          </TouchableOpacity>
                         );
                       })}
                     </View>
                   );
                   })
                 )}
-              </ScrollView>
-            </View>
-          </TouchableOpacity>
+            </ScrollView>
+          </View>
         </View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   );
 };
@@ -316,6 +355,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#222222',
   },
+  sportHeaderLeft: {
+    flex: 1,
+  },
   sportName: {
     fontSize: 14,
     fontWeight: '600',
@@ -325,6 +367,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  sportEyeButton: {
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   countBadge: {
     paddingHorizontal: 8,
@@ -342,6 +390,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     gap: 12,
+  },
+  teamRowClickable: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  circleIconContainer: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   iconButton: {
     width: 32,

@@ -20,7 +20,7 @@ import {
   AppState,
   Animated,
 } from 'react-native';
-import { ChevronDown, ChevronUp, ArrowDownToLine, ArrowUpToLine } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, CalendarArrowDown, CalendarArrowUp } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
 import { ViewDropdownPopover } from '../../components/ui/ViewDropdownPopover';
@@ -226,47 +226,10 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
   }, []);
 
 
-  // Live polling: Refresh games every 15 seconds when app is active
-  useEffect(() => {
-    let pollInterval: NodeJS.Timeout | null = null;
-    
-    const startPolling = () => {
-      // Poll immediately
-      refreshLiveGames();
-      
-      // Then poll every 15 seconds
-      pollInterval = setInterval(() => {
-        refreshLiveGames();
-      }, 15000);
-    };
-    
-    const stopPolling = () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-        pollInterval = null;
-      }
-    };
-    
-    // Listen to app state changes
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        startPolling();
-      } else {
-        stopPolling();
-      }
-    });
-    
-    // Start polling if app is currently active
-    if (AppState.currentState === 'active') {
-      startPolling();
-    }
-    
-    // Cleanup
-    return () => {
-      stopPolling();
-      subscription.remove();
-    };
-  }, []); // Remove sections dependency to prevent infinite loop
+  // Live polling: DISABLED to prevent jumping during data refreshes
+  // TODO: Re-enable with smarter update logic that doesn't cause scroll jumps
+  // The 15-second refresh was causing the list to jump even with scroll preservation disabled
+  // Need to implement in-place score updates without full section re-renders
 
   // Refresh games for today and nearby dates (where live games might be)
   const refreshLiveGames = async () => {
@@ -510,48 +473,9 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
     return flatIndex;
   }, [filteredSections, todayDateKey]);
 
-  // Preserve scroll position when filteredSections changes
-  useEffect(() => {
-    if (!hasInitiallyScrolled.current || !currentScrollDate.current || !sectionListRef.current) {
-      return;
-    }
-    
-    // Don't interfere if we're in the middle of scrolling to today
-    if (isScrollingToToday.current) {
-      return;
-    }
-    
-    // Find the section with the date we were viewing
-    const targetSectionIndex = filteredSections.findIndex(s => s.title === currentScrollDate.current);
-    
-    if (targetSectionIndex !== -1) {
-      // Only try to find the specific game if it still exists in the filtered data
-      let targetItemIndex = 0;
-      
-      if (currentScrollGameId.current) {
-        const gameIndex = filteredSections[targetSectionIndex].data.findIndex(
-          g => g.id === currentScrollGameId.current
-        );
-        // Only use the game index if we found it, otherwise default to section start
-        if (gameIndex !== -1) {
-          targetItemIndex = gameIndex;
-        }
-      }
-      
-      // Small delay to let React finish rendering before scrolling
-      setTimeout(() => {
-        if (sectionListRef.current) {
-          sectionListRef.current.scrollToLocation({
-            sectionIndex: targetSectionIndex,
-            itemIndex: targetItemIndex,
-            animated: false,
-            viewPosition: 0,
-            viewOffset: 0,
-          });
-        }
-      }, 50);
-    }
-  }, [filteredSections]);
+  // NOTE: Scroll position preservation has been disabled to prevent unwanted jumping
+  // When live scores update every 15 seconds, we don't want to force scroll repositioning
+  // React Native's SectionList handles its own scroll position naturally
 
   // Track which date and game is currently visible
   const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
@@ -631,32 +555,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
     } else {
       // Expand this game
       setExpandedGameId?.('NHL', gameId);
-      
-      // Scroll to ensure expanded card is visible after a short delay
-      setTimeout(() => {
-        // Find the section containing this game
-        let targetSectionIndex = -1;
-        let targetItemIndex = -1;
-        
-        for (let i = 0; i < filteredSections.length; i++) {
-          const itemIndex = filteredSections[i].data.findIndex(game => game.id === gameId);
-          if (itemIndex !== -1) {
-            targetSectionIndex = i;
-            targetItemIndex = itemIndex;
-            break;
-          }
-        }
-        
-        if (targetSectionIndex !== -1 && sectionListRef.current) {
-          sectionListRef.current.scrollToLocation({
-            sectionIndex: targetSectionIndex,
-            itemIndex: targetItemIndex,
-            animated: true,
-            viewPosition: 0.1, // Position near top with small margin
-            viewOffset: 0,
-          });
-        }
-      }, 100); // Small delay to let expansion start
+      // Let React Native handle the expansion naturally - no forced scrolling
     }
   };
 
@@ -841,9 +740,9 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
                 accessibilityRole="button"
               >
                 {scrollPosition === 'past' ? (
-                  <ArrowDownToLine size={24} color="#00D9FF" strokeWidth={2.5} />
+                  <CalendarArrowDown size={24} color="#00D9FF" strokeWidth={2.5} />
                 ) : (
-                  <ArrowUpToLine size={24} color="#00D9FF" strokeWidth={2.5} />
+                  <CalendarArrowUp size={24} color="#00D9FF" strokeWidth={2.5} />
                 )}
               </TouchableOpacity>
             </Animated.View>
