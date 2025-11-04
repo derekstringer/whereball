@@ -15,10 +15,10 @@ export const MyRemindersScreen: React.FC = () => {
   React.useEffect(() => {
     if (!isFocused) {
       // When screen loses focus, collapse all cards
-      setExpandedGameId('nhl', null);
-      setExpandedGameId('nba', null);
-      setExpandedGameId('mlb', null);
-      setExpandedGameId('nfl', null);
+      setExpandedGameId('NHL', null);
+      setExpandedGameId('NBA', null);
+      setExpandedGameId('MLB', null);
+      setExpandedGameId('NFL', null);
     }
   }, [isFocused, setExpandedGameId]);
   
