@@ -4,16 +4,54 @@
  */
 
 // Request cache to prevent duplicate API calls
-const requestCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 30000; // 30 seconds
+const requestCache = new Map<string, { data: any; timestamp: number; is404: boolean }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes for successful fetches
+const CACHE_DURATION_404 = 24 * 60 * 60 * 1000; // 24 hours for 404s (don't retry)
 const pendingRequests = new Map<string, Promise<any>>();
+
+// Date range validation - prevent API calls that will definitely 404
+const isDateInValidRange = (dateString: string): boolean => {
+  const targetDate = new Date(dateString);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // NHL removes game data older than 7 days
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+  // Games aren't scheduled more than 120 days out
+  const maxFuture = new Date(today);
+  maxFuture.setDate(maxFuture.getDate() + 120);
+  
+  // NHL season typically runs Sep-June (allow Jul-Aug for playoffs)
+  const month = targetDate.getMonth(); // 0-11
+  const year = targetDate.getFullYear();
+  
+  // Block dates outside valid range
+  if (targetDate < sevenDaysAgo || targetDate > maxFuture) {
+    return false;
+  }
+  
+  return true;
+};
 
 // Helper to get cached data or make new request
 const cachedFetch = async (url: string, cacheKey: string): Promise<any> => {
   // Check if we have a valid cached response
   const cached = requestCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
+  if (cached) {
+    // Check if it's a cached 404
+    if (cached.is404) {
+      // Don't retry 404s for 24 hours
+      if (Date.now() - cached.timestamp < CACHE_DURATION_404) {
+        return cached.data;
+      }
+    } else {
+      // Normal successful response cache
+      if (Date.now() - cached.timestamp < CACHE_DURATION) {
+        return cached.data;
+      }
+    }
   }
   
   // Check if there's already a pending request for this URL
@@ -26,14 +64,26 @@ const cachedFetch = async (url: string, cacheKey: string): Promise<any> => {
   const promise = fetch(url)
     .then(async (response) => {
       if (!response.ok) {
+        // If 404, cache it so we don't retry
+        if (response.status === 404) {
+          const emptyData = { gameWeek: [] };
+          requestCache.set(cacheKey, {
+            data: emptyData,
+            timestamp: Date.now(),
+            is404: true,
+          });
+          pendingRequests.delete(cacheKey);
+          return emptyData;
+        }
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       const data = await response.json();
       
-      // Cache the response
+      // Cache the successful response
       requestCache.set(cacheKey, {
         data,
         timestamp: Date.now(),
+        is404: false,
       });
       
       // Clean up pending request
@@ -98,6 +148,12 @@ export const getGamesForDate = async (date?: Date | string): Promise<NHLGame[]> 
       dateString = date;
     } else {
       dateString = date.toISOString().split('T')[0];
+    }
+    
+    // PREVENT 404 ERRORS: Skip API call for dates outside valid range
+    if (!isDateInValidRange(dateString)) {
+      console.log(`[NHL API] Skipping API call for out-of-range date: ${dateString}`);
+      return []; // Return empty array immediately, no API call
     }
     
     // Use cached fetch to prevent duplicate API calls
