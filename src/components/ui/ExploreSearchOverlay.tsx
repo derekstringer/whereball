@@ -83,9 +83,13 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
     // Add the team first (which will trigger games to load)
     addToExplore(teamId);
     
-    // Then dismiss keyboard and clear search
-    Keyboard.dismiss();
-    setSearchQuery('');
+    // Double requestAnimationFrame to ensure React has fully re-rendered with new state
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        Keyboard.dismiss();
+        setSearchQuery('');
+      });
+    });
   };
 
   const handleToggleFavorite = (teamId: string) => {
