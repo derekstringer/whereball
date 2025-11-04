@@ -16,13 +16,23 @@ import { useTheme } from '../../hooks/useTheme';
 export const ExploreScreen: React.FC = () => {
   const { colors } = useTheme();
   const isFocused = useIsFocused();
-  const { exploreSelections } = useAppStore();
+  const { exploreSelections, setExpandedGameId } = useAppStore();
   const [showSearch, setShowSearch] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [scrollPosition, setScrollPosition] = useState<'past' | 'today' | 'future'>('today');
   const hasHandledInitialFocus = useRef(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scrollToTodayRef = useRef<(() => void) | null>(null);
+
+  // Collapse any expanded cards when this screen comes into focus
+  React.useEffect(() => {
+    if (isFocused) {
+      setExpandedGameId('nhl', null);
+      setExpandedGameId('nba', null);
+      setExpandedGameId('mlb', null);
+      setExpandedGameId('nfl', null);
+    }
+  }, [isFocused, setExpandedGameId]);
 
   // Animation effects for the Return to Today icon
   useEffect(() => {
