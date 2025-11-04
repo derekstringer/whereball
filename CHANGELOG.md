@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **feat: Score notifications, Explore UX fixes, and API improvements** (2025-11-03)
+  - Bell icon reminders for score notifications (distinct from game start reminders)
+  - NHL API caching to prevent repeated requests and errors
+  - ErrorBoundary component for graceful error handling
+  - Reminder type distinction in app store (score vs game start)
+  - Empty state improvements with actionable buttons
+  - Related commit: ef1a8f6
+
+### Fixed
+- **fix: Explore search double-tap after favoriting teams** (2025-11-03)
+  - Resolved issue where users had to double-tap team after favoriting
+  - Fixed keyboard dismissal and search state handling
+  - Improved team selection flow in Explore search
+  - Related commit: ef1a8f6
+
+- **fix: Follow Teams button navigation and styling** (2025-11-03)
+  - Fixed navigation to correct screen when tapping Follow Teams
+  - Updated button text color for better visibility
+  - Related commit: ef1a8f6
+
 - **docs(ai): Record ADR-0005 and update AI/Voice stack across docs** (2025-10-25)
   - Created ADR-0005: AI and Voice Stack decision record
   - Added `docs/ai/overview.md` - comprehensive AI & Voice system overview
