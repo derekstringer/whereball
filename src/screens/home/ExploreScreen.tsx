@@ -26,15 +26,13 @@ export const ExploreScreen: React.FC = () => {
 
   // Collapse any expanded cards when LEAVING this screen (on blur)
   React.useEffect(() => {
-    // Cleanup function runs when screen loses focus
-    return () => {
-      if (!isFocused) {
-        setExpandedGameId('nhl', null);
-        setExpandedGameId('nba', null);
-        setExpandedGameId('mlb', null);
-        setExpandedGameId('nfl', null);
-      }
-    };
+    if (!isFocused) {
+      // When screen loses focus, collapse all cards
+      setExpandedGameId('nhl', null);
+      setExpandedGameId('nba', null);
+      setExpandedGameId('mlb', null);
+      setExpandedGameId('nfl', null);
+    }
   }, [isFocused, setExpandedGameId]);
 
   // Animation effects for the Return to Today icon
