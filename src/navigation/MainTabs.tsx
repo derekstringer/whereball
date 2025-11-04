@@ -23,8 +23,15 @@ export const MainTabs: React.FC = () => {
   const { colors } = useTheme();
   const { alerts } = useAppStore();
   
-  // Count pending reminders for badge
-  const reminderCount = alerts.filter(a => a.status === 'pending').length;
+  // Count unique games with pending reminders for badge
+  const reminderCount = React.useMemo(() => {
+    const uniqueGameIds = new Set(
+      alerts
+        .filter(a => a.status === 'pending')
+        .map(a => a.game_id)
+    );
+    return uniqueGameIds.size;
+  }, [alerts]);
   
   return (
     <Tab.Navigator

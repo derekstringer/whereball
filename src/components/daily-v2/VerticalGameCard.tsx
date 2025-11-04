@@ -5,7 +5,7 @@
 
 import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image } from 'react-native';
-import { AlarmClockCheck } from 'lucide-react-native';
+import { Bell } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
 import { NHLGame } from '../../lib/nhl-api';
@@ -29,13 +29,15 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   onPress,
 }) => {
   const { colors } = useTheme();
-  const { filtersV2, hasReminders } = useAppStore();
+  const { filtersV2, hasReminders, hasScoreNotifications } = useAppStore();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   
-  // Check if reminders are set for this game
+  // Check if any notifications are set for this game
   const reminderSet = hasReminders(game.id);
+  const scoreNotificationsSet = hasScoreNotifications(game.id);
+  const hasAnyNotifications = reminderSet || scoreNotificationsSet;
   
   // Determine game state with robust detection
   const isFinal = game.gameState === 'FINAL' || game.gameState === 'OFF';
@@ -293,7 +295,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
             <Text style={[styles.cityCode, styles.leftAlign, { color: colors.text }]}>
               {game.awayTeam.abbreviation}
             </Text>
-            <Text style={[styles.score, { color: colors.text }]}>
+            <Text style={[styles.score, { color: scoreNotificationsSet && !isFinal ? colors.primary : colors.text }]}>
               {game.awayTeam.score !== undefined ? game.awayTeam.score : (isLive ? '0' : '-')}
             </Text>
           </View>
@@ -306,7 +308,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
           </Text>
         </View>
 
-        {/* CENTER: Live Clock Widget, "Final", "@", or reminder icon above @ */}
+        {/* CENTER: Live Clock Widget, "Final", Bell icon, or "@" */}
         {isLive && clockData ? (
           <View style={styles.centerCol}>
             <LiveClockWidget clock={clockData} />
@@ -315,15 +317,18 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
           <Text style={[styles.atCol, { color: colors.textSecondary }]}>Final</Text>
         ) : (
           <View style={styles.centerCol}>
-            {/* TEST: Icon removed, using time pill green instead */}
-            <Text style={[styles.atText, { color: colors.textSecondary }]}>@</Text>
+            {scoreNotificationsSet ? (
+              <Bell size={20} color={colors.primary} strokeWidth={2.5} />
+            ) : (
+              <Text style={[styles.atText, { color: colors.textSecondary }]}>@</Text>
+            )}
           </View>
         )}
 
         {/* RIGHT TEAM Column (flex) - Home Team */}
         <View style={styles.teamColRight}>
           <View style={styles.abbrScoreRowRight}>
-            <Text style={[styles.score, { color: colors.text }]}>
+            <Text style={[styles.score, { color: scoreNotificationsSet && !isFinal ? colors.primary : colors.text }]}>
               {game.homeTeam.score !== undefined ? game.homeTeam.score : (isLive ? '0' : '-')}
             </Text>
             <Text style={[styles.cityCode, styles.rightAlign, { color: colors.text }]}>

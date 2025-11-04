@@ -20,6 +20,7 @@ import {
   AppState,
   Animated,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { ChevronDown, ChevronUp, CalendarArrowDown, CalendarArrowUp } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
@@ -44,10 +45,19 @@ interface GameSection {
 
 interface DailyV3Props {
   viewMode?: 'my-teams' | 'explore' | 'reminders';
+  onOpenExploreSearch?: () => void; // Callback to open search in Explore mode
+  onScrollPositionChange?: (position: 'past' | 'today' | 'future') => void;
+  onScrollToTodayRef?: (fn: () => void) => void;
 }
 
-export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
+export const DailyV3: React.FC<DailyV3Props> = ({ 
+  viewMode = 'my-teams', 
+  onOpenExploreSearch,
+  onScrollPositionChange,
+  onScrollToTodayRef,
+}) => {
   const { colors } = useTheme();
+  const navigation = useNavigation();
   const { 
     subscriptions, 
     follows,
@@ -173,20 +183,20 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
             label: 'Follow Teams',
             primary: true,
             onPress: () => {
-              // TODO: Navigate to team selection or show search
-              console.log('Follow teams pressed');
+              // Navigate to Explore tab
+              navigation.navigate('Explore' as never);
             },
           },
         ],
       };
     }
 
-    // Scenario 2: EXPLORE but nothing selected
-    if (viewMode === 'explore' && exploreSelections.length === 0) {
+    // Scenario 2: EXPLORE with selections but no matching games (e.g. non-NHL teams during dev)
+    if (viewMode === 'explore' && exploreSelections.length > 0) {
       return {
-        message: "No teams selected",
-        description: "Search for teams to view their schedule.",
-        actions: [], // Search overlay should already be open
+        message: "No games found",
+        description: "The selected teams have no upcoming games, or we haven't connected that sport's API yet.",
+        actions: [],
       };
     }
 
@@ -219,12 +229,90 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
   };
 
   const todayDateKey = useMemo(() => getTodayDateKey(), []);
+  
+  // Track the "home" date - the date we consider "today" for scroll purposes
+  // This might be a future date if today has no games
+  const homeDateKey = useRef<string | null>(null);
 
   // Initialize: Load today -30 to +60 days
   useEffect(() => {
     loadInitialData();
   }, []);
 
+  // Expose scrollToToday function to parent
+  useEffect(() => {
+    if (onScrollToTodayRef) {
+      onScrollToTodayRef(scrollToToday);
+    }
+  }, [onScrollToTodayRef]);
+
+  // Restore scroll position after team visibility changes
+  useEffect(() => {
+    // Don't restore on initial mount or if we don't have a tracked position
+    if (!hasInitiallyScrolled.current || !currentScrollDate.current) {
+      return;
+    }
+
+    // Wait for next frame to ensure filteredSections has updated
+    requestAnimationFrame(() => {
+      if (!sectionListRef.current) return;
+
+      // Find the section for the date we were viewing
+      const targetSectionIndex = filteredSections.findIndex(
+        section => section.title === currentScrollDate.current
+      );
+
+      if (targetSectionIndex === -1) {
+        // The date we were viewing is no longer visible (all games hidden)
+        // Try to find the closest date that is visible
+        const currentDate = new Date(currentScrollDate.current || '');
+        let closestIndex = -1;
+        let smallestDiff = Infinity;
+
+        filteredSections.forEach((section, index) => {
+          const diff = Math.abs(section.dateObj.getTime() - currentDate.getTime());
+          if (diff < smallestDiff) {
+            smallestDiff = diff;
+            closestIndex = index;
+          }
+        });
+
+        if (closestIndex !== -1) {
+          sectionListRef.current.scrollToLocation({
+            sectionIndex: closestIndex,
+            itemIndex: 0,
+            animated: false,
+            viewPosition: 0,
+            viewOffset: 0,
+          });
+          console.log('Restored to closest date:', filteredSections[closestIndex].title);
+        }
+        return;
+      }
+
+      // Find the game within that section if we have one tracked
+      let targetItemIndex = 0;
+      if (currentScrollGameId.current) {
+        const gameIndex = filteredSections[targetSectionIndex].data.findIndex(
+          game => game.id === currentScrollGameId.current
+        );
+        if (gameIndex !== -1) {
+          targetItemIndex = gameIndex;
+        }
+      }
+
+      // Restore scroll position without animation
+      sectionListRef.current.scrollToLocation({
+        sectionIndex: targetSectionIndex,
+        itemIndex: targetItemIndex,
+        animated: false,
+        viewPosition: 0,
+        viewOffset: 0,
+      });
+
+      console.log('Restored scroll to:', currentScrollDate.current, 'game:', currentScrollGameId.current);
+    });
+  }, [hiddenTeamsInMyTeams, filteredSections]);
 
   // Live polling: DISABLED to prevent jumping during data refreshes
   // TODO: Re-enable with smarter update logic that doesn't cause scroll jumps
@@ -277,43 +365,52 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
   };
 
   const loadInitialData = async () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Build date range: -30 to +60
-    const dates: Date[] = [];
-    for (let i = dateRange.start; i <= dateRange.end; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
-      dates.push(date);
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Build date range: -30 to +60
+      const dates: Date[] = [];
+      for (let i = dateRange.start; i <= dateRange.end; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() + i);
+        dates.push(date);
+      }
+      
+      // Load all games in parallel with timeout
+      const results = await Promise.all(
+        dates.map(async (date) => {
+          const dateStr = formatDateKey(date);
+          try {
+            const games = await getGamesForDate(date);
+            // Validate games array
+            const validGames = Array.isArray(games) ? games.filter(g => g && g.id) : [];
+            return {
+              title: dateStr,
+              dateObj: date,
+              isToday: dateStr === todayDateKey,
+              data: validGames,
+            };
+          } catch (error) {
+            console.error(`Error loading games for ${dateStr}:`, error);
+            return {
+              title: dateStr,
+              dateObj: date,
+              isToday: dateStr === todayDateKey,
+              data: [],
+            };
+          }
+        })
+      );
+      
+      setSections(results);
+    } catch (error) {
+      console.error('Critical error in loadInitialData:', error);
+      // Set empty sections to prevent undefined state
+      setSections([]);
+    } finally {
+      setLoading(false);
     }
-    
-    // Load all games in parallel
-    const results = await Promise.all(
-      dates.map(async (date) => {
-        const dateStr = formatDateKey(date);
-        try {
-          const games = await getGamesForDate(date);
-          return {
-            title: dateStr,
-            dateObj: date,
-            isToday: dateStr === todayDateKey,
-            data: games,
-          };
-        } catch (error) {
-          console.error(`Error loading games for ${dateStr}:`, error);
-          return {
-            title: dateStr,
-            dateObj: date,
-            isToday: dateStr === todayDateKey,
-            data: [],
-          };
-        }
-      })
-    );
-    
-    setSections(results);
-    setLoading(false);
   };
 
   const loadMoreBackward = async () => {
@@ -456,9 +553,10 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
     
     if (targetSectionIndex === -1) return 0;
     
-    // Store the initial date we're scrolling to
+    // Store the initial date we're scrolling to - this is our "home" date
     if (filteredSections[targetSectionIndex]) {
       currentScrollDate.current = filteredSections[targetSectionIndex].title;
+      homeDateKey.current = filteredSections[targetSectionIndex].title;
     }
     
     // Calculate total flat items before target section
@@ -499,22 +597,19 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
       }
       
       // Update scroll position for "Return to Today" icon
-      if (currentScrollDate.current) {
+      // Compare against "home" date (initial scroll target), not calendar today
+      if (currentScrollDate.current && homeDateKey.current) {
         const visibleDate = new Date(currentScrollDate.current);
-        const todayDate = new Date(todayDateKey);
-        todayDate.setHours(0, 0, 0, 0);
+        const homeDate = new Date(homeDateKey.current);
+        homeDate.setHours(0, 0, 0, 0);
         visibleDate.setHours(0, 0, 0, 0);
         
-        const diffTime = visibleDate.getTime() - todayDate.getTime();
+        const diffTime = visibleDate.getTime() - homeDate.getTime();
         const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
         
-        if (diffDays < -1) {
-          setScrollPosition('past');
-        } else if (diffDays > 1) {
-          setScrollPosition('future');
-        } else {
-          setScrollPosition('today');
-        }
+        const newPosition = diffDays < -1 ? 'past' : diffDays > 1 ? 'future' : 'today';
+        setScrollPosition(newPosition);
+        onScrollPositionChange?.(newPosition);
       }
       
       // Mark that we've scrolled at least once
@@ -699,7 +794,8 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Header - Phase 4: Dropdown with proper wiring */}
+      {/* Header - Phase 4: Dropdown with proper wiring (hidden in explore mode) */}
+      {viewMode !== 'explore' && (
       <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.border }]}>
         <View style={styles.headerLeft}>
           <View style={styles.logoStack}>
@@ -729,7 +825,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
         </View>
         
         <View style={styles.headerRight}>
-          {scrollPosition !== 'today' && (
+          {scrollPosition !== 'today' && viewMode !== 'reminders' && (
             <Animated.View style={{ opacity: fadeAnim }}>
               <TouchableOpacity 
                 onPress={scrollToToday} 
@@ -749,13 +845,16 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
           )}
         </View>
       </View>
+      )}
 
-      {/* ViewDropdownPopover */}
+      {/* ViewDropdownPopover (not shown in explore mode) */}
+      {viewMode !== 'explore' && (
       <ViewDropdownPopover
         visible={showDropdown}
         onClose={() => setShowDropdown(false)}
         mode={viewMode === 'my-teams' ? 'my-teams' : 'explore'}
       />
+      )}
 
       {emptyStateInfo ? (
         <View style={styles.emptyStateContainer}>
@@ -786,6 +885,8 @@ export const DailyV3: React.FC<DailyV3Props> = ({ viewMode = 'my-teams' }) => {
         scrollEventThrottle={400}
         onEndReached={loadMoreForward}
         onEndReachedThreshold={0.5}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
         getItemLayout={(data, index) => {
           // Approximate heights for performance
           const HEADER_HEIGHT = 44;

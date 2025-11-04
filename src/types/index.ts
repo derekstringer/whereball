@@ -82,7 +82,7 @@ export interface Alert {
   id: string;
   user_id: string;
   game_id: string;
-  type: 'game_start' | 'national_flip';
+  type: 'game_start' | 'national_flip' | 'score_updates';
   scheduled_ts: string;
   sent_ts: string | null;
   status: 'pending' | 'sent' | 'failed';

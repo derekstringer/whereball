@@ -24,14 +24,20 @@ import { SPORTS } from '../../constants/sports';
 interface ExploreSearchOverlayProps {
   visible: boolean;
   onClose: () => void;
+  showGamesBelow?: boolean; // If true, shows DailyV3 games below search
+  onScrollPositionChange?: (position: 'past' | 'today' | 'future') => void;
+  onScrollToTodayRef?: (fn: () => void) => void;
 }
 
 export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   visible,
   onClose,
+  showGamesBelow = false,
+  onScrollPositionChange,
+  onScrollToTodayRef,
 }) => {
   const { colors } = useTheme();
-  const { follows, addToExplore, addFollow, removeFollow } = useAppStore();
+  const { follows, addToExplore, addFollow, removeFollow, exploreSelections } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<TextInput>(null);
 
@@ -74,9 +80,12 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   };
 
   const handleQuickView = (teamId: string) => {
+    // Add the team first (which will trigger games to load)
     addToExplore(teamId);
+    
+    // Then dismiss keyboard and clear search
     Keyboard.dismiss();
-    onClose();
+    setSearchQuery('');
   };
 
   const handleToggleFavorite = (teamId: string) => {
@@ -108,13 +117,13 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   const hasResults = searchResults.teams.length > 0 || searchResults.sports.length > 0;
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: 'rgba(0, 0, 0, 0.3)' }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <View style={[styles.searchContainer, { backgroundColor: colors.bg }]}>
-        {/* Search Bar */}
-        <View style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+    <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      {/* Search Bar - Full width, directly under header */}
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => searchInputRef.current?.focus()}
+        style={[styles.searchBar, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      >
           <Search size={20} color={colors.textSecondary} />
           <TextInput
             ref={searchInputRef}
@@ -126,23 +135,30 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
+            onSubmitEditing={handleDismissKeyboard}
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
               <X size={18} color={colors.textSecondary} />
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={handleDismissKeyboard} style={styles.doneButton}>
-            <Text style={[styles.doneText, { color: colors.primary }]}>Done</Text>
-          </TouchableOpacity>
-        </View>
+      </TouchableOpacity>
 
-        {/* Results / Empty State */}
-        <ScrollView 
-          style={styles.resultsContainer}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
+      {/* Results / Empty State / Games */}
+      {showGamesBelow && exploreSelections.length > 0 && searchQuery.trim() === '' ? (
+        // Show games only when not actively searching
+        require('./../../screens/home/DailyV3').DailyV3 && 
+        React.createElement(require('./../../screens/home/DailyV3').DailyV3, { 
+          viewMode: 'explore',
+          onScrollPositionChange,
+          onScrollToTodayRef,
+        })
+      ) : (
+      <ScrollView 
+        style={styles.resultsContainer}
+        keyboardShouldPersistTaps="always"
+        showsVerticalScrollIndicator={false}
+      >
           {showEmptyState ? (
             <View style={styles.emptyState}>
               <Search size={64} color={colors.textSecondary} strokeWidth={1.5} />
@@ -214,13 +230,18 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
                   </Text>
                   {searchResults.teams.map(team => {
                     const isFollowed = follows.some(f => f.team_id === team.id);
+                    const isInExplore = exploreSelections.includes(team.id);
                     return (
                       <View key={team.id} style={styles.resultRow}>
                         <TouchableOpacity
                           style={styles.resultRowMain}
                           onPress={() => handleQuickView(team.id)}
                         >
-                          <Circle size={20} color={colors.textSecondary} />
+                          {isInExplore ? (
+                            <CircleCheckBig size={20} color="#22c55e" />
+                          ) : (
+                            <Circle size={20} color={colors.textSecondary} />
+                          )}
                           <Text style={[styles.resultText, { color: colors.text }]}>
                             {team.name}
                           </Text>
@@ -242,34 +263,26 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
               )}
             </>
           )}
-        </ScrollView>
-      </View>
-    </KeyboardAvoidingView>
+      </ScrollView>
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 1000,
-  },
-  searchContainer: {
     flex: 1,
-    paddingTop: 100, // Below header
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginBottom: 16,
-    borderRadius: 10,
-    borderWidth: 1,
+    borderRadius: 0,
+    borderWidth: 0,
+    borderBottomWidth: 1,
     gap: 12,
   },
   searchInput: {
@@ -279,13 +292,6 @@ const styles = StyleSheet.create({
   },
   clearButton: {
     padding: 4,
-  },
-  doneButton: {
-    paddingHorizontal: 8,
-  },
-  doneText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   resultsContainer: {
     flex: 1,

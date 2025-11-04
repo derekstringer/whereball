@@ -3,6 +3,56 @@
  * Fetches schedule and game data from NHL's public API
  */
 
+// Request cache to prevent duplicate API calls
+const requestCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 30000; // 30 seconds
+const pendingRequests = new Map<string, Promise<any>>();
+
+// Helper to get cached data or make new request
+const cachedFetch = async (url: string, cacheKey: string): Promise<any> => {
+  // Check if we have a valid cached response
+  const cached = requestCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+  
+  // Check if there's already a pending request for this URL
+  const pending = pendingRequests.get(cacheKey);
+  if (pending) {
+    return pending;
+  }
+  
+  // Make new request
+  const promise = fetch(url)
+    .then(async (response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      const data = await response.json();
+      
+      // Cache the response
+      requestCache.set(cacheKey, {
+        data,
+        timestamp: Date.now(),
+      });
+      
+      // Clean up pending request
+      pendingRequests.delete(cacheKey);
+      
+      return data;
+    })
+    .catch((error) => {
+      // Clean up pending request on error
+      pendingRequests.delete(cacheKey);
+      throw error;
+    });
+  
+  // Store as pending
+  pendingRequests.set(cacheKey, promise);
+  
+  return promise;
+};
+
 export interface NHLGame {
   id: string;
   gameDate: string;
@@ -50,16 +100,10 @@ export const getGamesForDate = async (date?: Date | string): Promise<NHLGame[]> 
       dateString = date.toISOString().split('T')[0];
     }
     
-    // NHL API v1 endpoint
-    const response = await fetch(
-      `https://api-web.nhle.com/v1/schedule/${dateString}`
-    );
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch NHL schedule');
-    }
-
-    const data = await response.json();
+    // Use cached fetch to prevent duplicate API calls
+    const url = `https://api-web.nhle.com/v1/schedule/${dateString}`;
+    const cacheKey = `schedule-${dateString}`;
+    const data = await cachedFetch(url, cacheKey);
     
     // Transform API response to our format
     const games: NHLGame[] = [];

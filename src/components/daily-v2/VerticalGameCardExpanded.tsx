@@ -4,7 +4,7 @@
 
 import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated, Image, Alert } from 'react-native';
-import { AlarmClockCheck } from 'lucide-react-native';
+import { AlarmClockCheck, Bell } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { NHLGame } from '../../lib/nhl-api';
 import { getServicesForGameSplit, deepLinkToService, affiliateCTA } from '../../lib/service-helpers';
@@ -28,13 +28,15 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   onCollapse,
 }) => {
   const { colors } = useTheme();
-  const { filters, filtersV2, hasReminders, addAlert, removeAlertsForGame } = useAppStore();
+  const { filters, filtersV2, hasReminders, hasScoreNotifications, addAlert, removeAlertsForGame, addScoreAlert, removeScoreAlertsForGame } = useAppStore();
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const [showTimePicker, setShowTimePicker] = useState(false);
   
-  // Check if reminders are set for this game
+  // Check if any notifications are set for this game
   const reminderSet = hasReminders(game.id);
+  const scoreNotificationsSet = hasScoreNotifications(game.id);
+  const hasAnyNotifications = reminderSet || scoreNotificationsSet;
 
   const showDiscovery = filters.showAllServices;
   const hasSubscribed = subscribed.length > 0;
@@ -188,6 +190,27 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
     });
   };
 
+  const handleScoreNotificationsPress = () => {
+    if (scoreNotificationsSet) {
+      // Show confirmation dialog before removing
+      Alert.alert(
+        'Stop Score Updates?',
+        "You'll no longer receive notifications when the score changes or the game ends.",
+        [
+          { text: 'Keep It', style: 'cancel' },
+          {
+            text: 'Stop Updates',
+            style: 'destructive',
+            onPress: () => removeScoreAlertsForGame(game.id),
+          },
+        ]
+      );
+    } else {
+      // Immediately toggle on
+      addScoreAlert(game.id);
+    }
+  };
+
   // Get service brand color
   const getServiceColor = (code: string): string => {
     const service = STREAMING_SERVICES.find(s => s.code === code);
@@ -300,7 +323,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
                 <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
                   {game.awayTeam.abbreviation}
                 </Text>
-                <Text style={[styles.scoreInline, { color: colors.text }]}>
+                <Text style={[styles.scoreInline, { color: scoreNotificationsSet && !isFinal ? colors.primary : colors.text }]}>
                   {game.awayTeam.score ?? '-'}
                 </Text>
               </View>
@@ -309,13 +332,17 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
               </Text>
             </View>
 
-            {/* CENTER: Live Clock Widget, "Final", or "@" */}
+            {/* CENTER: Live Clock Widget, "Final", Bell icon, or "@" */}
             {isLive && clockData ? (
               <View style={styles.centerColInline}>
                 <LiveClockWidget clock={clockData} />
               </View>
             ) : isFinal ? (
               <Text style={[styles.atColInline, { color: colors.textSecondary }]}>Final</Text>
+            ) : scoreNotificationsSet ? (
+              <View style={styles.centerColInline}>
+                <Bell size={20} color={colors.primary} strokeWidth={2.5} />
+              </View>
             ) : (
               <Text style={[styles.atColInline, { color: colors.textSecondary }]}>@</Text>
             )}
@@ -323,7 +350,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             {/* RIGHT TEAM - Home */}
             <View style={[styles.teamInlineContainer, styles.teamInlineContainerRight]}>
               <View style={styles.teamInline}>
-                <Text style={[styles.scoreInline, { color: colors.text }]}>
+                <Text style={[styles.scoreInline, { color: scoreNotificationsSet && !isFinal ? colors.primary : colors.text }]}>
                   {game.homeTeam.score ?? '-'}
                 </Text>
                 <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
@@ -454,28 +481,53 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
         </View>
       )}
 
-      {/* Set Reminder - Only show for upcoming games (not started yet) */}
+      {/* Notification Buttons - Only show for upcoming games (not started yet) */}
       {!isLive && !isFinal && (
-        <TouchableOpacity
-          style={[
-            styles.reminderButton,
-            reminderSet 
-              ? { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary }
-              : { backgroundColor: colors.primary }
-          ]}
-          onPress={handleReminderPress}
-          activeOpacity={0.8}
-        >
-          {reminderSet && (
-            <AlarmClockCheck size={22} color={colors.primary} style={styles.reminderIcon} />
-          )}
-          <Text style={[
-            styles.reminderButtonText,
-            reminderSet && { color: colors.primary }
-          ]}>
-            {reminderSet ? 'Reminder Set' : 'Set Reminder'}
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.buttonRow}>
+          {/* Left: Set Reminder Button */}
+          <TouchableOpacity
+            style={[
+              styles.halfButton,
+              reminderSet 
+                ? { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary }
+                : { backgroundColor: colors.primary }
+            ]}
+            onPress={handleReminderPress}
+            activeOpacity={0.8}
+          >
+            {reminderSet && (
+              <AlarmClockCheck size={20} color={colors.primary} style={styles.buttonIcon} />
+            )}
+            <Text style={[
+              styles.halfButtonText,
+              reminderSet && { color: colors.primary }
+            ]}>
+              {reminderSet ? 'Reminder Set' : 'Set Reminder'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Right: Score Updates Button */}
+          <TouchableOpacity
+            style={[
+              styles.halfButton,
+              scoreNotificationsSet 
+                ? { backgroundColor: 'transparent', borderWidth: 2, borderColor: colors.primary }
+                : { backgroundColor: colors.primary }
+            ]}
+            onPress={handleScoreNotificationsPress}
+            activeOpacity={0.8}
+          >
+            {scoreNotificationsSet && (
+              <Bell size={20} color={colors.primary} style={styles.buttonIcon} />
+            )}
+            <Text style={[
+              styles.halfButtonText,
+              scoreNotificationsSet && { color: colors.primary }
+            ]}>
+              Score Updates
+            </Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Time Picker Bottom Sheet */}
@@ -761,5 +813,28 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     gap: 0,
+  },
+  // Button row for notification buttons
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+  },
+  halfButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  buttonIcon: {
+    marginRight: -2,
+  },
+  halfButtonText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

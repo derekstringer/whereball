@@ -51,8 +51,14 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
     const grouped: Record<string, string[]> = {};
     
     teamsToShow.forEach(teamId => {
-      const follow = follows.find(f => f.team_id === teamId);
-      const league = follow?.league || 'unknown';
+      // Try to get league from follows first, then lookup in ALL_TEAMS
+      let league: string = follows.find(f => f.team_id === teamId)?.league || '';
+      
+      if (!league) {
+        const { ALL_TEAMS } = require('../../constants/teams');
+        const team = ALL_TEAMS.find((t: any) => t.id === teamId);
+        league = team?.league || 'unknown';
+      }
       
       if (!grouped[league]) {
         grouped[league] = [];
@@ -66,12 +72,18 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
   const sportKeys = Object.keys(teamsBySport);
   const hasSingleSport = sportKeys.length === 1;
 
-  // Auto-expand if single sport (only once on mount or when visible changes)
+  // Auto-expand ONLY if single sport
+  // If 2+ sports, keep all collapsed initially
   React.useEffect(() => {
-    if (visible && hasSingleSport && sportKeys.length > 0) {
-      setExpandedSports(new Set([sportKeys[0]]));
+    if (visible) {
+      if (hasSingleSport && sportKeys.length > 0) {
+        setExpandedSports(new Set([sportKeys[0]]));
+      } else {
+        // Multiple sports: ensure all start collapsed
+        setExpandedSports(new Set());
+      }
     }
-  }, [visible]); // Only run when visibility changes
+  }, [visible, hasSingleSport, sportKeys.length]);
 
   const toggleSport = (sport: string) => {
     const newExpanded = new Set(expandedSports);
@@ -84,22 +96,34 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
   };
 
   const handleSportVisibilityToggle = (league: string) => {
-    if (mode !== 'my-teams') return; // Only works in my-teams mode
-    
     const teamsInSport = teamsBySport[league];
-    const allVisible = teamsInSport.every(teamId => !hiddenTeamsInMyTeams.includes(teamId));
     
-    // Toggle all teams in this sport
-    teamsInSport.forEach(teamId => {
-      const isCurrentlyVisible = !hiddenTeamsInMyTeams.includes(teamId);
-      if (allVisible && isCurrentlyVisible) {
-        // Hide all
-        toggleTeamVisibilityInMyTeams(teamId);
-      } else if (!allVisible && !isCurrentlyVisible) {
-        // Show all
-        toggleTeamVisibilityInMyTeams(teamId);
+    if (mode === 'my-teams') {
+      // My Teams mode: toggle visibility
+      const allVisible = teamsInSport.every(teamId => !hiddenTeamsInMyTeams.includes(teamId));
+      
+      teamsInSport.forEach(teamId => {
+        const isCurrentlyVisible = !hiddenTeamsInMyTeams.includes(teamId);
+        if (allVisible && isCurrentlyVisible) {
+          // Hide all
+          toggleTeamVisibilityInMyTeams(teamId);
+        } else if (!allVisible && !isCurrentlyVisible) {
+          // Show all
+          toggleTeamVisibilityInMyTeams(teamId);
+        }
+      });
+    } else {
+      // Explore mode: remove all teams of this sport
+      teamsInSport.forEach(teamId => {
+        removeFromExplore(teamId);
+      });
+      
+      // Auto-close if no teams left
+      const remainingTeams = exploreSelections.filter(id => !teamsInSport.includes(id));
+      if (remainingTeams.length === 0) {
+        setTimeout(() => onClose(), 150);
       }
-    });
+    }
   };
 
   const handleCircleTap = (teamId: string) => {
@@ -107,6 +131,12 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
       toggleTeamVisibilityInMyTeams(teamId);
     } else {
       removeFromExplore(teamId);
+      
+      // Auto-close if this was the last team in Explore
+      const remainingTeams = exploreSelections.filter(id => id !== teamId);
+      if (remainingTeams.length === 0) {
+        setTimeout(() => onClose(), 150); // Small delay for smooth UX
+      }
     }
   };
 
@@ -126,13 +156,26 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
           {
             text: 'Remove',
             style: 'destructive',
-            onPress: () => removeFollow(teamId),
+            onPress: () => {
+              removeFollow(teamId);
+              
+              // Auto-close if this was the last followed team in My Teams mode
+              if (mode === 'my-teams') {
+                const remainingFollows = follows.filter(f => f.team_id !== teamId);
+                if (remainingFollows.length === 0) {
+                  setTimeout(() => onClose(), 150); // Small delay for smooth UX
+                }
+              }
+            },
           },
         ]
       );
     } else {
-      // Add to favorites
-      const league = 'NHL'; // TODO: Determine league from teamId
+      // Add to favorites - determine league from team data
+      const { ALL_TEAMS } = require('../../constants/teams');
+      const team = ALL_TEAMS.find((t: any) => t.id === teamId);
+      const league = team?.league || 'NHL';
+      
       addFollow({
         user_id: 'temp-user', // TODO: Get from auth
         team_id: teamId,
@@ -222,15 +265,21 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
                               <Text style={styles.countBadgeText}>{teamCount}</Text>
                             </View>
                           )}
-                          {mode === 'my-teams' && (
+                          {(mode === 'my-teams' || teamCount > 1) && (
                             <TouchableOpacity
                               style={styles.sportEyeButton}
                               onPress={() => handleSportVisibilityToggle(league)}
                             >
-                              {teamsBySport[league].every(teamId => !hiddenTeamsInMyTeams.includes(teamId)) ? (
-                                <CircleCheckBig size={20} color="#22c55e" />
+                              {mode === 'my-teams' ? (
+                                // My Teams: show visibility state
+                                teamsBySport[league].every(teamId => !hiddenTeamsInMyTeams.includes(teamId)) ? (
+                                  <CircleCheckBig size={20} color="#22c55e" />
+                                ) : (
+                                  <Circle size={20} color={colors.textSecondary} />
+                                )
                               ) : (
-                                <Circle size={20} color={colors.textSecondary} />
+                                // Explore: show check only if multiple teams (tap to remove all)
+                                <CircleCheckBig size={20} color="#22c55e" />
                               )}
                             </TouchableOpacity>
                           )}

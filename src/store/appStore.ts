@@ -29,12 +29,15 @@ export interface GameFilters {
 }
 
 interface AppStore extends AppState {
-  // Alerts (Reminders)
+  // Alerts (Reminders & Score Notifications)
   alerts: Alert[];
   setAlerts: (alerts: Alert[]) => void;
   addAlert: (gameId: string, offsetMinutes: number) => void;
   removeAlertsForGame: (gameId: string) => void;
   hasReminders: (gameId: string) => boolean;
+  addScoreAlert: (gameId: string) => void;
+  removeScoreAlertsForGame: (gameId: string) => void;
+  hasScoreNotifications: (gameId: string) => boolean;
   
   // Color Mode
   colorMode: ColorMode;
@@ -170,13 +173,44 @@ export const useAppStore = create<AppStore>((set, get) => ({
   
   removeAlertsForGame: (gameId) =>
     set((state) => ({
-      alerts: state.alerts.filter(alert => alert.game_id !== gameId),
+      alerts: state.alerts.filter(
+        alert => !(alert.game_id === gameId && alert.type === 'game_start')
+      ),
     })),
   
   hasReminders: (gameId) => {
     const alerts = get().alerts;
     return alerts.some(
-      alert => alert.game_id === gameId && alert.status === 'pending'
+      alert => alert.game_id === gameId && alert.type === 'game_start' && alert.status === 'pending'
+    );
+  },
+  
+  addScoreAlert: (gameId) =>
+    set((state) => {
+      // Create score updates alert
+      const newAlert: Alert = {
+        id: `${gameId}-score-${Date.now()}`,
+        user_id: state.user?.id || 'temp-user',
+        game_id: gameId,
+        type: 'score_updates',
+        scheduled_ts: new Date().toISOString(), // Score updates don't need a specific time
+        sent_ts: null,
+        status: 'pending',
+      };
+      return { alerts: [...state.alerts, newAlert] };
+    }),
+  
+  removeScoreAlertsForGame: (gameId) =>
+    set((state) => ({
+      alerts: state.alerts.filter(
+        alert => !(alert.game_id === gameId && alert.type === 'score_updates')
+      ),
+    })),
+  
+  hasScoreNotifications: (gameId) => {
+    const alerts = get().alerts;
+    return alerts.some(
+      alert => alert.game_id === gameId && alert.type === 'score_updates' && alert.status === 'pending'
     );
   },
 

@@ -60,7 +60,7 @@ export const EmptyStateCard: React.FC<EmptyStateCardProps> = ({
                 style={[
                   styles.actionButtonText,
                   action.primary 
-                    ? { color: '#FFFFFF' }
+                    ? { color: '#000000' }
                     : { color: colors.primary }
                 ]}
               >

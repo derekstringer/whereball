@@ -19,6 +19,9 @@ import { MainTabs } from './src/navigation/MainTabs';
 import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { useAppStore } from './src/store/appStore';
 
+// Error Boundary
+import { ErrorBoundary } from './src/components/ErrorBoundary';
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -85,7 +88,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <ErrorBoundary>
       <StatusBar style="auto" />
       <NavigationContainer>
         <Stack.Navigator
@@ -109,7 +112,7 @@ export default function App() {
           />
         </Stack.Navigator>
       </NavigationContainer>
-    </>
+    </ErrorBoundary>
   );
 }
 
