@@ -165,6 +165,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
       <ScrollView 
         style={styles.resultsContainer}
         keyboardShouldPersistTaps="always"
+        keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
           {showEmptyState ? (
