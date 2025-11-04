@@ -83,11 +83,14 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
     // Add the team first (which will trigger games to load)
     addToExplore(teamId);
     
-    // Double requestAnimationFrame to ensure React has fully re-rendered with new state
+    // Wait for React to re-render showing the CircleCheckBig, then clear search
+    // This gives satisfying visual feedback that the team was added
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        Keyboard.dismiss();
-        setSearchQuery('');
+        setTimeout(() => {
+          Keyboard.dismiss();
+          setSearchQuery('');
+        }, 350); // Brief delay so user sees the green checkmark
       });
     });
   };
