@@ -59,12 +59,11 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
       return { teams: [], sports: [] };
     }
 
-    // Search teams and exclude ones already selected in Explore
+    // Search teams (keep them visible so user sees checkmark)
     const matchedTeams = ALL_TEAMS.filter(team =>
-      (team.name.toLowerCase().includes(query) ||
-       team.market.toLowerCase().includes(query) ||
-       team.short_code.toLowerCase().includes(query)) &&
-      !exploreSelections.includes(team.id) // Hide teams already showing in Explore
+      team.name.toLowerCase().includes(query) ||
+      team.market.toLowerCase().includes(query) ||
+      team.short_code.toLowerCase().includes(query)
     );
 
     // Search sports
