@@ -13,6 +13,14 @@ import { getServicesForGameSplit } from '../../lib/service-helpers';
 import { LiveClockWidget } from './LiveClockWidget';
 import { NHL_TEAMS } from '../../constants/teams';
 
+// Load badge images once at module level for stable references
+const BADGE_IMAGES = {
+  available: require('../../../assets/icons/available.png'),
+  elsewhere: require('../../../assets/icons/elsewhere.png'),
+  national: require('../../../assets/icons/national.png'),
+  blackout: require('../../../assets/icons/blackout.png'),
+} as const;
+
 interface VerticalGameCardProps {
   game: NHLGame;
   userServiceCodes: string[];
@@ -145,7 +153,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       icons.push(
         <Image
           key="available"
-          source={require('../../../assets/icons/available.png')}
+          source={BADGE_IMAGES.available}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -157,7 +165,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       icons.push(
         <Image
           key="elsewhere"
-          source={require('../../../assets/icons/elsewhere.png')}
+          source={BADGE_IMAGES.elsewhere}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -170,7 +178,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       icons.push(
         <Image
           key="national"
-          source={require('../../../assets/icons/national.png')}
+          source={BADGE_IMAGES.national}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -184,7 +192,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       icons.push(
         <Image
           key="blackout"
-          source={require('../../../assets/icons/blackout.png')}
+          source={BADGE_IMAGES.blackout}
           style={styles.statusIcon}
           resizeMode="contain"
         />
