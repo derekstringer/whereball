@@ -11,14 +11,16 @@ import { useAppStore } from '../../store/appStore';
 export const MyTeamsScreen: React.FC = () => {
   const { setExpandedGameId } = useAppStore();
   
-  // Collapse any expanded cards when this screen comes into focus
+  // Collapse any expanded cards when LEAVING this screen (on blur)
   useFocusEffect(
     React.useCallback(() => {
-      setExpandedGameId('nhl', null);
-      // Add other sports as they're implemented
-      setExpandedGameId('nba', null);
-      setExpandedGameId('mlb', null);
-      setExpandedGameId('nfl', null);
+      // Return cleanup function that runs when screen loses focus
+      return () => {
+        setExpandedGameId('nhl', null);
+        setExpandedGameId('nba', null);
+        setExpandedGameId('mlb', null);
+        setExpandedGameId('nfl', null);
+      };
     }, [setExpandedGameId])
   );
   

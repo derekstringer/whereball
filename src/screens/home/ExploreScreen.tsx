@@ -24,14 +24,17 @@ export const ExploreScreen: React.FC = () => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scrollToTodayRef = useRef<(() => void) | null>(null);
 
-  // Collapse any expanded cards when this screen comes into focus
+  // Collapse any expanded cards when LEAVING this screen (on blur)
   React.useEffect(() => {
-    if (isFocused) {
-      setExpandedGameId('nhl', null);
-      setExpandedGameId('nba', null);
-      setExpandedGameId('mlb', null);
-      setExpandedGameId('nfl', null);
-    }
+    // Cleanup function runs when screen loses focus
+    return () => {
+      if (!isFocused) {
+        setExpandedGameId('nhl', null);
+        setExpandedGameId('nba', null);
+        setExpandedGameId('mlb', null);
+        setExpandedGameId('nfl', null);
+      }
+    };
   }, [isFocused, setExpandedGameId]);
 
   // Animation effects for the Return to Today icon
