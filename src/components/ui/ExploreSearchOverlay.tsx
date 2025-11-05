@@ -55,11 +55,15 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   useEffect(() => {
     // Only clear if length increased (team added, not removed)
     if (exploreSelections.length > prevSelectionsLength.current) {
+      // Force immediate clear by setting state multiple times
       setSearchQuery('');
-      Keyboard.dismiss();
+      requestAnimationFrame(() => {
+        setSearchQuery('');
+        Keyboard.dismiss();
+      });
     }
     prevSelectionsLength.current = exploreSelections.length;
-  }, [exploreSelections.length]);
+  }, [exploreSelections]);
 
   // Filter teams/sports based on search query, excluding teams already in Explore
   const searchResults = React.useMemo(() => {
@@ -93,24 +97,24 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   const handleQuickView = (teamId: string) => {
     const team = ALL_TEAMS.find(t => t.id === teamId);
     
-    // Use a ref to track we're clearing - this bypasses React's async setState
-    const shouldClear = true;
+    // FORCE clear the TextInput directly via ref to bypass React state
+    if (searchInputRef.current) {
+      searchInputRef.current.clear();
+    }
     
-    if (shouldClear) {
-      // Clear search and dismiss keyboard
-      setSearchQuery('');
-      Keyboard.dismiss();
-      
-      // Add team to explore
-      addToExplore(teamId);
-      
-      // Show feedback overlay
-      if (team) {
-        setFeedbackTeam(team.name);
-        setTimeout(() => {
-          setFeedbackTeam(null);
-        }, 800);
-      }
+    // Also update React state
+    setSearchQuery('');
+    Keyboard.dismiss();
+    
+    // Add team to explore
+    addToExplore(teamId);
+    
+    // Show feedback overlay
+    if (team) {
+      setFeedbackTeam(team.name);
+      setTimeout(() => {
+        setFeedbackTeam(null);
+      }, 800);
     }
   };
 
