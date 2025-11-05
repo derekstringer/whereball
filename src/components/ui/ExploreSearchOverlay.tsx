@@ -60,7 +60,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
       return { teams: [], sports: [] };
     }
 
-    // Search teams (keep them visible so user sees checkmark)
+    // Search teams
     const matchedTeams = ALL_TEAMS.filter(team =>
       team.name.toLowerCase().includes(query) ||
       team.market.toLowerCase().includes(query) ||
@@ -74,7 +74,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
     );
 
     return { teams: matchedTeams, sports: matchedSports };
-  }, [searchQuery, exploreSelections]);
+  }, [searchQuery]);
 
   const handleDismissKeyboard = () => {
     Keyboard.dismiss();
@@ -83,17 +83,20 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   const handleQuickView = (teamId: string) => {
     const team = ALL_TEAMS.find(t => t.id === teamId);
     
-    // Add the team and clear search immediately so schedule loads
-    addToExplore(teamId);
-    Keyboard.dismiss();
+    // CRITICAL: Clear search BEFORE adding team
+    // This ensures React state updates before Zustand triggers re-render
     setSearchQuery('');
+    Keyboard.dismiss();
     
-    // Show feedback overlay with team name and checkmark
+    // Now add the team (Zustand will trigger re-render with cleared search)
+    addToExplore(teamId);
+    
+    // Show feedback overlay
     if (team) {
       setFeedbackTeam(team.name);
       setTimeout(() => {
         setFeedbackTeam(null);
-      }, 800); // Show feedback for 800ms
+      }, 800);
     }
   };
 
