@@ -392,16 +392,6 @@ export const DailyV3: React.FC<DailyV3Props> = ({
       })
     );
     
-    // Check if we got any games in this batch
-    const gamesFound = results.some(section => section.data.length > 0);
-    
-    if (!gamesFound) {
-      // No games found in this entire 30-day batch - we've gone past the API's data range
-      console.log('No games found in backward load - stopping pagination');
-      setLoadingMore(false);
-      return;
-    }
-    
     // Prepend to existing sections
     setSections(prev => [...results, ...prev]);
     setDateRange({ start: newStart, end: dateRange.end });
