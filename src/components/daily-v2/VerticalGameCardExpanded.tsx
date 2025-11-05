@@ -29,7 +29,7 @@ interface VerticalGameCardExpandedProps {
   onCollapse: () => void;
 }
 
-export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> = ({
+export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> = React.memo(({
   game,
   userServiceCodes,
   currentTime,
@@ -552,7 +552,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
       />
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
