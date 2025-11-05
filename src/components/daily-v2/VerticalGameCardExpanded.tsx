@@ -21,12 +21,12 @@ interface VerticalGameCardExpandedProps {
   onCollapse: () => void;
 }
 
-export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps>(({
+export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> = ({
   game,
   userServiceCodes,
   currentTime,
   onCollapse
-}: VerticalGameCardExpandedProps) => {
+}) => {
   const { colors } = useTheme();
   const { filters, filtersV2, hasReminders, hasScoreNotifications, addAlert, removeAlertsForGame, addScoreAlert, removeScoreAlertsForGame } = useAppStore();
   
@@ -544,7 +544,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
       />
     </View>
   );
-});
+};
 
 const styles = StyleSheet.create({
   container: {

@@ -21,13 +21,13 @@ interface VerticalGameCardProps {
   onPress?: () => void;
 }
 
-export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
+export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
   game,
   userServiceCodes,
   currentTime,
   isExpanded = false,
   onPress
-}: VerticalGameCardProps) => {
+}) => {
   const { colors } = useTheme();
   const { filtersV2, hasReminders, hasScoreNotifications } = useAppStore();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
@@ -358,7 +358,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
       </View>
     </TouchableOpacity>
   );
-});
+};
 
 const styles = StyleSheet.create({
   container: {
