@@ -1,4 +1,4 @@
-/**
+c/**
  * Vertical Game Card - Apple Calendar style
  * Time on left, centered scoreboard, status icons on right
  */
@@ -40,11 +40,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   const { filtersV2, hasReminders, hasScoreNotifications } = useAppStore();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   
-  // Memoize service split to prevent recalculation on every render
-  const { subscribed, unsubscribed } = useMemo(
-    () => getServicesForGameSplit(game, userServiceCodes),
-    [game.id, game.broadcasts, userServiceCodes]
-  );
+  const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   
   // Check if any notifications are set for this game
   const reminderSet = hasReminders(game.id);
@@ -144,8 +140,8 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
     return { timeDisplay: time, redIntensity: intensity };
   }, [game.startTime, isLive, isFinal, now]);
 
-  // Memoize status icons to prevent unnecessary re-renders
-  const statusIcons = useMemo(() => {
+  // Render status icons
+  const renderStatusIcons = () => {
     const icons = [];
     
     // Green: on your services (always show)
@@ -200,7 +196,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
     }
 
     return icons;
-  }, [subscribed.length, unsubscribed.length, game.broadcasts]);
+  };
 
   // Time background and border styling (LAYERED APPROACH)
   const timeBackgroundColor = useMemo(() => {
@@ -361,7 +357,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
 
         {/* ACTIONS Column (fixed 72px) */}
         <View style={styles.actionsCol}>
-          {statusIcons}
+          {renderStatusIcons()}
         </View>
       </View>
     </TouchableOpacity>

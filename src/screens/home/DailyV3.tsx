@@ -643,7 +643,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({
     }
   }, [scrollPosition, fadeAnim]);
 
-  const handleGamePress = React.useCallback((gameId: string) => {
+  const handleGamePress = (gameId: string) => {
     if (expandedGameId === gameId) {
       // Collapse if already expanded
       setExpandedGameId?.('NHL', null);
@@ -652,7 +652,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({
       setExpandedGameId?.('NHL', gameId);
       // Let React Native handle the expansion naturally - no forced scrolling
     }
-  }, [expandedGameId, setExpandedGameId]);
+  };
 
   const navigateToGame = (gameId: string) => {
     // Find the section containing this game
