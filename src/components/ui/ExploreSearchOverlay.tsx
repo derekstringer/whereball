@@ -114,7 +114,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
       setFeedbackTeam(team.name);
       setTimeout(() => {
         setFeedbackTeam(null);
-      }, 800);
+      }, 1000); // 1 second display
     }
   };
 
@@ -429,7 +429,8 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: 180,
     zIndex: 1000,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
