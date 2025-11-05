@@ -29,12 +29,12 @@ interface VerticalGameCardExpandedProps {
   onCollapse: () => void;
 }
 
-export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> = React.memo(({
+export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps>(({
   game,
   userServiceCodes,
   currentTime,
-  onCollapse,
-}) => {
+  onCollapse
+}: VerticalGameCardExpandedProps) => {
   const { colors } = useTheme();
   const { filters, filtersV2, hasReminders, hasScoreNotifications, addAlert, removeAlertsForGame, addScoreAlert, removeScoreAlertsForGame } = useAppStore();
   
