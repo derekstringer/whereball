@@ -14,14 +14,6 @@ import { LiveClockWidget } from './LiveClockWidget';
 import { TimePickerBottomSheet } from '../ui/TimePickerBottomSheet';
 import { NHL_TEAMS } from '../../constants/teams';
 
-// Load badge images once at module level for stable references
-const BADGE_IMAGES = {
-  available: require('../../../assets/icons/available.png'),
-  elsewhere: require('../../../assets/icons/elsewhere.png'),
-  national: require('../../../assets/icons/national.png'),
-  blackout: require('../../../assets/icons/blackout.png'),
-} as const;
-
 interface VerticalGameCardExpandedProps {
   game: NHLGame;
   userServiceCodes: string[];
@@ -245,8 +237,8 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
     return colorMap[code] || colors.primary;
   };
 
-  // Memoize status icons to prevent recreation on every render
-  const statusIcons = useMemo(() => {
+  // Render status icons
+  const renderStatusIcons = () => {
     const icons = [];
     
     // Green: always show (on your services)
@@ -254,7 +246,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
       icons.push(
         <Image
           key="available"
-          source={BADGE_IMAGES.available}
+          source={require('../../../assets/icons/available.png')}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -266,7 +258,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
       icons.push(
         <Image
           key="elsewhere"
-          source={BADGE_IMAGES.elsewhere}
+          source={require('../../../assets/icons/elsewhere.png')}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -279,7 +271,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
       icons.push(
         <Image
           key="national"
-          source={BADGE_IMAGES.national}
+          source={require('../../../assets/icons/national.png')}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -287,7 +279,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
     }
 
     return icons;
-  }, [subscribed.length, unsubscribed.length, game.broadcasts]);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.stroke }]}>
@@ -392,7 +384,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Image
-              source={BADGE_IMAGES.available}
+              source={require('../../../assets/icons/available.png')}
               style={styles.sectionIcon}
               resizeMode="contain"
             />
@@ -434,7 +426,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Image
-              source={BADGE_IMAGES.elsewhere}
+              source={require('../../../assets/icons/elsewhere.png')}
               style={styles.sectionIcon}
               resizeMode="contain"
             />
@@ -470,7 +462,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Image
-              source={BADGE_IMAGES.national}
+              source={require('../../../assets/icons/national.png')}
               style={styles.sectionIcon}
               resizeMode="contain"
             />

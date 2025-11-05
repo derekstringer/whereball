@@ -13,14 +13,6 @@ import { getServicesForGameSplit } from '../../lib/service-helpers';
 import { LiveClockWidget } from './LiveClockWidget';
 import { NHL_TEAMS } from '../../constants/teams';
 
-// Load badge images once at module level for stable references
-const BADGE_IMAGES = {
-  available: require('../../../assets/icons/available.png'),
-  elsewhere: require('../../../assets/icons/elsewhere.png'),
-  national: require('../../../assets/icons/national.png'),
-  blackout: require('../../../assets/icons/blackout.png'),
-} as const;
-
 interface VerticalGameCardProps {
   game: NHLGame;
   userServiceCodes: string[];
@@ -144,8 +136,8 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
     return { timeDisplay: time, redIntensity: intensity };
   }, [game.startTime, isLive, isFinal, now]);
 
-  // Memoize status icons to prevent recreation on every render
-  const statusIcons = useMemo(() => {
+  // Render status icons
+  const renderStatusIcons = () => {
     const icons = [];
     
     // Green: on your services (always show)
@@ -153,7 +145,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
       icons.push(
         <Image
           key="available"
-          source={BADGE_IMAGES.available}
+          source={require('../../../assets/icons/available.png')}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -165,7 +157,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
       icons.push(
         <Image
           key="elsewhere"
-          source={BADGE_IMAGES.elsewhere}
+          source={require('../../../assets/icons/elsewhere.png')}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -178,7 +170,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
       icons.push(
         <Image
           key="national"
-          source={BADGE_IMAGES.national}
+          source={require('../../../assets/icons/national.png')}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -192,7 +184,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
       icons.push(
         <Image
           key="blackout"
-          source={BADGE_IMAGES.blackout}
+          source={require('../../../assets/icons/blackout.png')}
           style={styles.statusIcon}
           resizeMode="contain"
         />
@@ -200,7 +192,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
     }
 
     return icons;
-  }, [subscribed.length, unsubscribed.length, game.broadcasts]);
+  };
 
   // Time background and border styling (LAYERED APPROACH)
   const timeBackgroundColor = useMemo(() => {
@@ -361,7 +353,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
 
         {/* ACTIONS Column (fixed 72px) */}
         <View style={styles.actionsCol}>
-          {statusIcons}
+          {renderStatusIcons()}
         </View>
       </View>
     </TouchableOpacity>
