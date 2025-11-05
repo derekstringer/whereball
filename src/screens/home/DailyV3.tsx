@@ -822,19 +822,15 @@ export const DailyV3: React.FC<DailyV3Props> = ({
           initialScrollIndex={initialScrollIndex}
           onViewableItemsChanged={onViewableItemsChanged}
           viewabilityConfig={viewabilityConfig}
-          removeClippedSubviews={false}
-          windowSize={10}
-          initialNumToRender={20}
-          maxToRenderPerBatch={10}
-          updateCellsBatchingPeriod={50}
-          onScroll={handleScroll}
-          scrollEventThrottle={400}
-          onEndReached={loadMoreForward}
-          onEndReachedThreshold={0.5}
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-            autoscrollToTopThreshold: 10,
-          }}
+        removeClippedSubviews={false}
+        windowSize={10}
+        initialNumToRender={20}
+        maxToRenderPerBatch={10}
+        updateCellsBatchingPeriod={50}
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
+        onEndReached={loadMoreForward}
+        onEndReachedThreshold={0.5}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         getItemLayout={(data, index) => {
