@@ -21,17 +21,17 @@ interface VerticalGameCardProps {
   onPress?: () => void;
 }
 
-export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
+export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   game,
   userServiceCodes,
   currentTime,
   isExpanded = false,
-  onPress
+  onPress,
 }) => {
   const { colors } = useTheme();
   const { filtersV2, hasReminders, hasScoreNotifications } = useAppStore();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
-
+  
   const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   
   // Check if any notifications are set for this game
@@ -354,7 +354,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

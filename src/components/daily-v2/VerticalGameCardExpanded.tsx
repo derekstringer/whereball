@@ -25,13 +25,11 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
   game,
   userServiceCodes,
   currentTime,
-  onCollapse
+  onCollapse,
 }) => {
   const { colors } = useTheme();
   const { filters, filtersV2, hasReminders, hasScoreNotifications, addAlert, removeAlertsForGame, addScoreAlert, removeScoreAlertsForGame } = useAppStore();
-  
-  const { subscribed, unsubscribed} = getServicesForGameSplit(game, userServiceCodes);
-  
+  const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const [showTimePicker, setShowTimePicker] = useState(false);
   
