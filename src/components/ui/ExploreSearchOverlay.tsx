@@ -50,6 +50,17 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
     }
   }, [visible]);
 
+  // Clear search when team is added to exploreSelections
+  const prevSelectionsLength = useRef(exploreSelections.length);
+  useEffect(() => {
+    // Only clear if length increased (team added, not removed)
+    if (exploreSelections.length > prevSelectionsLength.current) {
+      setSearchQuery('');
+      Keyboard.dismiss();
+    }
+    prevSelectionsLength.current = exploreSelections.length;
+  }, [exploreSelections.length]);
+
   // Filter teams/sports based on search query, excluding teams already in Explore
   const searchResults = React.useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
