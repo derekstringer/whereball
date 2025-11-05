@@ -81,7 +81,6 @@ export const DailyV3: React.FC<DailyV3Props> = ({
   const hasInitiallyScrolled = useRef(false);
   const [scrollPosition, setScrollPosition] = useState<'past' | 'today' | 'future'>('today');
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const lastBackwardLoadTime = useRef<number>(0);
   
   const { hiddenTeamsInMyTeams, exploreSelections } = useAppStore();
   const userServiceCodes = useMemo(() => subscriptions.map(s => s.service_code), [subscriptions]);
@@ -453,14 +452,8 @@ export const DailyV3: React.FC<DailyV3Props> = ({
       return;
     }
     
-    // Very conservative backward loading:
-    // - Only trigger within 50px of top (very close to edge)
-    // - Require 5 second cooldown between loads
-    // - Must not already be loading
-    const now = Date.now();
-    const timeSinceLastLoad = now - lastBackwardLoadTime.current;
-    if (offsetY < 50 && !loadingMore && timeSinceLastLoad > 5000) {
-      lastBackwardLoadTime.current = now;
+    // If scrolled near top (within 500px), load more backward
+    if (offsetY < 500 && !loadingMore) {
       loadMoreBackward();
     }
   };
