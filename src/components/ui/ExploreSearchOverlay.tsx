@@ -143,7 +143,9 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
 
   if (!visible) return null;
 
-  const showEmptyState = searchQuery.trim() === '';
+  // When showing feedback, treat as if search is empty (hide search results)
+  const effectiveSearchQuery = feedbackTeam ? '' : searchQuery;
+  const showEmptyState = effectiveSearchQuery.trim() === '';
   const hasResults = searchResults.teams.length > 0 || searchResults.sports.length > 0;
 
   return (
@@ -187,7 +189,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
       </TouchableOpacity>
 
       {/* Results / Empty State / Games */}
-      {showGamesBelow && exploreSelections.length > 0 && searchQuery.trim() === '' ? (
+      {showGamesBelow && exploreSelections.length > 0 && effectiveSearchQuery.trim() === '' ? (
         // Show games only when not actively searching
         require('./../../screens/home/DailyV3').DailyV3 && 
         React.createElement(require('./../../screens/home/DailyV3').DailyV3, { 
