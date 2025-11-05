@@ -11,11 +11,9 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
   Keyboard,
 } from 'react-native';
-import { Search, Circle, CircleCheckBig, Heart, X } from 'lucide-react-native';
+import { Search, CircleCheckBig, Heart, X } from 'lucide-react-native';
 import { useTheme } from '../../hooks/useTheme';
 import { useAppStore } from '../../store/appStore';
 import { ALL_TEAMS, getTeamsByLeague } from '../../constants/teams';
@@ -52,7 +50,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
     }
   }, [visible]);
 
-  // Filter teams/sports based on search query
+  // Filter teams/sports based on search query, excluding teams already in Explore
   const searchResults = React.useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
     
@@ -60,11 +58,12 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
       return { teams: [], sports: [] };
     }
 
-    // Search teams
+    // Search teams and EXCLUDE those already in exploreSelections
     const matchedTeams = ALL_TEAMS.filter(team =>
-      team.name.toLowerCase().includes(query) ||
-      team.market.toLowerCase().includes(query) ||
-      team.short_code.toLowerCase().includes(query)
+      (team.name.toLowerCase().includes(query) ||
+       team.market.toLowerCase().includes(query) ||
+       team.short_code.toLowerCase().includes(query)) &&
+      !exploreSelections.includes(team.id)
     );
 
     // Search sports
@@ -74,7 +73,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
     );
 
     return { teams: matchedTeams, sports: matchedSports };
-  }, [searchQuery]);
+  }, [searchQuery, exploreSelections]);
 
   const handleDismissKeyboard = () => {
     Keyboard.dismiss();
@@ -83,20 +82,24 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   const handleQuickView = (teamId: string) => {
     const team = ALL_TEAMS.find(t => t.id === teamId);
     
-    // CRITICAL: Clear search BEFORE adding team
-    // This ensures React state updates before Zustand triggers re-render
-    setSearchQuery('');
-    Keyboard.dismiss();
+    // Use a ref to track we're clearing - this bypasses React's async setState
+    const shouldClear = true;
     
-    // Now add the team (Zustand will trigger re-render with cleared search)
-    addToExplore(teamId);
-    
-    // Show feedback overlay
-    if (team) {
-      setFeedbackTeam(team.name);
-      setTimeout(() => {
-        setFeedbackTeam(null);
-      }, 800);
+    if (shouldClear) {
+      // Clear search and dismiss keyboard
+      setSearchQuery('');
+      Keyboard.dismiss();
+      
+      // Add team to explore
+      addToExplore(teamId);
+      
+      // Show feedback overlay
+      if (team) {
+        setFeedbackTeam(team.name);
+        setTimeout(() => {
+          setFeedbackTeam(null);
+        }, 800);
+      }
     }
   };
 
@@ -237,7 +240,6 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
                         style={styles.resultRow}
                         onPress={() => handleQuickView(`sport_${sport.league}`)}
                       >
-                        <Circle size={20} color={colors.textSecondary} />
                         <Text style={[styles.resultText, { color: colors.text }]}>
                           {sport.emoji} {sport.name} ({teamCount} teams)
                         </Text>
@@ -247,7 +249,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
                 </View>
               )}
 
-              {/* Teams Results */}
+              {/* Teams Results - NO circles, just team name + heart */}
               {searchResults.teams.length > 0 && (
                 <View style={styles.resultsSection}>
                   <Text style={[styles.resultsSectionHeader, { color: colors.textSecondary }]}>
@@ -255,18 +257,12 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
                   </Text>
                   {searchResults.teams.map(team => {
                     const isFollowed = follows.some(f => f.team_id === team.id);
-                    const isInExplore = exploreSelections.includes(team.id);
                     return (
                       <View key={team.id} style={styles.resultRow}>
                         <TouchableOpacity
                           style={styles.resultRowMain}
                           onPress={() => handleQuickView(team.id)}
                         >
-                          {isInExplore ? (
-                            <CircleCheckBig size={20} color="#22c55e" />
-                          ) : (
-                            <Circle size={20} color={colors.textSecondary} />
-                          )}
                           <Text style={[styles.resultText, { color: colors.text }]}>
                             {team.name}
                           </Text>
@@ -401,9 +397,6 @@ const styles = StyleSheet.create({
   },
   resultRowMain: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
   },
   resultText: {
     fontSize: 15,
