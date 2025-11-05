@@ -1,4 +1,4 @@
-c/**
+/**
  * Vertical Game Card - Apple Calendar style
  * Time on left, centered scoreboard, status icons on right
  */
