@@ -32,11 +32,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
   const { filtersV2, hasReminders, hasScoreNotifications } = useAppStore();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
 
-  // Memoize service split to prevent recalculation on every render
-  const { subscribed, unsubscribed } = useMemo(
-    () => getServicesForGameSplit(game, userServiceCodes),
-    [game.id, game.broadcasts, userServiceCodes]
-  );
+  const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
   
   // Check if any notifications are set for this game
   const reminderSet = hasReminders(game.id);
