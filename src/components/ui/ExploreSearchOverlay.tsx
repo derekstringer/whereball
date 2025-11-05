@@ -39,6 +39,7 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   const { colors } = useTheme();
   const { follows, addToExplore, addFollow, removeFollow, exploreSelections } = useAppStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const [feedbackTeam, setFeedbackTeam] = useState<string | null>(null);
   const searchInputRef = useRef<TextInput>(null);
 
   // Focus search when visible
@@ -80,19 +81,20 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
   };
 
   const handleQuickView = (teamId: string) => {
-    // Add the team first (which will trigger games to load)
-    addToExplore(teamId);
+    const team = ALL_TEAMS.find(t => t.id === teamId);
     
-    // Wait for React to re-render showing the CircleCheckBig, then clear search
-    // This gives satisfying visual feedback that the team was added
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          Keyboard.dismiss();
-          setSearchQuery('');
-        }, 350); // Brief delay so user sees the green checkmark
-      });
-    });
+    // Add the team and clear search immediately so schedule loads
+    addToExplore(teamId);
+    Keyboard.dismiss();
+    setSearchQuery('');
+    
+    // Show feedback overlay with team name and checkmark
+    if (team) {
+      setFeedbackTeam(team.name);
+      setTimeout(() => {
+        setFeedbackTeam(null);
+      }, 800); // Show feedback for 800ms
+    }
   };
 
   const handleToggleFavorite = (teamId: string) => {
@@ -125,6 +127,18 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
 
   return (
     <View style={[styles.container, { backgroundColor: colors.bg }]}>
+      {/* Feedback Overlay - Shows briefly when team is selected */}
+      {feedbackTeam && (
+        <View style={styles.feedbackOverlay}>
+          <View style={[styles.feedbackCard, { backgroundColor: colors.surface }]}>
+            <CircleCheckBig size={48} color="#22c55e" />
+            <Text style={[styles.feedbackText, { color: colors.text }]}>
+              {feedbackTeam} added
+            </Text>
+          </View>
+        </View>
+      )}
+      
       {/* Search Bar - Full width, directly under header */}
       <TouchableOpacity
         activeOpacity={1}
@@ -394,5 +408,32 @@ const styles = StyleSheet.create({
   },
   heartButton: {
     padding: 8,
+  },
+  feedbackOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  feedbackCard: {
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    borderRadius: 16,
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  feedbackText: {
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
