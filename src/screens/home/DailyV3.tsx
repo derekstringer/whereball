@@ -246,73 +246,12 @@ export const DailyV3: React.FC<DailyV3Props> = ({
     }
   }, [onScrollToTodayRef]);
 
-  // Restore scroll position after team visibility changes
-  useEffect(() => {
-    // Don't restore on initial mount or if we don't have a tracked position
-    if (!hasInitiallyScrolled.current || !currentScrollDate.current) {
-      return;
-    }
-
-    // Wait for next frame to ensure filteredSections has updated
-    requestAnimationFrame(() => {
-      if (!sectionListRef.current) return;
-
-      // Find the section for the date we were viewing
-      const targetSectionIndex = filteredSections.findIndex(
-        section => section.title === currentScrollDate.current
-      );
-
-      if (targetSectionIndex === -1) {
-        // The date we were viewing is no longer visible (all games hidden)
-        // Try to find the closest date that is visible
-        const currentDate = new Date(currentScrollDate.current || '');
-        let closestIndex = -1;
-        let smallestDiff = Infinity;
-
-        filteredSections.forEach((section, index) => {
-          const diff = Math.abs(section.dateObj.getTime() - currentDate.getTime());
-          if (diff < smallestDiff) {
-            smallestDiff = diff;
-            closestIndex = index;
-          }
-        });
-
-        if (closestIndex !== -1) {
-          sectionListRef.current.scrollToLocation({
-            sectionIndex: closestIndex,
-            itemIndex: 0,
-            animated: false,
-            viewPosition: 0,
-            viewOffset: 0,
-          });
-          console.log('Restored to closest date:', filteredSections[closestIndex].title);
-        }
-        return;
-      }
-
-      // Find the game within that section if we have one tracked
-      let targetItemIndex = 0;
-      if (currentScrollGameId.current) {
-        const gameIndex = filteredSections[targetSectionIndex].data.findIndex(
-          game => game.id === currentScrollGameId.current
-        );
-        if (gameIndex !== -1) {
-          targetItemIndex = gameIndex;
-        }
-      }
-
-      // Restore scroll position without animation
-      sectionListRef.current.scrollToLocation({
-        sectionIndex: targetSectionIndex,
-        itemIndex: targetItemIndex,
-        animated: false,
-        viewPosition: 0,
-        viewOffset: 0,
-      });
-
-      console.log('Restored scroll to:', currentScrollDate.current, 'game:', currentScrollGameId.current);
-    });
-  }, [hiddenTeamsInMyTeams, filteredSections]);
+  // DISABLED: Scroll position restoration was causing unwanted jumps during backward scroll
+  // The restoration effect was firing constantly, preventing smooth backward scrolling
+  // React Native's SectionList already maintains scroll position naturally
+  // useEffect(() => {
+  //   // ... scroll restoration logic disabled
+  // }, [hiddenTeamsInMyTeams, filteredSections]);
 
   // Live polling: DISABLED to prevent jumping during data refreshes
   // TODO: Re-enable with smarter update logic that doesn't cause scroll jumps
