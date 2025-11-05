@@ -144,8 +144,8 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
     return { timeDisplay: time, redIntensity: intensity };
   }, [game.startTime, isLive, isFinal, now]);
 
-  // Render status icons
-  const renderStatusIcons = () => {
+  // Memoize status icons to prevent recreation on every render
+  const statusIcons = useMemo(() => {
     const icons = [];
     
     // Green: on your services (always show)
@@ -200,7 +200,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
     }
 
     return icons;
-  };
+  }, [subscribed.length, unsubscribed.length, game.broadcasts]);
 
   // Time background and border styling (LAYERED APPROACH)
   const timeBackgroundColor = useMemo(() => {
@@ -361,7 +361,7 @@ export const VerticalGameCard = React.memo<VerticalGameCardProps>(({
 
         {/* ACTIONS Column (fixed 72px) */}
         <View style={styles.actionsCol}>
-          {renderStatusIcons()}
+          {statusIcons}
         </View>
       </View>
     </TouchableOpacity>

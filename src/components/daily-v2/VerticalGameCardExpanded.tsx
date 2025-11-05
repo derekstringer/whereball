@@ -245,8 +245,8 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
     return colorMap[code] || colors.primary;
   };
 
-  // Render status icons
-  const renderStatusIcons = () => {
+  // Memoize status icons to prevent recreation on every render
+  const statusIcons = useMemo(() => {
     const icons = [];
     
     // Green: always show (on your services)
@@ -287,7 +287,7 @@ export const VerticalGameCardExpanded = React.memo<VerticalGameCardExpandedProps
     }
 
     return icons;
-  };
+  }, [subscribed.length, unsubscribed.length, game.broadcasts]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.card, borderColor: colors.stroke }]}>
