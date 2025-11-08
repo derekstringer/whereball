@@ -21,7 +21,7 @@ interface VerticalGameCardProps {
   onPress?: () => void;
 }
 
-export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
+export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
   game,
   userServiceCodes,
   currentTime,
@@ -32,7 +32,11 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
   const { filtersV2, hasReminders, hasScoreNotifications } = useAppStore();
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   
-  const { subscribed, unsubscribed } = getServicesForGameSplit(game, userServiceCodes);
+  // Memoize service split to prevent recalculation on every render
+  const { subscribed, unsubscribed } = useMemo(
+    () => getServicesForGameSplit(game, userServiceCodes),
+    [game.id, game.broadcasts, userServiceCodes]
+  );
   
   // Check if any notifications are set for this game
   const reminderSet = hasReminders(game.id);
@@ -132,8 +136,8 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
     return { timeDisplay: time, redIntensity: intensity };
   }, [game.startTime, isLive, isFinal, now]);
 
-  // Render status icons
-  const renderStatusIcons = () => {
+  // Memoize status icons to prevent unnecessary re-renders
+  const statusIcons = useMemo(() => {
     const icons = [];
     
     // Green: on your services (always show)
@@ -188,7 +192,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
     }
 
     return icons;
-  };
+  }, [subscribed.length, unsubscribed.length, game.broadcasts]);
 
   // Time background and border styling (LAYERED APPROACH)
   const timeBackgroundColor = useMemo(() => {
@@ -349,12 +353,12 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
 
         {/* ACTIONS Column (fixed 72px) */}
         <View style={styles.actionsCol}>
-          {renderStatusIcons()}
+          {statusIcons}
         </View>
       </View>
     </TouchableOpacity>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
