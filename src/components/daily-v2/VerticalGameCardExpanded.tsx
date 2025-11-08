@@ -326,10 +326,10 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             {/* LEFT TEAM - Away */}
             <View style={styles.teamInlineContainer}>
               <View style={styles.teamInline}>
-                <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
+                <Text style={[styles.teamAbbrInline, { color: colors.text }, isFinal && { opacity: 0.4 }]}>
                   {game.awayTeam.abbreviation}
                 </Text>
-                <Text style={[styles.scoreInline, { color: scoreNotificationsSet && !isFinal ? colors.primary : colors.text }]}>
+                <Text style={[styles.scoreInline, { color: scoreNotificationsSet && !isFinal ? colors.primary : colors.text }, isFinal && { opacity: 0.4 }]}>
                   {game.awayTeam.score ?? '-'}
                 </Text>
               </View>
@@ -356,10 +356,10 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
             {/* RIGHT TEAM - Home */}
             <View style={[styles.teamInlineContainer, styles.teamInlineContainerRight]}>
               <View style={styles.teamInline}>
-                <Text style={[styles.scoreInline, { color: scoreNotificationsSet && !isFinal ? colors.primary : colors.text }]}>
+                <Text style={[styles.scoreInline, { color: scoreNotificationsSet && !isFinal ? colors.primary : colors.text }, isFinal && { opacity: 0.4 }]}>
                   {game.homeTeam.score ?? '-'}
                 </Text>
-                <Text style={[styles.teamAbbrInline, { color: colors.text }]}>
+                <Text style={[styles.teamAbbrInline, { color: colors.text }, isFinal && { opacity: 0.4 }]}>
                   {game.homeTeam.abbreviation}
                 </Text>
               </View>
@@ -388,7 +388,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
               style={[styles.sectionIcon, isFinal && { opacity: 0.4 }]}
               resizeMode="contain"
             />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }, isFinal && { opacity: 0.4 }]}>
               WATCH ON:
             </Text>
           </View>
@@ -430,7 +430,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
               style={[styles.sectionIcon, isFinal && { opacity: 0.4 }]}
               resizeMode="contain"
             />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }, isFinal && { opacity: 0.4 }]}>
               ALSO STREAMING ON:
             </Text>
           </View>
@@ -466,7 +466,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
               style={[styles.sectionIcon, isFinal && { opacity: 0.4 }]}
               resizeMode="contain"
             />
-            <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }, isFinal && { opacity: 0.4 }]}>
               NATIONALLY TELEVISED ON:
             </Text>
           </View>
@@ -478,7 +478,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
                   key={index}
                   style={[styles.networkChip, { backgroundColor: colors.surface, borderColor: colors.border }]}
                 >
-                  <Text style={[styles.networkChipText, { color: colors.text }]}>
+                  <Text style={[styles.networkChipText, { color: colors.text }, isFinal && { opacity: 0.4 }]}>
                     {broadcast.network}
                   </Text>
                 </View>
