@@ -74,7 +74,14 @@ export const DailyV3: React.FC<DailyV3Props> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
-  const [dateRange, setDateRange] = useState({ start: -90, end: 60 });
+  // Calculate days back to season start (2024-25 NHL season: Sept 20, 2024)
+  const seasonStartDate = new Date('2024-09-20');
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const daysBackToSeasonStart = Math.floor((today.getTime() - seasonStartDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysBack = Math.max(daysBackToSeasonStart, 0); // Never go before season start
+  
+  const [dateRange, setDateRange] = useState({ start: -daysBack, end: 60 });
   const isScrollingToToday = useRef(false);
   const currentScrollDate = useRef<string | null>(null);
   const currentScrollGameId = useRef<string | null>(null);
@@ -308,7 +315,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Build date range: -90 to +60 (fixed backward, infinite forward)
+      // Build date range: back to season start (Sept 20, 2024) to +60 days forward
       const dates: Date[] = [];
       for (let i = dateRange.start; i <= dateRange.end; i++) {
         const date = new Date(today);
