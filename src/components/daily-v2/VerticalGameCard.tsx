@@ -21,7 +21,7 @@ interface VerticalGameCardProps {
   onPress?: () => void;
 }
 
-export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
+export const VerticalGameCard: React.FC<VerticalGameCardProps> = ({
   game,
   userServiceCodes,
   currentTime,
@@ -358,7 +358,7 @@ export const VerticalGameCard: React.FC<VerticalGameCardProps> = React.memo(({
       </View>
     </TouchableOpacity>
   );
-});
+};
 
 const styles = StyleSheet.create({
   container: {
