@@ -74,7 +74,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
-  const [dateRange, setDateRange] = useState({ start: -60, end: 60 });
+  const [dateRange, setDateRange] = useState({ start: -90, end: 60 });
   const isScrollingToToday = useRef(false);
   const currentScrollDate = useRef<string | null>(null);
   const currentScrollGameId = useRef<string | null>(null);
@@ -308,7 +308,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Build date range: -60 to +60 (fixed backward, infinite forward)
+      // Build date range: -90 to +60 (fixed backward, infinite forward)
       const dates: Date[] = [];
       for (let i = dateRange.start; i <= dateRange.end; i++) {
         const date = new Date(today);
