@@ -136,12 +136,29 @@ export const DailyV3: React.FC<DailyV3Props> = ({
           if (exploreSelections.length === 0) {
             filteredGames = []; // Nothing selected yet
           } else {
+            // Check if any sport-level selections exist (e.g., "sport_NHL")
+            const sportSelections = exploreSelections.filter(id => id.startsWith('sport_'));
+            const teamSelections = exploreSelections.filter(id => !id.startsWith('sport_'));
+            
             filteredGames = section.data.filter(game => {
               // Convert NHL API numeric IDs to our string format for comparison
               const awayStringId = getTeamStringId(game.awayTeam.id, game.awayTeam.abbreviation);
               const homeStringId = getTeamStringId(game.homeTeam.id, game.homeTeam.abbreviation);
               
-              return exploreSelections.includes(awayStringId) || exploreSelections.includes(homeStringId);
+              // Check if either team matches a sport selection
+              if (sportSelections.length > 0) {
+                // For NHL games, check if "sport_NHL" is selected
+                if (sportSelections.includes('sport_NHL')) {
+                  return true; // Show all NHL games
+                }
+              }
+              
+              // Check if either team matches individual team selections
+              if (teamSelections.length > 0) {
+                return teamSelections.includes(awayStringId) || teamSelections.includes(homeStringId);
+              }
+              
+              return false;
             });
           }
         } else if (viewMode === 'reminders') {
