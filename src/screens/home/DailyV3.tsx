@@ -317,9 +317,18 @@ export const DailyV3: React.FC<DailyV3Props> = ({
       
       // Build date range: back to season start (Sept 20, 2024) to +60 days forward
       const dates: Date[] = [];
+      const seasonStart = new Date('2024-09-20');
+      seasonStart.setHours(0, 0, 0, 0);
+      
       for (let i = dateRange.start; i <= dateRange.end; i++) {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
+        
+        // GUARD: Never load dates before season start
+        if (date < seasonStart) {
+          continue;
+        }
+        
         dates.push(date);
       }
       
@@ -775,6 +784,8 @@ export const DailyV3: React.FC<DailyV3Props> = ({
         updateCellsBatchingPeriod={50}
         onEndReached={loadMoreForward}
         onEndReachedThreshold={0.5}
+        onStartReached={null}
+        onStartReachedThreshold={0}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         getItemLayout={(data, index) => {
