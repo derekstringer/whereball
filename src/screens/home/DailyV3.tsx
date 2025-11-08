@@ -74,13 +74,6 @@ export const DailyV3: React.FC<DailyV3Props> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
-  // Calculate days back to season start (2024-25 NHL season: Sept 20, 2024)
-  const seasonStartDate = new Date('2024-09-20');
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const daysBackToSeasonStart = Math.floor((today.getTime() - seasonStartDate.getTime()) / (1000 * 60 * 60 * 24));
-  const daysBack = Math.max(daysBackToSeasonStart, 0); // Never go before season start
-  
   const [dateRange, setDateRange] = useState({ start: -90, end: 60 });
   const isScrollingToToday = useRef(false);
   const currentScrollDate = useRef<string | null>(null);
