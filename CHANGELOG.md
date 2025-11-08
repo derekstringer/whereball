@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **fix: apply consistent opacity to all elements in past game expanded cards** (2025-11-08)
+  - Applied 40% opacity to badge icons (available, elsewhere, national)
+  - Applied 40% opacity to section titles (WATCH ON, ALSO STREAMING ON, NATIONALLY TELEVISED ON)
+  - Applied 40% opacity to team abbreviations and scores
+  - Applied 40% opacity to national network channel names
+  - Unified historical appearance matching collapsed card style
+  - Related commits: e537d19, b3b4808
+
+- **fix: properly handle sport-level selections in Explore dropdown and search** (2025-11-08)
+  - ViewDropdownPopover now displays sport selections as single rows (e.g., "🏒 Hockey (All 32 teams)")
+  - Tapping green check removes entire sport from Explore
+  - ExploreSearchOverlay now excludes teams whose sport is already selected
+  - Also excludes sports that are already selected from results
+  - No more duplicate/redundant results when sport or teams are selected
+  - Related commit: 82088f1
+
+- **fix: support sport-level selections in Explore (e.g. sport_NHL)** (2025-11-08)
+  - DailyV3 now recognizes sport-level selections like `sport_NHL`
+  - When sport selected, shows ALL games from that sport (e.g., all 32 NHL teams)
+  - Properly splits exploreSelections into sport IDs vs team IDs
+  - Supports mixing sport selections with individual team selections
+  - Related commit: 2ce1596
+
 ### Added
 - **feat: Score notifications, Explore UX fixes, and API improvements** (2025-11-03)
   - Bell icon reminders for score notifications (distinct from game start reminders)
