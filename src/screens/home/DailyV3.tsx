@@ -352,8 +352,51 @@ export const DailyV3: React.FC<DailyV3Props> = ({
     }
   };
 
-  // DISABLED: Backward scrolling removed - fixed 60-day lookback only
-  // const loadMoreBackward = async () => { ... }
+  const loadMoreBackward = async () => {
+    if (loadingMore) return;
+    
+    setLoadingMore(true);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    // Load 30 more days backward
+    const newStart = dateRange.start - 30;
+    const dates: Date[] = [];
+    for (let i = newStart; i < dateRange.start; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      dates.push(date);
+    }
+    
+    // Load all games in parallel
+    const results = await Promise.all(
+      dates.map(async (date) => {
+        const dateStr = formatDateKey(date);
+        try {
+          const games = await getGamesForDate(date);
+          return {
+            title: dateStr,
+            dateObj: date,
+            isToday: dateStr === todayDateKey,
+            data: games,
+          };
+        } catch (error) {
+          console.error(`Error loading games for ${dateStr}:`, error);
+          return {
+            title: dateStr,
+            dateObj: date,
+            isToday: dateStr === todayDateKey,
+            data: [],
+          };
+        }
+      })
+    );
+    
+    // Prepend to existing sections
+    setSections(prev => [...results, ...prev]);
+    setDateRange({ start: newStart, end: dateRange.end });
+    setLoadingMore(false);
+  };
 
   const loadMoreForward = async () => {
     if (loadingMore) return;
@@ -401,8 +444,24 @@ export const DailyV3: React.FC<DailyV3Props> = ({
     setLoadingMore(false);
   };
 
-  // DISABLED: No backward loading - handleScroll removed
-  // User can only scroll forward infinitely, backward is fixed at 60 days
+  const handleScroll = (event: any) => {
+    if (isScrollingToToday.current) return;
+    
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const scrollTop = contentOffset.y;
+    const scrollHeight = contentSize.height;
+    const clientHeight = layoutMeasurement.height;
+    
+    // Load more backward when near top
+    if (scrollTop < 500 && !loadingMore) {
+      loadMoreBackward();
+    }
+    
+    // Load more forward when near bottom
+    if (scrollTop + clientHeight > scrollHeight - 500 && !loadingMore) {
+      loadMoreForward();
+    }
+  };
 
   const formatDateKey = (date: Date): string => {
     const year = date.getFullYear();
@@ -766,6 +825,8 @@ export const DailyV3: React.FC<DailyV3Props> = ({
         initialNumToRender={20}
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={50}
+        onScroll={handleScroll}
+        scrollEventThrottle={400}
         onEndReached={loadMoreForward}
         onEndReachedThreshold={0.5}
         keyboardDismissMode="on-drag"
