@@ -73,19 +73,33 @@ export const ExploreSearchOverlay: React.FC<ExploreSearchOverlayProps> = ({
       return { teams: [], sports: [] };
     }
 
-    // Search teams and EXCLUDE those already in exploreSelections
-    const matchedTeams = ALL_TEAMS.filter(team =>
-      (team.name.toLowerCase().includes(query) ||
-       team.market.toLowerCase().includes(query) ||
-       team.short_code.toLowerCase().includes(query)) &&
-      !exploreSelections.includes(team.id)
-    );
+    // Extract sport-level selections (e.g., "sport_NHL")
+    const selectedSportLeagues = exploreSelections
+      .filter(id => id.startsWith('sport_'))
+      .map(id => id.replace('sport_', '')); // e.g., "sport_NHL" -> "NHL"
 
-    // Search sports
-    const matchedSports = SPORTS.filter(sport =>
-      sport.name.toLowerCase().includes(query) ||
-      sport.league.toLowerCase().includes(query)
-    );
+    // Search teams and EXCLUDE:
+    // 1. Teams already in exploreSelections
+    // 2. Teams whose sport is selected (e.g., if "sport_NHL" is selected, exclude all NHL teams)
+    const matchedTeams = ALL_TEAMS.filter(team => {
+      const alreadySelected = exploreSelections.includes(team.id);
+      const sportIsSelected = selectedSportLeagues.includes(team.league);
+      
+      const matchesQuery = team.name.toLowerCase().includes(query) ||
+                          team.market.toLowerCase().includes(query) ||
+                          team.short_code.toLowerCase().includes(query);
+      
+      return matchesQuery && !alreadySelected && !sportIsSelected;
+    });
+
+    // Search sports and EXCLUDE those already selected
+    const matchedSports = SPORTS.filter(sport => {
+      const alreadySelected = exploreSelections.includes(`sport_${sport.league}`);
+      const matchesQuery = sport.name.toLowerCase().includes(query) ||
+                          sport.league.toLowerCase().includes(query);
+      
+      return matchesQuery && !alreadySelected;
+    });
 
     return { teams: matchedTeams, sports: matchedSports };
   }, [searchQuery, exploreSelections]);

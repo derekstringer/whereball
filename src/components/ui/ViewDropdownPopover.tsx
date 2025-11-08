@@ -42,15 +42,31 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
 
   const [expandedSports, setExpandedSports] = useState<Set<string>>(new Set());
 
-  // Group teams by sport
-  const teamsBySport = React.useMemo(() => {
+  // Separate sport-level selections from team selections
+  const { sportSelections, teamSelections } = React.useMemo(() => {
     const teamsToShow = mode === 'my-teams' 
       ? follows.map(f => f.team_id)
       : exploreSelections;
 
+    const sports: string[] = [];
+    const teams: string[] = [];
+    
+    teamsToShow.forEach(id => {
+      if (id.startsWith('sport_')) {
+        sports.push(id);
+      } else {
+        teams.push(id);
+      }
+    });
+
+    return { sportSelections: sports, teamSelections: teams };
+  }, [follows, exploreSelections, mode]);
+
+  // Group teams by sport
+  const teamsBySport = React.useMemo(() => {
     const grouped: Record<string, string[]> = {};
     
-    teamsToShow.forEach(teamId => {
+    teamSelections.forEach(teamId => {
       // Try to get league from follows first, then lookup in ALL_TEAMS
       let league: string = follows.find(f => f.team_id === teamId)?.league || '';
       
@@ -67,7 +83,7 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
     });
 
     return grouped;
-  }, [follows, exploreSelections, mode]);
+  }, [follows, teamSelections]);
 
   const sportKeys = Object.keys(teamsBySport);
   const hasSingleSport = sportKeys.length === 1;
@@ -235,7 +251,39 @@ export const ViewDropdownPopover: React.FC<ViewDropdownPopoverProps> = ({
               style={styles.scrollContent} 
               showsVerticalScrollIndicator={false}
             >
-                {sportKeys.length === 0 ? (
+                {/* Sport-level selections (only in Explore mode) */}
+                {mode === 'explore' && sportSelections.map((sportId) => {
+                  const league = sportId.replace('sport_', ''); // e.g., "sport_NHL" -> "NHL"
+                  const { ALL_TEAMS } = require('../../constants/teams');
+                  const teamsInSport = ALL_TEAMS.filter((t: any) => t.league === league);
+                  const teamCount = teamsInSport.length;
+                  
+                  return (
+                    <TouchableOpacity
+                      key={sportId}
+                      style={styles.teamRow}
+                      onPress={() => removeFromExplore(sportId)}
+                      activeOpacity={0.7}
+                    >
+                      {/* Sport Name */}
+                      <View style={styles.teamNameContainer}>
+                        <Text style={[styles.cityCode, { color: colors.text }]}>
+                          {getSportEmoji(league)} {getSportName(league)}
+                        </Text>
+                        <Text style={[styles.teamName, { color: colors.textSecondary }]}>
+                          (All {teamCount} teams)
+                        </Text>
+                      </View>
+
+                      {/* Green Check - tap to remove */}
+                      <View style={styles.circleIconContainer}>
+                        <CircleCheckBig size={20} color="#22c55e" />
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+
+                {sportKeys.length === 0 && sportSelections.length === 0 ? (
                   <View style={styles.emptyState}>
                     <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
                       {mode === 'my-teams' ? 'No teams followed yet' : 'No teams selected'}
