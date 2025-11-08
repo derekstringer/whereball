@@ -385,7 +385,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           <View style={styles.sectionTitleRow}>
             <Image
               source={require('../../../assets/icons/available.png')}
-              style={styles.sectionIcon}
+              style={[styles.sectionIcon, isFinal && { opacity: 0.4 }]}
               resizeMode="contain"
             />
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -427,7 +427,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           <View style={styles.sectionTitleRow}>
             <Image
               source={require('../../../assets/icons/elsewhere.png')}
-              style={styles.sectionIcon}
+              style={[styles.sectionIcon, isFinal && { opacity: 0.4 }]}
               resizeMode="contain"
             />
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
@@ -463,7 +463,7 @@ export const VerticalGameCardExpanded: React.FC<VerticalGameCardExpandedProps> =
           <View style={styles.sectionTitleRow}>
             <Image
               source={require('../../../assets/icons/national.png')}
-              style={styles.sectionIcon}
+              style={[styles.sectionIcon, isFinal && { opacity: 0.4 }]}
               resizeMode="contain"
             />
             <Text style={[styles.sectionTitle, { color: colors.text }]}>
