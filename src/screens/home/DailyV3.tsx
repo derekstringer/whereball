@@ -74,7 +74,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({
   const [showFilters, setShowFilters] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const sectionListRef = useRef<SectionList<NHLGame, GameSection>>(null);
-  const [dateRange, setDateRange] = useState({ start: -30, end: 60 });
+  const [dateRange, setDateRange] = useState({ start: -60, end: 60 });
   const isScrollingToToday = useRef(false);
   const currentScrollDate = useRef<string | null>(null);
   const currentScrollGameId = useRef<string | null>(null);
@@ -308,7 +308,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Build date range: -30 to +60
+      // Build date range: -60 to +60 (fixed backward, infinite forward)
       const dates: Date[] = [];
       for (let i = dateRange.start; i <= dateRange.end; i++) {
         const date = new Date(today);
@@ -352,51 +352,8 @@ export const DailyV3: React.FC<DailyV3Props> = ({
     }
   };
 
-  const loadMoreBackward = async () => {
-    if (loadingMore) return;
-    
-    setLoadingMore(true);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    // Load 30 more days backward
-    const newStart = dateRange.start - 30;
-    const dates: Date[] = [];
-    for (let i = newStart; i < dateRange.start; i++) {
-      const date = new Date(today);
-      date.setDate(date.getDate() + i);
-      dates.push(date);
-    }
-    
-    // Load all games in parallel
-    const results = await Promise.all(
-      dates.map(async (date) => {
-        const dateStr = formatDateKey(date);
-        try {
-          const games = await getGamesForDate(date);
-          return {
-            title: dateStr,
-            dateObj: date,
-            isToday: dateStr === todayDateKey,
-            data: games,
-          };
-        } catch (error) {
-          console.error(`Error loading games for ${dateStr}:`, error);
-          return {
-            title: dateStr,
-            dateObj: date,
-            isToday: dateStr === todayDateKey,
-            data: [],
-          };
-        }
-      })
-    );
-    
-    // Prepend to existing sections
-    setSections(prev => [...results, ...prev]);
-    setDateRange({ start: newStart, end: dateRange.end });
-    setLoadingMore(false);
-  };
+  // DISABLED: Backward scrolling removed - fixed 60-day lookback only
+  // const loadMoreBackward = async () => { ... }
 
   const loadMoreForward = async () => {
     if (loadingMore) return;
@@ -444,19 +401,8 @@ export const DailyV3: React.FC<DailyV3Props> = ({
     setLoadingMore(false);
   };
 
-  const handleScroll = (event: any) => {
-    const offsetY = event.nativeEvent.contentOffset.y;
-    
-    // Don't trigger loading if we're in the middle of "Go To Today"
-    if (isScrollingToToday.current) {
-      return;
-    }
-    
-    // If scrolled near top (within 500px), load more backward
-    if (offsetY < 500 && !loadingMore) {
-      loadMoreBackward();
-    }
-  };
+  // DISABLED: No backward loading - handleScroll removed
+  // User can only scroll forward infinitely, backward is fixed at 60 days
 
   const formatDateKey = (date: Date): string => {
     const year = date.getFullYear();
@@ -820,8 +766,6 @@ export const DailyV3: React.FC<DailyV3Props> = ({
         initialNumToRender={20}
         maxToRenderPerBatch={10}
         updateCellsBatchingPeriod={50}
-        onScroll={handleScroll}
-        scrollEventThrottle={400}
         onEndReached={loadMoreForward}
         onEndReachedThreshold={0.5}
         keyboardDismissMode="on-drag"
