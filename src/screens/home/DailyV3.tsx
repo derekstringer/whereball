@@ -81,7 +81,7 @@ export const DailyV3: React.FC<DailyV3Props> = ({
   const daysBackToSeasonStart = Math.floor((today.getTime() - seasonStartDate.getTime()) / (1000 * 60 * 60 * 24));
   const daysBack = Math.max(daysBackToSeasonStart, 0); // Never go before season start
   
-  const [dateRange, setDateRange] = useState({ start: -daysBack, end: 60 });
+  const [dateRange, setDateRange] = useState({ start: -90, end: 60 });
   const isScrollingToToday = useRef(false);
   const currentScrollDate = useRef<string | null>(null);
   const currentScrollGameId = useRef<string | null>(null);
@@ -315,20 +315,11 @@ export const DailyV3: React.FC<DailyV3Props> = ({
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Build date range: back to season start (Sept 20, 2024) to +60 days forward
+      // Build date range: -90 to +60 days (will load backward infinitely on scroll)
       const dates: Date[] = [];
-      const seasonStart = new Date('2024-09-20');
-      seasonStart.setHours(0, 0, 0, 0);
-      
       for (let i = dateRange.start; i <= dateRange.end; i++) {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
-        
-        // GUARD: Never load dates before season start
-        if (date < seasonStart) {
-          continue;
-        }
-        
         dates.push(date);
       }
       
@@ -784,8 +775,6 @@ export const DailyV3: React.FC<DailyV3Props> = ({
         updateCellsBatchingPeriod={50}
         onEndReached={loadMoreForward}
         onEndReachedThreshold={0.5}
-        onStartReached={null}
-        onStartReachedThreshold={0}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
         getItemLayout={(data, index) => {
