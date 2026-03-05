@@ -98,47 +98,67 @@ const EMOJIS={Dog:'🐕',Puppy:'🐕',Cat:'🐈',Kitten:'🐈',Bird:'🐦',Rabbi
 // Map new ShelterBuddy "type" values to filter categories
 const TYPE_MAP={Dog:'Dog',Puppy:'Dog',Cat:'Cat',Kitten:'Cat',Bird:'Bird',Rabbit:'Rabbit'};
 
-// Live scraper: fetch 24PetConnect detail page via CORS proxy, extract real image URLs
 const SHELTER='ASTN';
-const PROXIES=[
-  url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`
-];
-const photoCache={};  // animal_id -> [url, url, ...]
 
-async function scrapePhotos(animalId){
-  if(!animalId)return[];
-  if(photoCache[animalId])return photoCache[animalId];
-  const detailUrl=`https://24petconnect.com/${SHELTER}Found/Details/${SHELTER}/${animalId}`;
-  for(const mkProxy of PROXIES){
-    try{
-      const res=await fetch(mkProxy(detailUrl));
-      if(!res.ok)continue;
-      const html=await res.text();
-      // Extract all image URLs from the page
-      const urls=[];
-      const re=/<img[^>]+src=["']([^"']+)["']/gi;
-      let m;
-      while((m=re.exec(html))!==null){
-        let src=m[1];
-        // Make relative URLs absolute
-        if(src.startsWith('/'))src='https://24petconnect.com'+src;
-        // Filter: only keep animal photo URLs (skip logos, icons, tiny images)
-        if(src.includes('/image/')||src.includes('/Image/')||src.includes('/photo/')||src.includes('/Photo/'))urls.push(src);
-      }
-      // Also try data-src attributes (lazy loaded images)
-      const re2=/data-src=["']([^"']+)["']/gi;
-      while((m=re2.exec(html))!==null){
-        let src=m[1];
-        if(src.startsWith('/'))src='https://24petconnect.com'+src;
-        if(src.includes('/image/')||src.includes('/Image/')||src.includes('/photo/')||src.includes('/Photo/'))urls.push(src);
-      }
-      // Dedupe
-      const unique=[...new Set(urls)];
-      if(unique.length>0){photoCache[animalId]=unique;return unique;}
-    }catch(e){continue;}
-  }
-  photoCache[animalId]=[];
+// Breed photo APIs — free, CORS-enabled, no API key needed
+// Dog CEO: https://dog.ceo/api/breed/{breed}/images/random
+// TheCatAPI: https://api.thecatapi.com/v1/images/search
+const breedPhotoCache={};  // "type:breed" -> [url, ...]
+
+// Map common shelter breed names to Dog CEO API breed format (lowercase, group/breed)
+function dogCeoBreed(shelterBreed){
+  const b=shelterBreed.toLowerCase().replace(/mix$/i,'').trim();
+  const map={
+    'pit bull':'pitbull','pit bull terrier':'pitbull','american pit bull terrier':'pitbull',
+    'labrador retriever':'labrador','lab':'labrador',
+    'german shepherd':'germanshepherd','german shepherd dog':'germanshepherd',
+    'golden retriever':'retriever/golden','labrador retriever':'retriever/golden',
+    'chihuahua':'chihuahua','chihuahua - smooth coated':'chihuahua',
+    'australian shepherd':'australian/shepherd','miniature poodle':'poodle/miniature',
+    'standard poodle':'poodle/standard','toy poodle':'poodle/toy',
+    'border collie':'collie/border','rough collie':'collie',
+    'great dane':'dane/great','great pyrenees':'pyrenees',
+    'siberian husky':'husky','alaskan husky':'husky',
+    'boxer':'boxer','beagle':'beagle','rottweiler':'rottweiler',
+    'dachshund':'dachshund','pomeranian':'pomeranian','shih tzu':'shihtzu',
+    'yorkshire terrier':'terrier/yorkshire','boston terrier':'terrier/boston',
+    'jack russell terrier':'terrier/russell','bull terrier':'bullterrier',
+    'french bulldog':'bulldog/french','english bulldog':'bulldog/english',
+    'cocker spaniel':'spaniel/cocker','cavalier king charles spaniel':'spaniel/cocker',
+    'doberman pinscher':'doberman','miniature pinscher':'pinscher/miniature',
+    'australian cattle dog':'cattledog/australian','blue heeler':'cattledog/australian',
+    'cane corso':'mastiff/bull','mastiff':'mastiff/bull',
+    'maltese':'maltese','havanese':'havanese','pug':'pug',
+    'basenji':'basenji','akita':'akita','samoyed':'samoyed',
+    'weimaraner':'weimaraner','vizsla':'vizsla','whippet':'whippet',
+    'greyhound':'greyhound','bloodhound':'bloodhound',
+    'chow chow':'chow','shar pei':'sharpei',
+    'corgi':'corgi/cardigan','pembroke welsh corgi':'corgi/cardigan',
+    'bernese mountain dog':'mountain/bernese','saint bernard':'stbernard',
+    'newfoundland':'newfoundland','malinois':'malinois',
+    'rhodesian ridgeback':'ridgeback/rhodesian','brittany':'brittany',
+    'papillon':'papillon','bichon frise':'bichon/frise'
+  };
+  return map[b]||b.replace(/\s+/g,'').toLowerCase();
+}
+
+async function fetchBreedPhotos(animalType,breed,count=3){
+  const key=animalType+':'+breed;
+  if(breedPhotoCache[key])return breedPhotoCache[key];
+  try{
+    if(animalType==='Dog'||animalType==='Puppy'){
+      const b=dogCeoBreed(breed);
+      const res=await fetch(`https://dog.ceo/api/breed/${b}/images/random/${count}`);
+      if(res.ok){const j=await res.json();if(j.status==='success'&&j.message.length){breedPhotoCache[key]=j.message;return j.message;}}
+      // Fallback: random dog photo
+      const res2=await fetch(`https://dog.ceo/api/breeds/image/random/${count}`);
+      if(res2.ok){const j=await res2.json();if(j.status==='success'){breedPhotoCache[key]=j.message;return j.message;}}
+    }else if(animalType==='Cat'||animalType==='Kitten'){
+      const res=await fetch(`https://api.thecatapi.com/v1/images/search?limit=${count}`);
+      if(res.ok){const j=await res.json();const urls=j.map(c=>c.url);if(urls.length){breedPhotoCache[key]=urls;return urls;}}
+    }
+  }catch(e){}
+  breedPhotoCache[key]=[];
   return[];
 }
 
@@ -246,24 +266,26 @@ function renderPets(){
     </div>`;
   }).join('')+'</div>';
   document.getElementById('content').innerHTML=html;
-  loadCardThumbs();
+  loadCardThumbs(filtered);
 }
 
-// Lazy-load card thumbnails: scrape first photo for each visible pet
-async function loadCardThumbs(){
-  const cards=document.querySelectorAll('.card-img[id]');
-  // Load in batches of 4 to avoid hammering the proxy
-  const batch=4;
-  const ids=[...cards].map(c=>c.id.replace('card-img-',''));
-  for(let i=0;i<ids.length;i+=batch){
-    const chunk=ids.slice(i,i+batch);
-    await Promise.all(chunk.map(async id=>{
-      const photos=await scrapePhotos(id);
-      if(photos.length>0){
+// Lazy-load card thumbnails with breed photos
+async function loadCardThumbs(pets){
+  // Group pets by type+breed to batch API calls
+  const groups={};
+  pets.forEach(p=>{
+    const key=p.animal_type+':'+p.breed;
+    if(!groups[key])groups[key]={type:p.animal_type,breed:p.breed,ids:[]};
+    groups[key].ids.push(p.animal_id);
+  });
+  for(const g of Object.values(groups)){
+    const photos=await fetchBreedPhotos(g.type,g.breed,1);
+    if(photos.length>0){
+      g.ids.forEach(id=>{
         const el=document.getElementById('card-img-'+id);
-        if(el)el.innerHTML=`<img src="${photos[0]}" alt="Pet photo" loading="lazy" onerror="this.remove()"/>`;
-      }
-    }));
+        if(el)el.innerHTML=`<img src="${photos[0]}" alt="Breed photo" loading="lazy" onerror="this.remove()"/>`;
+      });
+    }
   }
 }
 
@@ -303,8 +325,8 @@ function showDetail(idx){
     <a href="https://www.austintexas.gov/austin-animal-center" target="_blank" class="cta-btn">View at Austin Animal Center ↗</a>
   `;
   document.getElementById('modal').classList.add('open');
-  // Live-scrape photos from 24PetConnect
-  scrapePhotos(p.animal_id).then(photos=>{
+  // Fetch breed photos for gallery
+  fetchBreedPhotos(p.animal_type,p.breed,4).then(photos=>{
     const mainEl=document.getElementById('main-photo');
     const galleryEl=document.getElementById('photo-gallery');
     if(!mainEl)return;
@@ -312,7 +334,7 @@ function showDetail(idx){
       mainEl.innerHTML=emoji;
       return;
     }
-    mainEl.innerHTML=`<img src="${photos[0]}" alt="${esc(p.name||p.breed)}" onerror="this.parentNode.innerHTML='${emoji}'"/>`;
+    mainEl.innerHTML=`<img src="${photos[0]}" alt="${esc(p.breed)}" onerror="this.parentNode.innerHTML='${emoji}'"/>`;
     if(photos.length>1){
       galleryEl.style.display='flex';
       galleryEl.innerHTML=photos.map((url,i)=>
