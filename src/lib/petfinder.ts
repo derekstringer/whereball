@@ -1,11 +1,15 @@
 /**
- * RescueGroups.org API v5 Client
+ * Pet Data API — Smart Router
  *
- * Replaces Petfinder — RescueGroups has an active developer program.
- * Uses JSON:API format. Auth is a simple API key in the header.
+ * Primary:  RescueGroups.org API v5 (requires API key)
+ * Fallback: Austin Animal Center via Socrata SODA API (free, no key needed)
+ *
+ * When EXPO_PUBLIC_RESCUEGROUPS_API_KEY is not set, automatically falls back
+ * to live municipal shelter data from Austin Animal Center.
  */
 
 import { PETFINDER_API_KEY, PETFINDER_BASE_URL } from '../config/env';
+import * as Socrata from './socrata';
 import type {
   PetfinderAnimalsResponse,
   PetfinderAnimalResponse,
@@ -17,6 +21,9 @@ import type {
   Organization,
   PetfinderPagination,
 } from '../types';
+
+/** True when a RescueGroups API key is configured */
+const HAS_RG_KEY = !!PETFINDER_API_KEY && PETFINDER_API_KEY !== 'your-rescuegroups-api-key';
 
 // ─── RescueGroups response types ─────────────────────────────────────────────
 
@@ -226,12 +233,13 @@ function mapSpecies(type: string | null): string {
   return map[type] ?? '';
 }
 
-// ─── Public API (same interface as before) ───────────────────────────────────
+// ─── Public API (routes to RescueGroups or Socrata fallback) ─────────────────
 
 export async function searchAnimals(
   filters: SearchFilters,
   page = 1,
 ): Promise<PetfinderAnimalsResponse> {
+  if (!HAS_RG_KEY) return Socrata.searchAnimals(filters, page);
   const speciesPath = filters.type ? mapSpecies(filters.type) : '';
   const endpoint = speciesPath
     ? `/public/animals/search/available/${speciesPath}/`
@@ -369,6 +377,7 @@ export async function searchAnimals(
 }
 
 export async function getAnimal(id: number): Promise<PetfinderAnimalResponse> {
+  if (!HAS_RG_KEY) return Socrata.getAnimal(id);
   const res = await fetch(`${BASE}/public/animals/${id}`, {
     headers: headers(),
   });
@@ -378,6 +387,7 @@ export async function getAnimal(id: number): Promise<PetfinderAnimalResponse> {
 }
 
 export async function getBreeds(type: string): Promise<PetfinderBreedsResponse> {
+  if (!HAS_RG_KEY) return Socrata.getBreeds(type);
   // RescueGroups doesn't have a separate breeds endpoint in v5 public API
   // so we search for distinct breeds by species
   const speciesPath = mapSpecies(type);
@@ -410,6 +420,7 @@ export async function searchOrganizations(
   distance: number,
   page = 1,
 ): Promise<PetfinderOrganizationsResponse> {
+  if (!HAS_RG_KEY) return Socrata.searchOrganizations(location, distance, page);
   const body = {
     data: {
       filterRadius: {

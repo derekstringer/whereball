@@ -23,6 +23,9 @@ import {
   type Pet,
 } from '../types';
 import { spacing, typography, radii } from '../styles/tokens';
+import { PETFINDER_API_KEY } from '../config/env';
+
+const IS_FALLBACK = !PETFINDER_API_KEY || PETFINDER_API_KEY === 'your-rescuegroups-api-key';
 
 export const SearchScreen = ({ navigation }: any) => {
   const { colors } = useTheme();
@@ -140,6 +143,15 @@ export const SearchScreen = ({ navigation }: any) => {
         />
       </View>
 
+      {/* Fallback banner */}
+      {IS_FALLBACK && !isLoading && (
+        <View style={[s.fallbackBanner, { backgroundColor: colors.primaryDim }]}>
+          <Text style={[s.fallbackText, { color: colors.primary }]}>
+            Showing live data from Austin Animal Center (open data)
+          </Text>
+        </View>
+      )}
+
       {/* Results count */}
       {!isLoading && (
         <View style={s.countRow}>
@@ -164,7 +176,7 @@ export const SearchScreen = ({ navigation }: any) => {
             Could not load pets
           </Text>
           <Text style={[s.errorMsg, { color: colors.textSecondary }]}>
-            Check your RescueGroups API key in .env
+            Check your internet connection and try again
           </Text>
           <TouchableOpacity
             onPress={() => refetch()}
@@ -264,6 +276,14 @@ const s = StyleSheet.create({
   },
   speciesEmoji: { fontSize: 16 },
   speciesLabel: { ...typography.captionBold },
+  fallbackBanner: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+  },
+  fallbackText: { ...typography.small, textAlign: 'center' },
   countRow: { paddingHorizontal: spacing.lg, marginBottom: spacing.sm },
   countText: { ...typography.caption },
   grid: { paddingHorizontal: spacing.lg, paddingBottom: 100 },

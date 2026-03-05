@@ -1,7 +1,8 @@
 import { Platform } from 'react-native';
 
-// RescueGroups.org API v5
+// RescueGroups.org API v5 (primary)
 // Get your free key at: https://rescuegroups.org/services/request-an-api-key/
+// When no key is set, falls back to Austin Animal Center open data (no key needed)
 export const PETFINDER_API_KEY = process.env.EXPO_PUBLIC_RESCUEGROUPS_API_KEY ?? '';
 export const PETFINDER_BASE_URL = 'https://api.rescuegroups.org/v5';
 
