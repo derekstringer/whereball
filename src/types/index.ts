@@ -1,288 +1,238 @@
-/**
- * TypeScript Type Definitions for WhereBall
- */
+// ─── Pet Types (Petfinder API v2) ────────────────────────────────────────────
 
-// ============================================================================
-// Database Types (matches Supabase schema)
-// ============================================================================
+export interface Pet {
+  id: number;
+  organization_id: string;
+  url: string;
+  type: string;
+  species: string;
+  breeds: {
+    primary: string | null;
+    secondary: string | null;
+    mixed: boolean;
+    unknown: boolean;
+  };
+  colors: {
+    primary: string | null;
+    secondary: string | null;
+    tertiary: string | null;
+  };
+  age: PetAge;
+  gender: PetGender;
+  size: PetSize;
+  coat: string | null;
+  name: string;
+  description: string | null;
+  photos: PetPhoto[];
+  videos: PetVideo[];
+  status: 'adoptable' | 'adopted' | 'found';
+  attributes: {
+    spayed_neutered: boolean;
+    house_trained: boolean;
+    declawed: boolean | null;
+    special_needs: boolean;
+    shots_current: boolean;
+  };
+  environment: {
+    children: boolean | null;
+    dogs: boolean | null;
+    cats: boolean | null;
+  };
+  tags: string[];
+  contact: {
+    email: string | null;
+    phone: string | null;
+    address: {
+      address1: string | null;
+      address2: string | null;
+      city: string;
+      state: string;
+      postcode: string;
+      country: string;
+    };
+  };
+  published_at: string;
+  distance: number | null;
+}
+
+export interface PetPhoto {
+  small: string;
+  medium: string;
+  large: string;
+  full: string;
+}
+
+export interface PetVideo {
+  embed: string;
+}
+
+export type PetAge = 'Baby' | 'Young' | 'Adult' | 'Senior';
+export type PetGender = 'Male' | 'Female' | 'Unknown';
+export type PetSize = 'Small' | 'Medium' | 'Large' | 'Extra Large';
+export type PetSpecies =
+  | 'Dog'
+  | 'Cat'
+  | 'Rabbit'
+  | 'Bird'
+  | 'Small & Furry'
+  | 'Horse'
+  | 'Barnyard'
+  | 'Scales, Fins & Other';
+
+export const ALL_SPECIES: PetSpecies[] = [
+  'Dog', 'Cat', 'Rabbit', 'Bird', 'Small & Furry',
+  'Horse', 'Barnyard', 'Scales, Fins & Other',
+];
+
+export const SPECIES_EMOJI: Record<PetSpecies, string> = {
+  'Dog': '🐕',
+  'Cat': '🐈',
+  'Rabbit': '🐇',
+  'Bird': '🐦',
+  'Small & Furry': '🐹',
+  'Horse': '🐴',
+  'Barnyard': '🐔',
+  'Scales, Fins & Other': '🐢',
+};
+
+// ─── Organization / Shelter ──────────────────────────────────────────────────
+
+export interface Organization {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  url: string;
+  website: string | null;
+  mission_statement: string | null;
+  address: {
+    address1: string | null;
+    address2: string | null;
+    city: string;
+    state: string;
+    postcode: string;
+    country: string;
+  };
+  hours: Record<string, string | null>;
+  social_media: Record<string, string | null>;
+  photos: PetPhoto[];
+  distance: number | null;
+}
+
+// ─── Search Filters ──────────────────────────────────────────────────────────
+
+export interface SearchFilters {
+  type: PetSpecies | null;
+  breed: string | null;
+  size: PetSize | null;
+  gender: PetGender | null;
+  age: PetAge | null;
+  coat: string | null;
+  color: string | null;
+  location: string;
+  distance: number;
+  sort: 'recent' | 'distance' | '-distance' | 'random';
+  goodWithChildren: boolean | null;
+  goodWithDogs: boolean | null;
+  goodWithCats: boolean | null;
+  houseTrained: boolean | null;
+  specialNeeds: boolean | null;
+}
+
+export const DEFAULT_FILTERS: SearchFilters = {
+  type: null,
+  breed: null,
+  size: null,
+  gender: null,
+  age: null,
+  coat: null,
+  color: null,
+  location: '76301',
+  distance: 25,
+  sort: 'distance',
+  goodWithChildren: null,
+  goodWithDogs: null,
+  goodWithCats: null,
+  houseTrained: null,
+  specialNeeds: null,
+};
+
+export const DISTANCE_OPTIONS = [10, 25, 50, 100, 250, 500];
+
+// ─── API Response Types ──────────────────────────────────────────────────────
+
+export interface PetfinderPagination {
+  count_per_page: number;
+  total_count: number;
+  current_page: number;
+  total_pages: number;
+}
+
+export interface PetfinderAnimalsResponse {
+  animals: Pet[];
+  pagination: PetfinderPagination;
+}
+
+export interface PetfinderAnimalResponse {
+  animal: Pet;
+}
+
+export interface PetfinderBreedsResponse {
+  breeds: { name: string }[];
+}
+
+export interface PetfinderTokenResponse {
+  token_type: string;
+  expires_in: number;
+  access_token: string;
+}
+
+export interface PetfinderOrganizationsResponse {
+  organizations: Organization[];
+  pagination: PetfinderPagination;
+}
+
+// ─── User Types ──────────────────────────────────────────────────────────────
 
 export interface User {
   id: string;
   email: string;
-  created_at: string;
-  zip: string | null;
-  platform: 'ios' | 'android' | null;
-  marketing_opt_in: boolean;
-  revenuecat_user_id: string | null;
-}
-
-export interface UserSubscription {
-  user_id: string;
-  service_code: string;
+  display_name: string | null;
+  default_location: string | null;
+  default_radius: number;
   created_at: string;
 }
 
-export interface Team {
-  id: string;
-  league: 'NHL' | 'NBA' | 'MLB' | 'NCAA';
-  name: string;
-  mascot: string; // Team mascot name only (e.g., "Kings", "Bruins", "Cowboys")
-  market: string;
-  short_code: string;
-  rsn_strings: string[];
-  primary_colors: TeamColors | null;
-  secondary_colors: TeamColors | null;
-  logo_url: string | null;
-}
-
-export interface TeamColors {
-  light: string;
-  dark: string;
-}
-
-export interface Game {
-  id: string;
-  league: 'NHL' | 'NBA' | 'MLB' | 'NCAA';
-  start_ts: string;
-  home_team_id: string;
-  away_team_id: string;
-  venue: string | null;
-  broadcasters: GameBroadcasters;
-  national: boolean;
-  status: 'scheduled' | 'live' | 'final' | 'postponed';
-}
-
-export interface GameBroadcasters {
-  national: string[];
-  rsn: string[];
-}
-
-export interface Service {
-  code: string;
-  name: string;
-  type: 'streaming' | 'cable' | 'satellite';
-  deep_link_scheme: string | null;
-  channel_matrix: ChannelMatrix;
-  provider_lookup_url: string | null;
-}
-
-export interface ChannelMatrix {
-  channels: string[];
-  notes?: string;
-}
-
-export interface Follow {
-  user_id: string;
-  team_id: string;
-  league: 'NHL' | 'NBA' | 'MLB' | 'NCAA';
-  created_at: string;
-}
-
-export interface Alert {
+export interface FavoritePet {
   id: string;
   user_id: string;
-  game_id: string;
-  type: 'game_start' | 'national_flip' | 'score_updates';
-  scheduled_ts: string;
-  sent_ts: string | null;
-  status: 'pending' | 'sent' | 'failed';
+  pet_id: number;
+  pet_name: string;
+  pet_photo_url: string | null;
+  pet_species: string;
+  pet_breed: string | null;
+  organization_name: string | null;
+  saved_at: string;
+  notes: string | null;
 }
 
-export interface ConciergeUsage {
-  user_id: string;
-  date: string;
-  messages_count: number;
-  tokens_est: number;
-  upsell_shown_count: number;
-}
+// ─── App State ───────────────────────────────────────────────────────────────
 
-export interface ConciergeMemory {
-  user_id: string;
-  running_summary: string | null;
-  banter_tone_ok: boolean;
-  last_successful_watch: LastSuccessfulWatch | null;
-  theme_prefs: ThemePreferences | null;
-  updated_at: string;
-}
+export type ColorMode = 'light' | 'dark' | 'system';
 
-export interface LastSuccessfulWatch {
-  game_id: string;
-  service_code: string;
-  timestamp: string;
-}
-
-export interface ThemePreferences {
-  auto_context_enabled: boolean;
-  selections: Record<string, string>; // league/team -> theme_id
-  custom_overrides: Record<string, TeamColors>;
-}
-
-export interface BlackoutReport {
-  id: string;
-  user_id: string | null;
-  game_id: string;
-  zip: string;
-  reported_status: 'incorrect_blackout' | 'incorrect_available' | 'other';
-  user_comment: string | null;
-  created_at: string;
-  resolved: boolean;
-}
-
-// ============================================================================
-// App State Types
-// ============================================================================
-
-export interface AppState {
-  user: User | null;
-  isAuthenticated: boolean;
-  isPremium: boolean;
-  subscriptions: UserSubscription[];
-  follows: Follow[];
-  preferredServices: string[]; // Service codes user marks as "favorites"
-  theme: ThemeState;
-}
-
-export interface ThemeState {
-  mode: 'light' | 'dark';
-  primary: string;
-  accent: string;
-  background: string;
-  surface: string;
-  text: string;
-  safeAccent: string;
-  currentContext: {
-    league?: string;
-    teamId?: string;
-  } | null;
-}
-
-// ============================================================================
-// Blackout Logic Types
-// ============================================================================
-
-export interface BlackoutResult {
-  isBlackedOut: boolean;
-  confidence: 'likely' | 'possible' | 'unlikely';
-  reason: string;
-  affectedServices: string[];
-  alternatives: BlackoutAlternative[];
-}
-
-export interface BlackoutAlternative {
-  service_code: string;
-  service_name: string;
-  channel: string;
-  isAffiliate: boolean;
-  affiliateUrl?: string;
-}
-
-// ============================================================================
-// Watch Route Types
-// ============================================================================
-
-export interface WatchRoute {
-  service_code: string;
-  service_name: string;
-  channel: string;
-  deep_link: string | null;
-  userHasAccess: boolean;
-  isNational: boolean;
-  isRSN: boolean;
-}
-
-export interface GameWithRoutes {
-  game: Game;
-  homeTeam: Team;
-  awayTeam: Team;
-  watchRoutes: WatchRoute[];
-  blackoutInfo: BlackoutResult | null;
-  userCanWatch: boolean;
-}
-
-// ============================================================================
-// AI Concierge Types
-// ============================================================================
-
-export interface ConciergeMessage {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  timestamp: string;
-  tokenEstimate?: number;
-}
-
-export interface ConciergeContext {
-  userProfile: {
-    zip: string | null;
-    subscriptions: string[];
-    followedTeams: string[];
-    isPremium: boolean;
-  };
-  runningSummary: string | null;
-  recentTurns: ConciergeMessage[];
-  factPack: {
-    todayGames: GameWithRoutes[];
-  };
-}
-
-export interface ConciergeResponse {
-  message: string;
-  tokenEstimate: number;
-  showUpsell: boolean;
-  upsellMessage?: string;
-}
-
-// ============================================================================
-// Subscription Types (RevenueCat)
-// ============================================================================
-
-export interface SubscriptionPackage {
-  identifier: string;
-  product: {
-    identifier: string;
-    priceString: string;
-    price: number;
-    currencyCode: string;
-  };
-}
-
-export interface SubscriptionStatus {
-  isPremium: boolean;
-  plan: 'free' | 'monthly' | 'annual' | null;
-  expirationDate: string | null;
-  willRenew: boolean;
-}
-
-// ============================================================================
-// Analytics Event Types
-// ============================================================================
-
-export type AnalyticsEvent =
-  | { name: 'onboarding_start' }
-  | { name: 'onboarding_complete'; properties: { zip_present: boolean; services_count: number; teams_selected: number } }
-  | { name: 'tonight_viewed'; properties: { games_count: number } }
-  | { name: 'game_viewed'; properties: { game_id: string; home_team: string; away_team: string } }
-  | { name: 'watch_now_clicked'; properties: { service_code: string; game_id: string } }
-  | { name: 'paywall_viewed'; properties: { placement: string; variant: string } }
-  | { name: 'subscribe_success'; properties: { plan: 'monthly' | 'annual' } }
-  | { name: 'concierge_msg'; properties: { token_estimate: number; league?: string; team_id?: string } }
-  | { name: 'theme_changed'; properties: { scope: 'global' | 'sport' | 'team'; auto_context_on: boolean } };
-
-// ============================================================================
-// Navigation Types
-// ============================================================================
+// ─── Navigation ──────────────────────────────────────────────────────────────
 
 export type RootStackParamList = {
-  Splash: undefined;
-  Onboarding: undefined;
+  SignIn: undefined;
+  SignUp: undefined;
   Main: undefined;
-  GameDetails: { gameId: string };
-  Paywall: { placement: string };
-  Settings: undefined;
+  PetDetail: { petId: number };
+  ShelterDetail: { organizationId: string };
 };
 
 export type MainTabParamList = {
-  Tonight: undefined;
-  Concierge: undefined;
-  Settings: undefined;
+  Search: undefined;
+  Favorites: undefined;
+  Shelters: undefined;
+  Profile: undefined;
 };
