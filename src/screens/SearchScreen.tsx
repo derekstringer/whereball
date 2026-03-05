@@ -164,7 +164,7 @@ export const SearchScreen = ({ navigation }: any) => {
             Could not load pets
           </Text>
           <Text style={[s.errorMsg, { color: colors.textSecondary }]}>
-            Check your Petfinder API keys in .env
+            Check your RescueGroups API key in .env
           </Text>
           <TouchableOpacity
             onPress={() => refetch()}

@@ -246,7 +246,7 @@ export const PetDetailScreen = ({ route, navigation }: any) => {
           onPress={() => Linking.openURL(pet.url)}
           style={[s.ctaBtn, { backgroundColor: colors.primary }]}
         >
-          <Text style={s.ctaBtnText}>Adopt on Petfinder</Text>
+          <Text style={s.ctaBtnText}>View Adoption Info</Text>
           <ExternalLink size={16} color="#FFF" />
         </TouchableOpacity>
       </View>

@@ -164,7 +164,7 @@ export const ProfileScreen = ({ navigation }: any) => {
 
       {/* About */}
       <Text style={[s.about, { color: colors.textMuted }]}>
-        PawFinder v1.0.0 · Powered by Petfinder API
+        PawFinder v1.0.0 · Powered by RescueGroups.org
       </Text>
     </View>
   );

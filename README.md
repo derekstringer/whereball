@@ -2,7 +2,7 @@
 
 **Find adoptable pets near you — all in one place.**
 
-PawFinder consolidates pet adoption listings from shelters and rescues into a clean, modern mobile app. Powered by the Petfinder API, it stays synced with the latest available animals in real-time.
+PawFinder consolidates pet adoption listings from shelters and rescues into a clean, modern mobile app. Powered by the RescueGroups.org API, it stays synced with the latest available animals in real-time.
 
 ## Features
 
@@ -24,7 +24,7 @@ PawFinder consolidates pet adoption listings from shelters and rescues into a cl
 - **Zustand** (state management)
 - **React Query** (data fetching + auto-refresh)
 - **Supabase** (auth + user data)
-- **Petfinder API v2** (pet listings)
+- **RescueGroups.org API v5** (pet listings)
 - **Lucide Icons** (UI icons)
 
 ## Quick Start
@@ -33,9 +33,9 @@ PawFinder consolidates pet adoption listings from shelters and rescues into a cl
 # Install dependencies
 npm install
 
-# Add your Petfinder API keys
+# Add your RescueGroups API key
 cp .env.example .env.local
-# Edit .env.local with your keys from https://www.petfinder.com/developers/
+# Edit .env.local with your key from https://rescuegroups.org/services/request-an-api-key/
 
 # Start the app
 npx expo start --web    # Web
@@ -43,12 +43,12 @@ npx expo start --ios    # iOS
 npx expo start --android # Android
 ```
 
-## Getting Petfinder API Keys
+## Getting Your API Key
 
-1. Go to [petfinder.com/developers](https://www.petfinder.com/developers/)
-2. Create a free account
-3. Get your API Key and Secret
-4. Add them to `.env.local`
+1. Go to [rescuegroups.org/services/request-an-api-key](https://rescuegroups.org/services/request-an-api-key/)
+2. Fill out the short form (name, email, project description)
+3. You'll receive your API key
+4. Add it to `.env.local` as `EXPO_PUBLIC_RESCUEGROUPS_API_KEY=your-key-here`
 
 ## Default Location
 
