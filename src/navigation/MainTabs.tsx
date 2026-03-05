@@ -1,162 +1,98 @@
-/**
- * Main Bottom Tabs Navigation
- * 5-tab navigation with elevated center "Just Ask" button
- */
-
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Heart, Search, MessageCircle, Bell, User } from 'lucide-react-native';
+import { Search, Heart, Building2, User } from 'lucide-react-native';
 import { useTheme } from '../hooks/useTheme';
 import { useAppStore } from '../store/appStore';
 
-// Screens
-import { MyTeamsScreen } from '../screens/home/MyTeamsScreen';
-import { ExploreScreen } from '../screens/home/ExploreScreen';
-import { JustAskScreen } from '../screens/home/JustAskScreen';
-import { MyRemindersScreen } from '../screens/home/MyRemindersScreen';
-import { MyProfileScreen } from '../screens/home/MyProfileScreen';
+import { SearchScreen } from '../screens/SearchScreen';
+import { FavoritesScreen } from '../screens/FavoritesScreen';
+import { SheltersScreen } from '../screens/SheltersScreen';
+import { ProfileScreen } from '../screens/ProfileScreen';
 
 const Tab = createBottomTabNavigator();
 
 export const MainTabs: React.FC = () => {
-  const { colors } = useTheme();
-  const { alerts } = useAppStore();
-  
-  // Count unique games with pending reminders for badge
-  const reminderCount = React.useMemo(() => {
-    const uniqueGameIds = new Set(
-      alerts
-        .filter(a => a.status === 'pending')
-        .map(a => a.game_id)
-    );
-    return uniqueGameIds.size;
-  }, [alerts]);
-  
+  const { colors, isDark } = useTheme();
+  const favCount = useAppStore((s) => s.favorites.length);
+
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#000000',
-          borderTopColor: '#222222',
+          backgroundColor: isDark ? '#0D0D14' : '#FFFFFF',
+          borderTopColor: colors.border,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 90 : 65, // Extra height for iOS safe area
-          paddingBottom: Platform.OS === 'ios' ? 25 : 8,
+          height: Platform.OS === 'ios' ? 88 : 64,
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
         },
-        tabBarActiveTintColor: '#00d9ff', // Cyan
-        tabBarInactiveTintColor: '#666666',
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-        },
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}
     >
-      {/* 1. My Teams */}
       <Tab.Screen
-        name="MyTeams"
-        component={MyTeamsScreen}
+        name="Search"
+        component={SearchScreen}
         options={{
-          tabBarLabel: 'My Teams',
-          tabBarIcon: ({ color, size }) => (
-            <Heart size={24} color={color} strokeWidth={2} fill={color === '#00d9ff' ? color : 'none'} />
-          ),
+          tabBarLabel: 'Search',
+          tabBarIcon: ({ color }) => <Search size={22} color={color} />,
         }}
       />
-      
-      {/* 2. Explore */}
       <Tab.Screen
-        name="Explore"
-        component={ExploreScreen}
+        name="Favorites"
+        component={FavoritesScreen}
         options={{
-          tabBarLabel: 'Explore',
+          tabBarLabel: 'Favorites',
           tabBarIcon: ({ color }) => (
-            <Search size={24} color={color} strokeWidth={2} />
-          ),
-        }}
-      />
-      
-      {/* 3. Just Ask (Center, Elevated Icon) */}
-      <Tab.Screen
-        name="JustAsk"
-        component={JustAskScreen}
-        options={{
-          tabBarLabel: 'Just Ask',
-          tabBarIcon: ({ focused }) => (
-            <View style={[styles.centerButtonContainer, { marginTop: -35 }]}>
-              <View style={styles.centerButtonOutline}>
-                <MessageCircle size={31} color="#00d9ff" strokeWidth={0} fill="#00d9ff" />
-              </View>
-            </View>
-          ),
-        }}
-      />
-      
-      {/* 4. Reminders */}
-      <Tab.Screen
-        name="MyReminders"
-        component={MyRemindersScreen}
-        options={{
-          tabBarLabel: 'Reminders',
-          tabBarIcon: ({ color }) => (
-            <View style={{ position: 'relative' }}>
-              <Bell size={24} color={color} strokeWidth={2} />
-              {reminderCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{reminderCount}</Text>
+            <View>
+              <Heart
+                size={22}
+                color={color}
+                fill={favCount > 0 ? color : 'transparent'}
+              />
+              {favCount > 0 && (
+                <View style={[s.badge, { backgroundColor: colors.accent }]}>
+                  <Text style={s.badgeText}>{favCount}</Text>
                 </View>
               )}
             </View>
           ),
         }}
       />
-      
-      {/* 5. My Profile */}
       <Tab.Screen
-        name="MyProfile"
-        component={MyProfileScreen}
+        name="Shelters"
+        component={SheltersScreen}
         options={{
-          tabBarLabel: 'My Profile',
-          tabBarIcon: ({ color }) => (
-            <User size={24} color={color} strokeWidth={2} />
-          ),
+          tabBarLabel: 'Shelters',
+          tabBarIcon: ({ color }) => <Building2 size={22} color={color} />,
+        }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          tabBarLabel: 'Profile',
+          tabBarIcon: ({ color }) => <User size={22} color={color} />,
         }}
       />
     </Tab.Navigator>
   );
 };
 
-const styles = StyleSheet.create({
-  centerButtonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerButtonOutline: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: '#00d9ff',
-  },
+const s = StyleSheet.create({
   badge: {
     position: 'absolute',
     top: -4,
-    right: -8,
-    backgroundColor: '#ff4444',
-    borderRadius: 10,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
+    right: -10,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
-    paddingHorizontal: 6,
+    alignItems: 'center',
+    paddingHorizontal: 4,
   },
-  badgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
+  badgeText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
 });

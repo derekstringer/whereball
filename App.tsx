@@ -1,126 +1,102 @@
-/**
- * WhereBall Main App
- */
-
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 
-// Screens
-import { SignInScreen } from './src/screens/onboarding/SignInScreen';
-import { ZipEntryScreen } from './src/screens/onboarding/ZipEntryScreen';
-import { ServicesSelectorScreen } from './src/screens/onboarding/ServicesSelectorScreen';
-import { TeamPickerScreen } from './src/screens/onboarding/TeamPickerScreen';
+import { SignInScreen } from './src/screens/SignInScreen';
+import { SignUpScreen } from './src/screens/SignUpScreen';
+import { PetDetailScreen } from './src/screens/PetDetailScreen';
 import { MainTabs } from './src/navigation/MainTabs';
-
-// Auth & Store
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { getCurrentUser, onAuthStateChange } from './src/lib/auth';
 import { useAppStore } from './src/store/appStore';
 
-// Error Boundary
-import { ErrorBoundary } from './src/components/ErrorBoundary';
-
 const Stack = createNativeStackNavigator();
+const queryClient = new QueryClient();
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const { setUser, setAuthenticated } = useAppStore();
+  const isAuthenticated = useAppStore((s) => s.isAuthenticated);
+  const colorMode = useAppStore((s) => s.colorMode);
 
   useEffect(() => {
-    // Check auth state on mount
-    checkAuth();
+    const init = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        setUser({
+          id: user.id,
+          email: user.email ?? '',
+          display_name: null,
+          default_location: null,
+          default_radius: 25,
+          created_at: user.created_at ?? new Date().toISOString(),
+        });
+        setAuthenticated(true);
+      }
+      setIsLoading(false);
+    };
+    init();
 
-    // Listen for auth changes
     const { data: { subscription } } = onAuthStateChange((user) => {
       if (user) {
         setUser({
           id: user.id,
-          email: user.email || '',
-          created_at: user.created_at || new Date().toISOString(),
-          zip: null,
-          platform: null,
-          marketing_opt_in: false,
-          revenuecat_user_id: null,
+          email: user.email ?? '',
+          display_name: null,
+          default_location: null,
+          default_radius: 25,
+          created_at: user.created_at ?? new Date().toISOString(),
         });
         setAuthenticated(true);
-        setIsAuthenticated(true);
       } else {
         setUser(null);
         setAuthenticated(false);
-        setIsAuthenticated(false);
       }
     });
 
-    return () => {
-      subscription?.unsubscribe();
-    };
+    return () => subscription?.unsubscribe();
   }, []);
-
-  const checkAuth = async () => {
-    const { user } = await getCurrentUser();
-    
-    if (user) {
-      setUser({
-        id: user.id,
-        email: user.email || '',
-        created_at: user.created_at || new Date().toISOString(),
-        zip: null,
-        platform: null,
-        marketing_opt_in: false,
-        revenuecat_user_id: null,
-      });
-      setAuthenticated(true);
-      setIsAuthenticated(true);
-    }
-    
-    setIsLoading(false);
-  };
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0066CC" />
+      <View style={styles.loading}>
+        <ActivityIndicator size="large" color="#8B5CF6" />
       </View>
     );
   }
 
   return (
     <ErrorBoundary>
-      <StatusBar style="auto" />
-      <NavigationContainer>
-        <Stack.Navigator
-          screenOptions={{
-            headerShown: false,
-            animation: 'slide_from_right',
-          }}
-          initialRouteName="ZipEntry"
-        >
-          {/* Onboarding Stack - Auth bypassed for demo */}
-          <Stack.Screen name="SignIn" component={SignInScreen} />
-          <Stack.Screen name="ZipEntry" component={ZipEntryScreen} />
-          <Stack.Screen name="ServicesSelector" component={ServicesSelectorScreen} />
-          <Stack.Screen name="TeamPicker" component={TeamPickerScreen} />
-          <Stack.Screen 
-            name="Main" 
-            component={MainTabs}
-            options={{
-              gestureEnabled: false, // Disable swipe back gesture
-            }}
-          />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <QueryClientProvider client={queryClient}>
+        <StatusBar style={colorMode === 'light' ? 'dark' : 'light'} />
+        <NavigationContainer>
+          <Stack.Navigator
+            screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
+          >
+            {/* Always allow browsing — auth is optional */}
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="SignIn" component={SignInScreen} />
+            <Stack.Screen name="SignUp" component={SignUpScreen} />
+            <Stack.Screen
+              name="PetDetail"
+              component={PetDetailScreen}
+              options={{ animation: 'slide_from_bottom' }}
+            />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: {
+  loading: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#08080C',
   },
 });
