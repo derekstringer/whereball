@@ -10,6 +10,9 @@ export const PETFINDER_BASE_URL = 'https://api.rescuegroups.org/v5';
 export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
 export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
+// Cloudflare Worker for pet photos (scrapes 24PetConnect)
+export const PHOTO_WORKER_URL = process.env.EXPO_PUBLIC_PHOTO_WORKER_URL ?? '';
+
 // Platform
 export const IS_IOS = Platform.OS === 'ios';
 export const IS_ANDROID = Platform.OS === 'android';

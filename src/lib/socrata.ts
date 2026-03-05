@@ -21,7 +21,7 @@ import type {
   PetPhoto,
   Organization,
 } from '../types';
-import { enrichWithPhotos, getBreedPhoto } from './breedPhotos';
+import { enrichWithPhotos } from './breedPhotos';
 
 // ─── Socrata endpoints ───────────────────────────────────────────────────────
 
@@ -154,6 +154,7 @@ function mapIntakeToPet(record: SocrataIntake, index: number): Pet {
     },
     published_at: record.datetime ?? new Date().toISOString(),
     distance: null,
+    _animalId: record.animal_id ?? undefined,
   };
 }
 
@@ -305,10 +306,7 @@ export async function getAnimal(id: number): Promise<PetfinderAnimalResponse> {
   if (!match) throw new Error(`Animal ${id} not found`);
 
   const pet = mapIntakeToPet(match, 0);
-  if (pet.photos.length === 0) {
-    const photo = await getBreedPhoto(pet.species, pet.breeds.primary ?? 'unknown');
-    if (photo) pet.photos = [photo];
-  }
+  await enrichWithPhotos([pet]);
 
   return { animal: pet };
 }

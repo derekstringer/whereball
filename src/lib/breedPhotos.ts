@@ -1,20 +1,40 @@
 /**
- * Breed-based photo lookup using free APIs (no keys required).
+ * Pet photo enrichment — two-tier strategy:
  *
- * - Dogs: Dog CEO API (https://dog.ceo/dog-api/)
- * - Cats: TheCatAPI free tier
- * - Others: returns null
+ * 1. Cloudflare Worker (scrapes real photos from 24PetConnect)
+ * 2. Breed-based fallback (Dog CEO / TheCatAPI) if worker returns nothing
  *
- * Results are cached in-memory by breed so the same breed always shows the
- * same photo within a session.
+ * Results are cached in-memory per animal ID and per breed.
  */
 
 import type { PetPhoto } from '../types';
+import { PHOTO_WORKER_URL } from '../config/env';
 
-const cache = new Map<string, PetPhoto | null>();
+const breedCache = new Map<string, PetPhoto | null>();
 
-// Dog CEO expects lowercase, hyphenated, no spaces. "Labrador Retriever" → "labrador"
-// We try the first word of the primary breed for the best match.
+function makePhoto(url: string): PetPhoto {
+  return { small: url, medium: url, large: url, full: url };
+}
+
+// ─── Tier 1: Cloudflare Worker (real photos) ────────────────────────────────
+
+async function fetchWorkerPhotos(
+  animalIds: string[],
+): Promise<Record<string, string[]>> {
+  if (!PHOTO_WORKER_URL || animalIds.length === 0) return {};
+
+  try {
+    const url = `${PHOTO_WORKER_URL}/batch?ids=${animalIds.join(',')}`;
+    const res = await fetch(url);
+    if (!res.ok) return {};
+    return await res.json();
+  } catch {
+    return {};
+  }
+}
+
+// ─── Tier 2: Breed-based fallback ───────────────────────────────────────────
+
 const DOG_BREED_MAP: Record<string, string> = {
   labrador: 'labrador',
   retriever: 'golden/retriever',
@@ -67,114 +87,113 @@ const DOG_BREED_MAP: Record<string, string> = {
   ridgeback: 'ridgeback/rhodesian',
   chow: 'chow',
   'chow chow': 'chow',
-  'staffordshire': 'staffordshire/bull',
+  staffordshire: 'staffordshire/bull',
 };
 
 function findDogCeoBreed(breed: string): string | null {
   const lower = breed.toLowerCase();
-  // Try exact match first
   for (const [key, val] of Object.entries(DOG_BREED_MAP)) {
     if (lower.includes(key)) return val;
   }
   return null;
 }
 
-function makePhoto(url: string): PetPhoto {
-  return { small: url, medium: url, large: url, full: url };
-}
-
-async function fetchDogPhoto(breed: string): Promise<PetPhoto | null> {
-  const mapped = findDogCeoBreed(breed);
-  const endpoint = mapped
-    ? `https://dog.ceo/api/breed/${mapped}/images/random`
-    : 'https://dog.ceo/api/breeds/image/random';
-
-  try {
-    const res = await fetch(endpoint);
-    if (!res.ok) {
-      // If specific breed fails, try random
-      if (mapped) {
-        const fallback = await fetch('https://dog.ceo/api/breeds/image/random');
-        if (!fallback.ok) return null;
-        const data = await fallback.json();
-        return data.message ? makePhoto(data.message) : null;
-      }
-      return null;
-    }
-    const data = await res.json();
-    return data.message ? makePhoto(data.message) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function fetchCatPhoto(): Promise<PetPhoto | null> {
-  try {
-    const res = await fetch('https://api.thecatapi.com/v1/images/search?limit=1');
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (data[0]?.url) return makePhoto(data[0].url);
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Get a photo for a pet based on species + breed.
- * Returns cached result if available.
- */
-export async function getBreedPhoto(
-  species: string,
-  breed: string,
-): Promise<PetPhoto | null> {
+async function fetchBreedPhoto(species: string, breed: string): Promise<PetPhoto | null> {
   const key = `${species}:${breed}`.toLowerCase();
-  if (cache.has(key)) return cache.get(key) ?? null;
+  if (breedCache.has(key)) return breedCache.get(key) ?? null;
 
   let photo: PetPhoto | null = null;
   const lower = species.toLowerCase();
 
   if (lower === 'dog') {
-    photo = await fetchDogPhoto(breed);
+    const mapped = findDogCeoBreed(breed);
+    const endpoint = mapped
+      ? `https://dog.ceo/api/breed/${mapped}/images/random`
+      : 'https://dog.ceo/api/breeds/image/random';
+    try {
+      let res = await fetch(endpoint);
+      if (!res.ok && mapped) {
+        res = await fetch('https://dog.ceo/api/breeds/image/random');
+      }
+      if (res.ok) {
+        const data = await res.json();
+        if (data.message) photo = makePhoto(data.message);
+      }
+    } catch { /* ignore */ }
   } else if (lower === 'cat') {
-    photo = await fetchCatPhoto();
+    try {
+      const res = await fetch('https://api.thecatapi.com/v1/images/search?limit=1');
+      if (res.ok) {
+        const data = await res.json();
+        if (data[0]?.url) photo = makePhoto(data[0].url);
+      }
+    } catch { /* ignore */ }
   }
 
-  cache.set(key, photo);
+  breedCache.set(key, photo);
   return photo;
 }
 
+// ─── Public API ─────────────────────────────────────────────────────────────
+
+export async function getBreedPhoto(species: string, breed: string): Promise<PetPhoto | null> {
+  return fetchBreedPhoto(species, breed);
+}
+
 /**
- * Enrich an array of pets with breed photos in parallel.
- * Mutates the pets array for efficiency.
+ * Enrich pets with real photos from the Cloudflare Worker, then fall back
+ * to breed-based photos for any that the worker couldn't find.
+ *
+ * Each pet must have an `_animalId` field (the original AAC animal_id string
+ * like "A123456") for the worker lookup to work.
  */
-export async function enrichWithPhotos<T extends { photos: PetPhoto[]; species: string; breeds: { primary: string | null } }>(
-  pets: T[],
-): Promise<T[]> {
+export async function enrichWithPhotos<
+  T extends {
+    photos: PetPhoto[];
+    species: string;
+    breeds: { primary: string | null };
+    _animalId?: string;
+  },
+>(pets: T[]): Promise<T[]> {
   const petsNeedingPhotos = pets.filter((p) => p.photos.length === 0);
   if (petsNeedingPhotos.length === 0) return pets;
 
-  // Dedupe by species+breed to minimize API calls
-  const uniqueBreeds = new Map<string, { species: string; breed: string }>();
-  for (const p of petsNeedingPhotos) {
-    const key = `${p.species}:${p.breeds.primary ?? 'unknown'}`.toLowerCase();
-    if (!uniqueBreeds.has(key)) {
-      uniqueBreeds.set(key, { species: p.species, breed: p.breeds.primary ?? 'unknown' });
+  // ── Tier 1: Cloudflare Worker batch lookup ──
+  const idsForWorker = petsNeedingPhotos
+    .map((p) => p._animalId)
+    .filter((id): id is string => !!id);
+
+  if (idsForWorker.length > 0) {
+    const workerResults = await fetchWorkerPhotos(idsForWorker);
+    for (const p of petsNeedingPhotos) {
+      if (p._animalId && workerResults[p._animalId]?.length > 0) {
+        p.photos = workerResults[p._animalId].map(makePhoto);
+      }
     }
   }
 
-  // Fetch all unique breeds in parallel
-  await Promise.all(
-    Array.from(uniqueBreeds.values()).map(({ species, breed }) =>
-      getBreedPhoto(species, breed),
-    ),
-  );
+  // ── Tier 2: Breed fallback for any still without photos ──
+  const stillNeedPhotos = petsNeedingPhotos.filter((p) => p.photos.length === 0);
+  if (stillNeedPhotos.length > 0) {
+    const uniqueBreeds = new Map<string, { species: string; breed: string }>();
+    for (const p of stillNeedPhotos) {
+      const key = `${p.species}:${p.breeds.primary ?? 'unknown'}`.toLowerCase();
+      if (!uniqueBreeds.has(key)) {
+        uniqueBreeds.set(key, { species: p.species, breed: p.breeds.primary ?? 'unknown' });
+      }
+    }
 
-  // Assign cached photos to pets
-  for (const p of petsNeedingPhotos) {
-    const key = `${p.species}:${p.breeds.primary ?? 'unknown'}`.toLowerCase();
-    const photo = cache.get(key);
-    if (photo) p.photos = [photo];
+    await Promise.all(
+      Array.from(uniqueBreeds.values()).map(({ species, breed }) =>
+        fetchBreedPhoto(species, breed),
+      ),
+    );
+
+    for (const p of stillNeedPhotos) {
+      const key = `${p.species}:${p.breeds.primary ?? 'unknown'}`.toLowerCase();
+      const photo = breedCache.get(key);
+      if (photo) p.photos = [photo];
+    }
   }
 
   return pets;
