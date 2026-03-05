@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>PawFinder — Adoptable Pets</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#08080C;--surface:#151519;--card:#1C1C22;--border:#2A2A32;--text:#F5F5F7;--muted:#8E8E93;--primary:#6C5CE7;--primaryDim:rgba(108,92,231,.15);--accent:#FF6B6B;--pill-bg:#222228}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}
+.header{position:sticky;top:0;z-index:10;background:var(--bg);padding:16px 20px 12px;border-bottom:1px solid var(--border)}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.header p{color:var(--muted);font-size:13px;margin-top:2px}
+.source-badge{display:inline-block;background:var(--primaryDim);color:var(--primary);font-size:11px;font-weight:600;padding:4px 10px;border-radius:20px;margin-top:8px}
+.filters{display:flex;gap:8px;padding:12px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.filters::-webkit-scrollbar{display:none}
+.chip{background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:14px;font-weight:500;cursor:pointer;white-space:nowrap;transition:all .2s}
+.chip.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;padding:16px 20px 100px}
+@media(min-width:600px){.grid{grid-template-columns:repeat(3,1fr)}}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.card:active{transform:scale(.97)}
+.card-img{width:100%;aspect-ratio:1;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:48px;color:var(--muted)}
+.card-body{padding:12px}
+.card-name{font-size:16px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card-breed{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+.card-pills{display:flex;gap:4px;flex-wrap:wrap}
+.card-pill{background:var(--pill-bg);color:var(--muted);font-size:10px;padding:3px 8px;border-radius:10px;font-weight:500}
+.loading{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;color:var(--muted)}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{text-align:center;padding:80px 20px;color:var(--accent)}
+.empty{text-align:center;padding:80px 20px;color:var(--muted);font-size:15px}
+/* Detail modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg);width:100%;max-width:500px;max-height:92vh;border-radius:20px 20px 0 0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;position:sticky;top:0;background:var(--bg);z-index:1;border-bottom:1px solid var(--border)}
+.modal-header h2{font-size:20px;font-weight:700}
+.close-btn{width:32px;height:32px;border-radius:50%;background:var(--surface);border:none;color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.modal-body{padding:20px}
+.detail-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.detail-pill{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 16px;text-align:center;flex:1;min-width:80px}
+.detail-pill .label{font-size:11px;color:var(--muted);margin-bottom:2px}
+.detail-pill .value{font-size:14px;font-weight:600}
+.detail-section{margin-bottom:20px}
+.detail-section h3{font-size:15px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.detail-section p{font-size:14px;line-height:1.6;color:var(--muted)}
+.detail-tags{display:flex;gap:6px;flex-wrap:wrap}
+.detail-tag{background:var(--primaryDim);color:var(--primary);font-size:12px;padding:4px 12px;border-radius:20px;font-weight:500}
+.cta-btn{display:block;width:100%;padding:16px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;text-align:center;margin-top:16px}
+.contact-row{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:8px;color:var(--text);text-decoration:none;font-size:14px}
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>PawFinder</h1>
+  <p>Find your new best friend</p>
+  <span class="source-badge">Live data — Austin Animal Center</span>
+</div>
+
+<div class="filters" id="filters">
+  <button class="chip active" data-type="">All</button>
+  <button class="chip" data-type="Dog">🐕 Dogs</button>
+  <button class="chip" data-type="Cat">🐈 Cats</button>
+  <button class="chip" data-type="Bird">🐦 Birds</button>
+  <button class="chip" data-type="Other">🐾 Other</button>
+</div>
+
+<div id="content">
+  <div class="loading"><div class="spinner"></div>Fetching adorable pets...</div>
+</div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-name"></h2>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+const INTAKES='https://data.austintexas.gov/resource/wter-evkm.json';
+const OUTCOMES='https://data.austintexas.gov/resource/9t4d-g238.json';
+const EMOJIS={Dog:'🐕',Cat:'🐈',Bird:'🐦'};
+
+let allPets=[];
+let activeType='';
+
+// Fetch & render
+async function loadPets(){
+  document.getElementById('content').innerHTML='<div class="loading"><div class="spinner"></div>Fetching adorable pets...</div>';
+  try{
+    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
+    const dateFilter=`datetime > '${cutoff.toISOString().slice(0,10)}'`;
+    const [intakeRes,outcomeRes]=await Promise.all([
+      fetch(`${INTAKES}?$where=${encodeURIComponent(dateFilter+" AND intake_condition NOT IN ('Dead','Euthanasia Request')")}&$order=datetime DESC&$limit=200`),
+      fetch(`${OUTCOMES}?$select=animal_id&$where=${encodeURIComponent(dateFilter)}&$limit=5000`)
+    ]);
+    const intakes=await intakeRes.json();
+    const outcomes=await outcomeRes.json();
+    const outcomeIds=new Set(outcomes.map(o=>o.animal_id));
+    allPets=intakes.filter(r=>!outcomeIds.has(r.animal_id));
+    renderPets();
+  }catch(e){
+    document.getElementById('content').innerHTML=`<div class="error"><p style="font-size:48px;margin-bottom:16px">😿</p><p>Couldn't fetch pets. Check your connection.</p></div>`;
+  }
+}
+
+function renderPets(){
+  let filtered=allPets;
+  if(activeType==='Other'){
+    filtered=allPets.filter(p=>!['Dog','Cat','Bird'].includes(p.animal_type));
+  }else if(activeType){
+    filtered=allPets.filter(p=>p.animal_type===activeType);
+  }
+  if(!filtered.length){
+    document.getElementById('content').innerHTML='<div class="empty">No pets found for this filter</div>';
+    return;
+  }
+  const html='<div class="grid">'+filtered.map((p,i)=>{
+    const breed=(p.breed||'Unknown').split('/')[0].trim();
+    const emoji=EMOJIS[p.animal_type]||'🐾';
+    const age=parseAge(p.age_upon_intake);
+    const gender=(p.sex_upon_intake||'').includes('Female')?'♀':'♂';
+    return`<div class="card" onclick="showDetail(${i})" data-idx="${i}">
+      <div class="card-img">${emoji}</div>
+      <div class="card-body">
+        <div class="card-name">${esc(p.name||'Unknown')}</div>
+        <div class="card-breed">${esc(breed)}</div>
+        <div class="card-pills">
+          <span class="card-pill">${age}</span>
+          <span class="card-pill">${gender}</span>
+          <span class="card-pill">${esc(p.animal_type||'?')}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+  document.getElementById('content').innerHTML=html;
+}
+
+function parseAge(s){
+  if(!s)return'Adult';
+  const m=s.toLowerCase().match(/(\d+)\s*(year|month|week|day)/);
+  if(!m)return'Adult';
+  const n=parseInt(m[1]),u=m[2];
+  if(u==='month'||u==='week'||u==='day')return n<=6?'Baby':'Young';
+  if(n<=2)return'Young';if(n>=8)return'Senior';return'Adult';
+}
+
+function parseGender(s){
+  if(!s)return'Unknown';
+  if(s.toLowerCase().includes('female'))return'Female';
+  if(s.toLowerCase().includes('male'))return'Male';
+  return'Unknown';
+}
+
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function showDetail(idx){
+  const filtered=activeType==='Other'
+    ?allPets.filter(p=>!['Dog','Cat','Bird'].includes(p.animal_type))
+    :activeType?allPets.filter(p=>p.animal_type===activeType):allPets;
+  const p=filtered[idx];if(!p)return;
+  document.getElementById('modal-name').textContent=p.name||'Unknown';
+  const breed=(p.breed||'Unknown');
+  const age=parseAge(p.age_upon_intake);
+  const gender=parseGender(p.sex_upon_intake);
+  const spayed=(p.sex_upon_intake||'').toLowerCase().includes('neutered')||(p.sex_upon_intake||'').toLowerCase().includes('spayed');
+  document.getElementById('modal-body').innerHTML=`
+    <div class="detail-row">
+      <div class="detail-pill"><div class="label">Age</div><div class="value">${age}</div></div>
+      <div class="detail-pill"><div class="label">Gender</div><div class="value">${gender}</div></div>
+      <div class="detail-pill"><div class="label">Type</div><div class="value">${esc(p.animal_type||'?')}</div></div>
+    </div>
+    <div class="detail-section"><h3>Breed</h3><p>${esc(breed)}</p></div>
+    <div class="detail-section"><h3>Color</h3><p>${esc(p.color||'Unknown')}</p></div>
+    ${p.age_upon_intake?`<div class="detail-section"><h3>Age at intake</h3><p>${esc(p.age_upon_intake)}</p></div>`:''}
+    ${p.found_location?`<div class="detail-section"><h3>Found near</h3><p>${esc(p.found_location)}</p></div>`:''}
+    <div class="detail-section"><h3>Details</h3>
+      <div class="detail-tags">
+        ${spayed?'<span class="detail-tag">Spayed/Neutered</span>':''}
+        ${p.intake_type?`<span class="detail-tag">${esc(p.intake_type)}</span>`:''}
+        ${p.intake_condition?`<span class="detail-tag">${esc(p.intake_condition)}</span>`:''}
+      </div>
+    </div>
+    <div class="detail-section"><h3>Contact</h3>
+      <a href="tel:5129780500" class="contact-row">📞 (512) 978-0500</a>
+      <a href="mailto:animal.srvcinfo@austintexas.gov" class="contact-row">✉️ animal.srvcinfo@austintexas.gov</a>
+    </div>
+    <a href="https://www.austintexas.gov/austin-animal-center" target="_blank" class="cta-btn">View at Austin Animal Center ↗</a>
+  `;
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal(){document.getElementById('modal').classList.remove('open')}
+document.getElementById('modal').addEventListener('click',e=>{if(e.target.classList.contains('modal-overlay'))closeModal()});
+
+// Filter chips
+document.querySelectorAll('.chip').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.chip').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    activeType=btn.dataset.type;
+    renderPets();
+  });
+});
+
+loadPets();
+</script>
+</body>
+</html>
