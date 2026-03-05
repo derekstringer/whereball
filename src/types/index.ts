@@ -53,6 +53,8 @@ export interface Pet {
   };
   published_at: string;
   distance: number | null;
+  /** Original shelter animal ID (e.g. "A123456") — used for photo worker lookups */
+  _animalId?: string;
 }
 
 export interface PetPhoto {

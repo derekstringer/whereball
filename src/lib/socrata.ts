@@ -21,6 +21,7 @@ import type {
   PetPhoto,
   Organization,
 } from '../types';
+import { enrichWithPhotos } from './breedPhotos';
 
 // ─── Socrata endpoints ───────────────────────────────────────────────────────
 
@@ -153,6 +154,7 @@ function mapIntakeToPet(record: SocrataIntake, index: number): Pet {
     },
     published_at: record.datetime ?? new Date().toISOString(),
     distance: null,
+    _animalId: record.animal_id ?? undefined,
   };
 }
 
@@ -271,6 +273,9 @@ export async function searchAnimals(
 
   const pets = filtered.map(mapIntakeToPet);
 
+  // Enrich pets with breed-based photos from free APIs
+  await enrichWithPhotos(pets);
+
   // We don't know exact total from SODA without a separate count query, approximate it
   const hasMore = intakes.length === PAGE_SIZE;
 
@@ -300,7 +305,10 @@ export async function getAnimal(id: number): Promise<PetfinderAnimalResponse> {
   const match = intakes.find((r, i) => hashId(r.animal_id ?? `aac-${i}`) === id);
   if (!match) throw new Error(`Animal ${id} not found`);
 
-  return { animal: mapIntakeToPet(match, 0) };
+  const pet = mapIntakeToPet(match, 0);
+  await enrichWithPhotos([pet]);
+
+  return { animal: pet };
 }
 
 export async function getBreeds(_type: string): Promise<PetfinderBreedsResponse> {

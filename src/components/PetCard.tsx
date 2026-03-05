@@ -31,6 +31,11 @@ export const PetCard: React.FC<Props> = ({ pet, onPress }) => {
 
   const photo = pet.photos[0]?.medium;
   const breed = pet.breeds.primary ?? 'Unknown breed';
+  const speciesEmoji =
+    pet.species === 'Dog' ? '🐕' :
+    pet.species === 'Cat' ? '🐈' :
+    pet.species === 'Bird' ? '🐦' :
+    pet.species === 'Rabbit' ? '🐇' : '🐾';
   const distance =
     pet.distance != null ? `${Math.round(pet.distance)} mi` : null;
 
@@ -72,8 +77,8 @@ export const PetCard: React.FC<Props> = ({ pet, onPress }) => {
         {photo ? (
           <Image source={{ uri: photo }} style={s.image} />
         ) : (
-          <View style={[s.image, s.placeholder, { backgroundColor: colors.surface }]}>
-            <Text style={s.placeholderText}>🐾</Text>
+          <View style={[s.image, s.placeholder, { backgroundColor: isDark ? '#2a2a3e' : '#f0eaf8' }]}>
+            <Text style={s.placeholderText}>{speciesEmoji}</Text>
           </View>
         )}
 

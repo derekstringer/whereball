@@ -98,48 +98,36 @@ const EMOJIS={Dog:'🐕',Puppy:'🐕',Cat:'🐈',Kitten:'🐈',Bird:'🐦',Rabbi
 // Map new ShelterBuddy "type" values to filter categories
 const TYPE_MAP={Dog:'Dog',Puppy:'Dog',Cat:'Cat',Kitten:'Cat',Bird:'Bird',Rabbit:'Rabbit'};
 
-// Live scraper: fetch 24PetConnect detail page via CORS proxy, extract real image URLs
 const SHELTER='ASTN';
-const PROXIES=[
-  url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-  url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`
-];
-const photoCache={};  // animal_id -> [url, url, ...]
 
-async function scrapePhotos(animalId){
+// *** CHANGE THIS after deploying your Cloudflare Worker ***
+// Deploy: cd worker && npx wrangler deploy
+// Then paste your worker URL here (e.g. https://pawfinder-photos.yourname.workers.dev)
+const WORKER_URL='https://pawfinder-photos.YOUR_SUBDOMAIN.workers.dev';
+
+const photoCache={};  // animal_id -> [url, ...]
+
+async function fetchPhotos(animalId){
   if(!animalId)return[];
   if(photoCache[animalId])return photoCache[animalId];
-  const detailUrl=`https://24petconnect.com/${SHELTER}Found/Details/${SHELTER}/${animalId}`;
-  for(const mkProxy of PROXIES){
-    try{
-      const res=await fetch(mkProxy(detailUrl));
-      if(!res.ok)continue;
-      const html=await res.text();
-      // Extract all image URLs from the page
-      const urls=[];
-      const re=/<img[^>]+src=["']([^"']+)["']/gi;
-      let m;
-      while((m=re.exec(html))!==null){
-        let src=m[1];
-        // Make relative URLs absolute
-        if(src.startsWith('/'))src='https://24petconnect.com'+src;
-        // Filter: only keep animal photo URLs (skip logos, icons, tiny images)
-        if(src.includes('/image/')||src.includes('/Image/')||src.includes('/photo/')||src.includes('/Photo/'))urls.push(src);
-      }
-      // Also try data-src attributes (lazy loaded images)
-      const re2=/data-src=["']([^"']+)["']/gi;
-      while((m=re2.exec(html))!==null){
-        let src=m[1];
-        if(src.startsWith('/'))src='https://24petconnect.com'+src;
-        if(src.includes('/image/')||src.includes('/Image/')||src.includes('/photo/')||src.includes('/Photo/'))urls.push(src);
-      }
-      // Dedupe
-      const unique=[...new Set(urls)];
-      if(unique.length>0){photoCache[animalId]=unique;return unique;}
-    }catch(e){continue;}
-  }
-  photoCache[animalId]=[];
-  return[];
+  try{
+    const res=await fetch(`${WORKER_URL}/photos/${animalId}`);
+    if(!res.ok)return[];
+    const data=await res.json();
+    photoCache[animalId]=data.photos||[];
+    return photoCache[animalId];
+  }catch(e){return[];}
+}
+
+async function fetchPhotosBatch(ids){
+  if(!ids.length)return{};
+  try{
+    const res=await fetch(`${WORKER_URL}/batch?ids=${ids.join(',')}`);
+    if(!res.ok)return{};
+    const data=await res.json();
+    Object.entries(data).forEach(([id,photos])=>{photoCache[id]=photos;});
+    return data;
+  }catch(e){return{};}
 }
 
 let allPets=[];
@@ -246,24 +234,23 @@ function renderPets(){
     </div>`;
   }).join('')+'</div>';
   document.getElementById('content').innerHTML=html;
-  loadCardThumbs();
+  loadCardThumbs(filtered);
 }
 
-// Lazy-load card thumbnails: scrape first photo for each visible pet
-async function loadCardThumbs(){
-  const cards=document.querySelectorAll('.card-img[id]');
-  // Load in batches of 4 to avoid hammering the proxy
-  const batch=4;
-  const ids=[...cards].map(c=>c.id.replace('card-img-',''));
-  for(let i=0;i<ids.length;i+=batch){
-    const chunk=ids.slice(i,i+batch);
-    await Promise.all(chunk.map(async id=>{
-      const photos=await scrapePhotos(id);
+// Lazy-load card thumbnails via Cloudflare Worker (real photos)
+async function loadCardThumbs(pets){
+  if(WORKER_URL.includes('YOUR_SUBDOMAIN'))return;  // Worker not deployed yet
+  // Batch fetch in chunks of 20
+  const ids=pets.map(p=>p.animal_id).filter(Boolean);
+  for(let i=0;i<ids.length;i+=20){
+    const chunk=ids.slice(i,i+20);
+    const results=await fetchPhotosBatch(chunk);
+    Object.entries(results).forEach(([id,photos])=>{
       if(photos.length>0){
         const el=document.getElementById('card-img-'+id);
         if(el)el.innerHTML=`<img src="${photos[0]}" alt="Pet photo" loading="lazy" onerror="this.remove()"/>`;
       }
-    }));
+    });
   }
 }
 
@@ -303,8 +290,8 @@ function showDetail(idx){
     <a href="https://www.austintexas.gov/austin-animal-center" target="_blank" class="cta-btn">View at Austin Animal Center ↗</a>
   `;
   document.getElementById('modal').classList.add('open');
-  // Live-scrape photos from 24PetConnect
-  scrapePhotos(p.animal_id).then(photos=>{
+  // Fetch real photos via Cloudflare Worker
+  fetchPhotos(p.animal_id).then(photos=>{
     const mainEl=document.getElementById('main-photo');
     const galleryEl=document.getElementById('photo-gallery');
     if(!mainEl)return;
@@ -312,7 +299,7 @@ function showDetail(idx){
       mainEl.innerHTML=emoji;
       return;
     }
-    mainEl.innerHTML=`<img src="${photos[0]}" alt="${esc(p.name||p.breed)}" onerror="this.parentNode.innerHTML='${emoji}'"/>`;
+    mainEl.innerHTML=`<img src="${photos[0]}" alt="${esc(p.breed)}" onerror="this.parentNode.innerHTML='${emoji}'"/>`;
     if(photos.length>1){
       galleryEl.style.display='flex';
       galleryEl.innerHTML=photos.map((url,i)=>
