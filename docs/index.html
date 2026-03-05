@@ -146,7 +146,16 @@ async function loadPets(){
     if(!res.ok)throw new Error('API returned '+res.status);
     const raw=await res.json();
     if(raw.error)throw new Error(raw.message||raw.error);
-    allPets=raw.map(normalizePet);
+    // Deduplicate by animal_id (keep most recent)
+    const seen=new Set();
+    const deduped=[];
+    for(const r of raw){
+      if(!seen.has(r.animal_id)){seen.add(r.animal_id);deduped.push(r);}
+    }
+    allPets=deduped.map(normalizePet);
+    // Sort: dogs & cats first, then by date
+    const priority={Dog:0,Cat:1,Bird:2,Rabbit:3};
+    allPets.sort((a,b)=>(priority[a.animal_type]??9)-(priority[b.animal_type]??9));
     renderPets();
   }catch(e){
     document.getElementById('content').innerHTML=`<div class="error"><p style="font-size:48px;margin-bottom:16px">😿</p><p>Couldn't fetch pets.<br><small style="opacity:.6">${esc(e.message)}</small></p></div>`;
@@ -171,8 +180,8 @@ function renderPets(){
     return`<div class="card" onclick="showDetail(${i})" data-idx="${i}">
       <div class="card-img">${emoji}</div>
       <div class="card-body">
-        <div class="card-name">${esc(p.name||'Unknown')}</div>
-        <div class="card-breed">${esc(breed)}</div>
+        <div class="card-name">${esc(p.name||breed)}</div>
+        <div class="card-breed">${p.name?esc(breed):esc(p.color)}</div>
         <div class="card-pills">
           <span class="card-pill">${p.age}</span>
           <span class="card-pill">${gender}</span>
@@ -189,7 +198,7 @@ function showDetail(idx){
     ?allPets.filter(p=>!['Dog','Cat','Bird','Rabbit'].includes(p.animal_type))
     :activeType?allPets.filter(p=>p.animal_type===activeType):allPets;
   const p=filtered[idx];if(!p)return;
-  document.getElementById('modal-name').textContent=p.name||'Unknown';
+  document.getElementById('modal-name').textContent=p.name||p.breed;
   const gender=parseGender(p.sex);
   document.getElementById('modal-body').innerHTML=`
     <div class="detail-row">
