@@ -93,19 +93,25 @@ let activeType='';
 async function loadPets(){
   document.getElementById('content').innerHTML='<div class="loading"><div class="spinner"></div>Fetching adorable pets...</div>';
   try{
-    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-90);
-    const dateFilter=`datetime > '${cutoff.toISOString().slice(0,10)}'`;
-    const [intakeRes,outcomeRes]=await Promise.all([
-      fetch(`${INTAKES}?$where=${encodeURIComponent(dateFilter+" AND intake_condition NOT IN ('Dead','Euthanasia Request')")}&$order=datetime DESC&$limit=200`),
-      fetch(`${OUTCOMES}?$select=animal_id&$where=${encodeURIComponent(dateFilter)}&$limit=5000`)
-    ]);
+    const cutoff=new Date();cutoff.setDate(cutoff.getDate()-60);
+    const dateStr=cutoff.toISOString().slice(0,10);
+    // Fetch recent intakes
+    const intakeUrl=`${INTAKES}?$where=${encodeURIComponent("datetime > '"+dateStr+"'")}&$order=datetime DESC&$limit=300`;
+    const intakeRes=await fetch(intakeUrl);
+    if(!intakeRes.ok)throw new Error('Intake API '+intakeRes.status);
     const intakes=await intakeRes.json();
-    const outcomes=await outcomeRes.json();
+    // Fetch outcomes to find animals that left the shelter
+    const outcomeUrl=`${OUTCOMES}?$select=animal_id&$where=${encodeURIComponent("datetime > '"+dateStr+"'")}&$limit=5000`;
+    const outcomeRes=await fetch(outcomeUrl);
+    const outcomes=outcomeRes.ok?await outcomeRes.json():[];
     const outcomeIds=new Set(outcomes.map(o=>o.animal_id));
-    allPets=intakes.filter(r=>!outcomeIds.has(r.animal_id));
+    // Show animals still at the shelter (no outcome yet)
+    const stillHere=intakes.filter(r=>!outcomeIds.has(r.animal_id));
+    // If cross-referencing leaves nothing, just show all recent intakes
+    allPets=stillHere.length>0?stillHere:intakes;
     renderPets();
   }catch(e){
-    document.getElementById('content').innerHTML=`<div class="error"><p style="font-size:48px;margin-bottom:16px">😿</p><p>Couldn't fetch pets. Check your connection.</p></div>`;
+    document.getElementById('content').innerHTML=`<div class="error"><p style="font-size:48px;margin-bottom:16px">😿</p><p>Couldn't fetch pets.<br><small style="opacity:.6">${e.message}</small></p></div>`;
   }
 }
 
