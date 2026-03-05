@@ -98,12 +98,48 @@ const EMOJIS={Dog:'🐕',Puppy:'🐕',Cat:'🐈',Kitten:'🐈',Bird:'🐦',Rabbi
 // Map new ShelterBuddy "type" values to filter categories
 const TYPE_MAP={Dog:'Dog',Puppy:'Dog',Cat:'Cat',Kitten:'Cat',Bird:'Bird',Rabbit:'Rabbit'};
 
-// 24PetConnect image URLs (PetHarbor rebranded) — Austin shelter code = ASTN
-// Format: https://24petconnect.com/image/{ANIMAL_ID}/{SHELTER}/{PHOTO_NUMBER}
+// Live scraper: fetch 24PetConnect detail page via CORS proxy, extract real image URLs
 const SHELTER='ASTN';
-function petImageUrl(animalId,photoNum=1){
-  if(!animalId)return null;
-  return`https://24petconnect.com/image/${animalId}/${SHELTER}/${photoNum}`;
+const PROXIES=[
+  url=>`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url=>`https://corsproxy.io/?url=${encodeURIComponent(url)}`
+];
+const photoCache={};  // animal_id -> [url, url, ...]
+
+async function scrapePhotos(animalId){
+  if(!animalId)return[];
+  if(photoCache[animalId])return photoCache[animalId];
+  const detailUrl=`https://24petconnect.com/${SHELTER}Found/Details/${SHELTER}/${animalId}`;
+  for(const mkProxy of PROXIES){
+    try{
+      const res=await fetch(mkProxy(detailUrl));
+      if(!res.ok)continue;
+      const html=await res.text();
+      // Extract all image URLs from the page
+      const urls=[];
+      const re=/<img[^>]+src=["']([^"']+)["']/gi;
+      let m;
+      while((m=re.exec(html))!==null){
+        let src=m[1];
+        // Make relative URLs absolute
+        if(src.startsWith('/'))src='https://24petconnect.com'+src;
+        // Filter: only keep animal photo URLs (skip logos, icons, tiny images)
+        if(src.includes('/image/')||src.includes('/Image/')||src.includes('/photo/')||src.includes('/Photo/'))urls.push(src);
+      }
+      // Also try data-src attributes (lazy loaded images)
+      const re2=/data-src=["']([^"']+)["']/gi;
+      while((m=re2.exec(html))!==null){
+        let src=m[1];
+        if(src.startsWith('/'))src='https://24petconnect.com'+src;
+        if(src.includes('/image/')||src.includes('/Image/')||src.includes('/photo/')||src.includes('/Photo/'))urls.push(src);
+      }
+      // Dedupe
+      const unique=[...new Set(urls)];
+      if(unique.length>0){photoCache[animalId]=unique;return unique;}
+    }catch(e){continue;}
+  }
+  photoCache[animalId]=[];
+  return[];
 }
 
 let allPets=[];
@@ -150,8 +186,7 @@ function normalizePet(r){
     condition:r.intake_health_condition,
     found:r.found_address,
     date:r.source_date,
-    image:petImageUrl(id,1),
-    detailUrl:id?`https://24petconnect.com/ASTNFound/Details/ASTN/${id}`:null
+    detailUrl:id?`https://24petconnect.com/${SHELTER}Found/Details/${SHELTER}/${id}`:null
   };
 }
 
@@ -198,7 +233,7 @@ function renderPets(){
     const emoji=EMOJIS[p.raw_type]||EMOJIS[p.animal_type]||'🐾';
     const gender=p.sex.toLowerCase().includes('female')?'♀':'♂';
     return`<div class="card" onclick="showDetail(${i})" data-idx="${i}">
-      <div class="card-img">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name||breed)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=emoji-fallback>${emoji}</div>'"/>`:emoji}</div>
+      <div class="card-img" id="card-img-${p.animal_id}">${emoji}</div>
       <div class="card-body">
         <div class="card-name">${esc(p.name||breed)}</div>
         <div class="card-breed">${p.name?esc(breed):esc(p.color)}</div>
@@ -211,24 +246,25 @@ function renderPets(){
     </div>`;
   }).join('')+'</div>';
   document.getElementById('content').innerHTML=html;
+  loadCardThumbs();
 }
 
-// Probe 24PetConnect for multiple photos (image 1..6)
-function probePhotos(animalId,callback){
-  if(!animalId)return callback([]);
-  const urls=[];
-  for(let i=1;i<=6;i++)urls.push(petImageUrl(animalId,i));
-  const loaded=[];
-  let pending=urls.length;
-  urls.forEach((u,i)=>{
-    const img=new Image();
-    img.onload=()=>{
-      if(img.naturalWidth>10&&img.naturalHeight>10)loaded.push({url:u,idx:i});
-      if(--pending===0)callback(loaded.sort((a,b)=>a.idx-b.idx).map(x=>x.url));
-    };
-    img.onerror=()=>{if(--pending===0)callback(loaded.sort((a,b)=>a.idx-b.idx).map(x=>x.url));};
-    img.src=u;
-  });
+// Lazy-load card thumbnails: scrape first photo for each visible pet
+async function loadCardThumbs(){
+  const cards=document.querySelectorAll('.card-img[id]');
+  // Load in batches of 4 to avoid hammering the proxy
+  const batch=4;
+  const ids=[...cards].map(c=>c.id.replace('card-img-',''));
+  for(let i=0;i<ids.length;i+=batch){
+    const chunk=ids.slice(i,i+batch);
+    await Promise.all(chunk.map(async id=>{
+      const photos=await scrapePhotos(id);
+      if(photos.length>0){
+        const el=document.getElementById('card-img-'+id);
+        if(el)el.innerHTML=`<img src="${photos[0]}" alt="Pet photo" loading="lazy" onerror="this.remove()"/>`;
+      }
+    }));
+  }
 }
 
 function showDetail(idx){
@@ -267,16 +303,16 @@ function showDetail(idx){
     <a href="https://www.austintexas.gov/austin-animal-center" target="_blank" class="cta-btn">View at Austin Animal Center ↗</a>
   `;
   document.getElementById('modal').classList.add('open');
-  // Probe for all available photos
-  probePhotos(p.animal_id,photos=>{
+  // Live-scrape photos from 24PetConnect
+  scrapePhotos(p.animal_id).then(photos=>{
     const mainEl=document.getElementById('main-photo');
     const galleryEl=document.getElementById('photo-gallery');
-    if(!mainEl)return; // modal was closed
+    if(!mainEl)return;
     if(photos.length===0){
       mainEl.innerHTML=emoji;
       return;
     }
-    mainEl.innerHTML=`<img src="${photos[0]}" alt="${esc(p.name||p.breed)}"/>`;
+    mainEl.innerHTML=`<img src="${photos[0]}" alt="${esc(p.name||p.breed)}" onerror="this.parentNode.innerHTML='${emoji}'"/>`;
     if(photos.length>1){
       galleryEl.style.display='flex';
       galleryEl.innerHTML=photos.map((url,i)=>
