@@ -101,6 +101,36 @@ const TYPE_MAP={Dog:'Dog',Puppy:'Dog',Cat:'Cat',Kitten:'Cat',Bird:'Bird',Rabbit:
 const WORKER_URL='https://pawfinder-photos.dstringer.workers.dev';
 
 const photoCache={};  // animal_id -> [url, ...]
+const breedPhotoCache={};  // "species:breed" -> url
+
+// Dog CEO breed name mapping
+const DOG_BREED_MAP={labrador:'labrador',retriever:'retriever/golden','golden retriever':'retriever/golden','german shepherd':'germanshepherd',shepherd:'germanshepherd',chihuahua:'chihuahua',pitbull:'pitbull','pit bull':'pitbull',poodle:'poodle',beagle:'beagle',rottweiler:'rottweiler',dachshund:'dachshund',boxer:'boxer',husky:'husky',bulldog:'bulldog',pug:'pug',doberman:'doberman',corgi:'corgi/cardigan',collie:'collie','border collie':'collie/border',mastiff:'mastiff/english','great dane':'dane/great',malinois:'malinois',akita:'akita',dalmatian:'dalmatian',pomeranian:'pomeranian',maltese:'maltese',shiba:'shiba',terrier:'terrier/yorkshire','yorkshire terrier':'terrier/yorkshire','australian shepherd':'australian/shepherd',weimaraner:'weimaraner',newfoundland:'newfoundland',samoyed:'samoyed',greyhound:'greyhound',schnauzer:'schnauzer/miniature',hound:'hound/blood',coonhound:'coonhound',chow:'chow',staffordshire:'staffordshire/bull',pointer:'pointer/germanlonghair',setter:'setter/english',ridgeback:'ridgeback/rhodesian'};
+
+function findDogCeoBreed(breed){
+  const l=breed.toLowerCase();
+  for(const[k,v]of Object.entries(DOG_BREED_MAP)){if(l.includes(k))return v;}
+  return null;
+}
+
+async function fetchBreedPhoto(species,breed){
+  const key=(species+':'+breed).toLowerCase();
+  if(breedPhotoCache[key]!==undefined)return breedPhotoCache[key];
+  let url=null;
+  try{
+    if(species==='Dog'||species==='Puppy'){
+      const mapped=findDogCeoBreed(breed);
+      const ep=mapped?`https://dog.ceo/api/breed/${mapped}/images/random`:'https://dog.ceo/api/breeds/image/random';
+      let res=await fetch(ep);
+      if(!res.ok&&mapped)res=await fetch('https://dog.ceo/api/breeds/image/random');
+      if(res.ok){const d=await res.json();if(d.message)url=d.message;}
+    }else if(species==='Cat'||species==='Kitten'){
+      const res=await fetch('https://api.thecatapi.com/v1/images/search?limit=1');
+      if(res.ok){const d=await res.json();if(d[0]&&d[0].url)url=d[0].url;}
+    }
+  }catch(e){}
+  breedPhotoCache[key]=url;
+  return url;
+}
 
 async function fetchPhotos(animalId){
   if(!animalId)return[];
@@ -232,20 +262,43 @@ function renderPets(){
   loadCardThumbs(filtered);
 }
 
-// Lazy-load card thumbnails via Cloudflare Worker (real photos)
+// Lazy-load card thumbnails: try worker first, then breed fallback
 async function loadCardThumbs(pets){
-  if(WORKER_URL.includes('YOUR_SUBDOMAIN'))return;  // Worker not deployed yet
-  // Batch fetch in chunks of 20
+  const petMap={};
+  pets.forEach(p=>{if(p.animal_id)petMap[p.animal_id]=p;});
   const ids=pets.map(p=>p.animal_id).filter(Boolean);
+  const needsBreedFallback=[];
+
+  // Tier 1: Cloudflare Worker (real AAC photos)
   for(let i=0;i<ids.length;i+=20){
     const chunk=ids.slice(i,i+20);
-    const results=await fetchPhotosBatch(chunk);
-    Object.entries(results).forEach(([id,photos])=>{
-      if(photos.length>0){
-        const el=document.getElementById('card-img-'+id);
-        if(el)el.innerHTML=`<img src="${photos[0]}" alt="Pet photo" loading="lazy" onerror="this.remove()"/>`;
-      }
-    });
+    try{
+      const results=await fetchPhotosBatch(chunk);
+      chunk.forEach(id=>{
+        const photos=results[id]||[];
+        if(photos.length>0){
+          const el=document.getElementById('card-img-'+id);
+          if(el)el.innerHTML=`<img src="${photos[0]}" alt="Pet photo" loading="lazy" onerror="this.parentNode.dataset.needsFallback='1'"/>`;
+        }else{
+          needsBreedFallback.push(id);
+        }
+      });
+    }catch(e){
+      chunk.forEach(id=>needsBreedFallback.push(id));
+    }
+  }
+
+  // Tier 2: Breed-based fallback photos (Dog CEO / TheCatAPI)
+  for(const id of needsBreedFallback){
+    const p=petMap[id];
+    if(!p)continue;
+    const species=p.raw_type||p.animal_type;
+    if(!['Dog','Puppy','Cat','Kitten'].includes(species))continue;
+    const url=await fetchBreedPhoto(species,p.breed);
+    if(url){
+      const el=document.getElementById('card-img-'+id);
+      if(el)el.innerHTML=`<img src="${url}" alt="${esc(p.breed)} photo" loading="lazy" onerror="this.remove()"/>`;
+    }
   }
 }
 
@@ -285,13 +338,20 @@ function showDetail(idx){
     <a href="https://www.austintexas.gov/austin-animal-center" target="_blank" class="cta-btn">View at Austin Animal Center ↗</a>
   `;
   document.getElementById('modal').classList.add('open');
-  // Fetch real photos via Cloudflare Worker
-  fetchPhotos(p.animal_id).then(photos=>{
+  // Fetch real photos via worker, then breed fallback
+  fetchPhotos(p.animal_id).then(async photos=>{
     const mainEl=document.getElementById('main-photo');
     const galleryEl=document.getElementById('photo-gallery');
     if(!mainEl)return;
+    // If worker found no photos, try breed fallback
     if(photos.length===0){
-      mainEl.innerHTML=emoji;
+      const species=p.raw_type||p.animal_type;
+      const breedUrl=await fetchBreedPhoto(species,p.breed);
+      if(breedUrl){
+        mainEl.innerHTML=`<img src="${breedUrl}" alt="${esc(p.breed)}" onerror="this.parentNode.innerHTML='${emoji}'"/>`;
+      }else{
+        mainEl.innerHTML=emoji;
+      }
       return;
     }
     mainEl.innerHTML=`<img src="${photos[0]}" alt="${esc(p.breed)}" onerror="this.parentNode.innerHTML='${emoji}'"/>`;
