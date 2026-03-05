@@ -94,19 +94,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <script>
 // New ShelterBuddy dataset (May 2025+) — old wter-evkm stopped updating May 5 2025
 const INTAKES='https://data.austintexas.gov/resource/pyqf-r2dc.json';
-const STRAY_MAP='https://data.austintexas.gov/resource/kz4x-q9k5.json';
 const EMOJIS={Dog:'🐕',Puppy:'🐕',Cat:'🐈',Kitten:'🐈',Bird:'🐦',Rabbit:'🐇'};
 // Map new ShelterBuddy "type" values to filter categories
 const TYPE_MAP={Dog:'Dog',Puppy:'Dog',Cat:'Cat',Kitten:'Cat',Bird:'Bird',Rabbit:'Rabbit'};
 
-// PetHarbor image URLs from animal_id (Austin shelter code = ASTN)
-function petImageUrl(animalId,res='Detail'){
+// 24PetConnect image URLs (PetHarbor rebranded) — Austin shelter code = ASTN
+// Format: https://24petconnect.com/image/{ANIMAL_ID}/{SHELTER}/{PHOTO_NUMBER}
+const SHELTER='ASTN';
+function petImageUrl(animalId,photoNum=1){
   if(!animalId)return null;
-  return`https://petharbor.com/get_image.asp?RES=${res}&ID=${animalId}&LOCATION=ASTN`;
+  return`https://24petconnect.com/image/${animalId}/${SHELTER}/${photoNum}`;
 }
 
 let allPets=[];
-let imageMap={};  // animal_id -> image_link from stray map
 let activeType='';
 
 // Compute age label from date_of_birth
@@ -150,9 +150,8 @@ function normalizePet(r){
     condition:r.intake_health_condition,
     found:r.found_address,
     date:r.source_date,
-    image:petImageUrl(id,'Detail'),
-    thumb:petImageUrl(id,'Thumb'),
-    petharbor:imageMap[id]||( id ? `https://petharbor.com/pet.asp?uaid=ASTN.${id}` : null)
+    image:petImageUrl(id,1),
+    detailUrl:id?`https://24petconnect.com/ASTNFound/Details/ASTN/${id}`:null
   };
 }
 
@@ -163,18 +162,10 @@ async function loadPets(){
     const dateStr=cutoff.toISOString().slice(0,10);
     const where=encodeURIComponent("source_date > '"+dateStr+"'");
     const url=`${INTAKES}?$where=${where}&$order=source_date DESC&$limit=300`;
-    // Fetch intakes + stray map (for image links) in parallel
-    const [res,strayRes]=await Promise.all([
-      fetch(url),
-      fetch(`${STRAY_MAP}?$limit=500`).catch(()=>null)
-    ]);
+    const res=await fetch(url);
     if(!res.ok)throw new Error('API returned '+res.status);
     const raw=await res.json();
     if(raw.error)throw new Error(raw.message||raw.error);
-    // Build image lookup from stray map
-    if(strayRes&&strayRes.ok){
-      try{const strays=await strayRes.json();strays.forEach(s=>{if(s.animal_id&&s.image_link)imageMap[s.animal_id]=s.image_link;});}catch(e){}
-    }
     // Deduplicate by animal_id (keep most recent)
     const seen=new Set();
     const deduped=[];
@@ -207,7 +198,7 @@ function renderPets(){
     const emoji=EMOJIS[p.raw_type]||EMOJIS[p.animal_type]||'🐾';
     const gender=p.sex.toLowerCase().includes('female')?'♀':'♂';
     return`<div class="card" onclick="showDetail(${i})" data-idx="${i}">
-      <div class="card-img">${p.thumb?`<img src="${esc(p.thumb)}" alt="${esc(p.name||breed)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=emoji-fallback>${emoji}</div>'"/>`:emoji}</div>
+      <div class="card-img">${p.image?`<img src="${esc(p.image)}" alt="${esc(p.name||breed)}" loading="lazy" onerror="this.parentNode.innerHTML='<div class=emoji-fallback>${emoji}</div>'"/>`:emoji}</div>
       <div class="card-body">
         <div class="card-name">${esc(p.name||breed)}</div>
         <div class="card-breed">${p.name?esc(breed):esc(p.color)}</div>
@@ -222,18 +213,16 @@ function renderPets(){
   document.getElementById('content').innerHTML=html;
 }
 
-// Probe PetHarbor for multiple photos (main + &no=1..5)
+// Probe 24PetConnect for multiple photos (image 1..6)
 function probePhotos(animalId,callback){
   if(!animalId)return callback([]);
-  const base=`https://petharbor.com/get_image.asp?RES=Detail&ID=${animalId}&LOCATION=ASTN`;
-  const urls=[base];
-  for(let i=1;i<=5;i++)urls.push(base+'&no='+i);
+  const urls=[];
+  for(let i=1;i<=6;i++)urls.push(petImageUrl(animalId,i));
   const loaded=[];
   let pending=urls.length;
   urls.forEach((u,i)=>{
     const img=new Image();
     img.onload=()=>{
-      // PetHarbor returns a tiny 1x1 or error image for missing photos; filter those out
       if(img.naturalWidth>10&&img.naturalHeight>10)loaded.push({url:u,idx:i});
       if(--pending===0)callback(loaded.sort((a,b)=>a.idx-b.idx).map(x=>x.url));
     };
@@ -254,7 +243,7 @@ function showDetail(idx){
   document.getElementById('modal-body').innerHTML=`
     <div class="modal-photo" id="main-photo"><div class="spinner"></div></div>
     <div class="photo-gallery" id="photo-gallery" style="display:none"></div>
-    ${p.petharbor?`<a href="${esc(p.petharbor)}" target="_blank" style="display:block;text-align:center;color:var(--primary);font-size:13px;margin:-8px 0 16px;text-decoration:none">View more photos on PetHarbor ↗</a>`:''}
+    ${p.detailUrl?`<a href="${esc(p.detailUrl)}" target="_blank" style="display:block;text-align:center;color:var(--primary);font-size:13px;margin:-8px 0 16px;text-decoration:none">View on 24PetConnect ↗</a>`:''}
     <div class="detail-row">
       <div class="detail-pill"><div class="label">Age</div><div class="value">${p.age}</div></div>
       <div class="detail-pill"><div class="label">Gender</div><div class="value">${gender}</div></div>
