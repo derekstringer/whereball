@@ -98,11 +98,6 @@ const EMOJIS={Dog:'🐕',Puppy:'🐕',Cat:'🐈',Kitten:'🐈',Bird:'🐦',Rabbi
 // Map new ShelterBuddy "type" values to filter categories
 const TYPE_MAP={Dog:'Dog',Puppy:'Dog',Cat:'Cat',Kitten:'Cat',Bird:'Bird',Rabbit:'Rabbit'};
 
-const SHELTER='ASTN';
-
-// *** CHANGE THIS after deploying your Cloudflare Worker ***
-// Deploy: cd worker && npx wrangler deploy
-// Then paste your worker URL here (e.g. https://pawfinder-photos.yourname.workers.dev)
 const WORKER_URL='https://pawfinder-photos.dstringer.workers.dev';
 
 const photoCache={};  // animal_id -> [url, ...]
@@ -174,7 +169,7 @@ function normalizePet(r){
     condition:r.intake_health_condition,
     found:r.found_address,
     date:r.source_date,
-    detailUrl:id?`https://24petconnect.com/${SHELTER}Found/Details/${SHELTER}/${id}`:null
+    detailUrl:id?`https://www.austintexas.gov/austin-animal-center`:null
   };
 }
 
@@ -266,7 +261,7 @@ function showDetail(idx){
   document.getElementById('modal-body').innerHTML=`
     <div class="modal-photo" id="main-photo"><div class="spinner"></div></div>
     <div class="photo-gallery" id="photo-gallery" style="display:none"></div>
-    ${p.detailUrl?`<a href="${esc(p.detailUrl)}" target="_blank" style="display:block;text-align:center;color:var(--primary);font-size:13px;margin:-8px 0 16px;text-decoration:none">View on 24PetConnect ↗</a>`:''}
+    ${p.detailUrl?`<a href="${esc(p.detailUrl)}" target="_blank" style="display:block;text-align:center;color:var(--primary);font-size:13px;margin:-8px 0 16px;text-decoration:none">View at Austin Animal Center ↗</a>`:''}
     <div class="detail-row">
       <div class="detail-pill"><div class="label">Age</div><div class="value">${p.age}</div></div>
       <div class="detail-pill"><div class="label">Gender</div><div class="value">${gender}</div></div>
