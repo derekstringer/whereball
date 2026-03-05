@@ -116,8 +116,10 @@ export const PetDetailScreen = ({ route, navigation }: any) => {
             )}
           />
         ) : (
-          <View style={[s.photo, s.noPhoto, { backgroundColor: colors.surface }]}>
-            <Text style={{ fontSize: 72 }}>🐾</Text>
+          <View style={[s.photo, s.noPhoto, { backgroundColor: isDark ? '#2a2a3e' : '#f0eaf8' }]}>
+            <Text style={{ fontSize: 72 }}>
+              {pet.species === 'Dog' ? '🐕' : pet.species === 'Cat' ? '🐈' : pet.species === 'Bird' ? '🐦' : pet.species === 'Rabbit' ? '🐇' : '🐾'}
+            </Text>
           </View>
         )}
 
