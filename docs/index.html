@@ -64,6 +64,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
   <button class="chip" data-type="Dog">🐕 Dogs</button>
   <button class="chip" data-type="Cat">🐈 Cats</button>
   <button class="chip" data-type="Bird">🐦 Birds</button>
+  <button class="chip" data-type="Rabbit">🐇 Rabbits</button>
   <button class="chip" data-type="Other">🐾 Other</button>
 </div>
 
@@ -82,43 +83,80 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </div>
 
 <script>
-const INTAKES='https://data.austintexas.gov/resource/wter-evkm.json';
-const OUTCOMES='https://data.austintexas.gov/resource/9t4d-g238.json';
-const EMOJIS={Dog:'🐕',Cat:'🐈',Bird:'🐦'};
+// New ShelterBuddy dataset (May 2025+) — old wter-evkm stopped updating May 5 2025
+const INTAKES='https://data.austintexas.gov/resource/pyqf-r2dc.json';
+const EMOJIS={Dog:'🐕',Puppy:'🐕',Cat:'🐈',Kitten:'🐈',Bird:'🐦',Rabbit:'🐇'};
+// Map new ShelterBuddy "type" values to filter categories
+const TYPE_MAP={Dog:'Dog',Puppy:'Dog',Cat:'Cat',Kitten:'Cat',Bird:'Bird',Rabbit:'Rabbit'};
 
 let allPets=[];
 let activeType='';
 
-// Fetch & render
+// Compute age label from date_of_birth
+function ageFromDob(dob){
+  if(!dob)return'Unknown';
+  const birth=new Date(dob),now=new Date();
+  const months=(now.getFullYear()-birth.getFullYear())*12+(now.getMonth()-birth.getMonth());
+  if(months<6)return'Baby';
+  if(months<24)return'Young';
+  if(months>=96)return'Senior';
+  return'Adult';
+}
+
+function parseGender(s){
+  if(!s)return'Unknown';
+  const l=s.toLowerCase();
+  if(l.includes('female'))return'Female';
+  if(l.includes('male'))return'Male';
+  return s;
+}
+
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// Normalize a pet record from the new ShelterBuddy schema
+function normalizePet(r){
+  const animalType=TYPE_MAP[r.type]||r.type||'Other';
+  const color=[r.primary_color,r.secondary_color].filter(Boolean).join(' / ');
+  return{
+    animal_id:r.animal_id,
+    name:r.name,
+    animal_type:animalType,
+    raw_type:r.type,
+    breed:r.primary_breed||'Unknown',
+    color:color||'Unknown',
+    sex:r.sex||'Unknown',
+    spayed:String(r.ispreviouslyspayedneutered||'').toLowerCase()==='true',
+    dob:r.date_of_birth,
+    age:ageFromDob(r.date_of_birth),
+    source:r.source_name,
+    condition:r.intake_health_condition,
+    found:r.found_address,
+    date:r.source_date
+  };
+}
+
 async function loadPets(){
   document.getElementById('content').innerHTML='<div class="loading"><div class="spinner"></div>Fetching adorable pets...</div>';
   try{
     const cutoff=new Date();cutoff.setDate(cutoff.getDate()-60);
     const dateStr=cutoff.toISOString().slice(0,10);
-    // Fetch recent intakes
-    const intakeUrl=`${INTAKES}?$where=${encodeURIComponent("datetime > '"+dateStr+"'")}&$order=datetime DESC&$limit=300`;
-    const intakeRes=await fetch(intakeUrl);
-    if(!intakeRes.ok)throw new Error('Intake API '+intakeRes.status);
-    const intakes=await intakeRes.json();
-    // Fetch outcomes to find animals that left the shelter
-    const outcomeUrl=`${OUTCOMES}?$select=animal_id&$where=${encodeURIComponent("datetime > '"+dateStr+"'")}&$limit=5000`;
-    const outcomeRes=await fetch(outcomeUrl);
-    const outcomes=outcomeRes.ok?await outcomeRes.json():[];
-    const outcomeIds=new Set(outcomes.map(o=>o.animal_id));
-    // Show animals still at the shelter (no outcome yet)
-    const stillHere=intakes.filter(r=>!outcomeIds.has(r.animal_id));
-    // If cross-referencing leaves nothing, just show all recent intakes
-    allPets=stillHere.length>0?stillHere:intakes;
+    const where=encodeURIComponent("source_date > '"+dateStr+"'");
+    const url=`${INTAKES}?$where=${where}&$order=source_date DESC&$limit=300`;
+    const res=await fetch(url);
+    if(!res.ok)throw new Error('API returned '+res.status);
+    const raw=await res.json();
+    if(raw.error)throw new Error(raw.message||raw.error);
+    allPets=raw.map(normalizePet);
     renderPets();
   }catch(e){
-    document.getElementById('content').innerHTML=`<div class="error"><p style="font-size:48px;margin-bottom:16px">😿</p><p>Couldn't fetch pets.<br><small style="opacity:.6">${e.message}</small></p></div>`;
+    document.getElementById('content').innerHTML=`<div class="error"><p style="font-size:48px;margin-bottom:16px">😿</p><p>Couldn't fetch pets.<br><small style="opacity:.6">${esc(e.message)}</small></p></div>`;
   }
 }
 
 function renderPets(){
   let filtered=allPets;
   if(activeType==='Other'){
-    filtered=allPets.filter(p=>!['Dog','Cat','Bird'].includes(p.animal_type));
+    filtered=allPets.filter(p=>!['Dog','Cat','Bird','Rabbit'].includes(p.animal_type));
   }else if(activeType){
     filtered=allPets.filter(p=>p.animal_type===activeType);
   }
@@ -127,19 +165,18 @@ function renderPets(){
     return;
   }
   const html='<div class="grid">'+filtered.map((p,i)=>{
-    const breed=(p.breed||'Unknown').split('/')[0].trim();
-    const emoji=EMOJIS[p.animal_type]||'🐾';
-    const age=parseAge(p.age_upon_intake);
-    const gender=(p.sex_upon_intake||'').includes('Female')?'♀':'♂';
+    const breed=p.breed.split('/')[0].trim();
+    const emoji=EMOJIS[p.raw_type]||EMOJIS[p.animal_type]||'🐾';
+    const gender=p.sex.toLowerCase().includes('female')?'♀':'♂';
     return`<div class="card" onclick="showDetail(${i})" data-idx="${i}">
       <div class="card-img">${emoji}</div>
       <div class="card-body">
         <div class="card-name">${esc(p.name||'Unknown')}</div>
         <div class="card-breed">${esc(breed)}</div>
         <div class="card-pills">
-          <span class="card-pill">${age}</span>
+          <span class="card-pill">${p.age}</span>
           <span class="card-pill">${gender}</span>
-          <span class="card-pill">${esc(p.animal_type||'?')}</span>
+          <span class="card-pill">${esc(p.raw_type||p.animal_type)}</span>
         </div>
       </div>
     </div>`;
@@ -147,49 +184,28 @@ function renderPets(){
   document.getElementById('content').innerHTML=html;
 }
 
-function parseAge(s){
-  if(!s)return'Adult';
-  const m=s.toLowerCase().match(/(\d+)\s*(year|month|week|day)/);
-  if(!m)return'Adult';
-  const n=parseInt(m[1]),u=m[2];
-  if(u==='month'||u==='week'||u==='day')return n<=6?'Baby':'Young';
-  if(n<=2)return'Young';if(n>=8)return'Senior';return'Adult';
-}
-
-function parseGender(s){
-  if(!s)return'Unknown';
-  if(s.toLowerCase().includes('female'))return'Female';
-  if(s.toLowerCase().includes('male'))return'Male';
-  return'Unknown';
-}
-
-function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-
 function showDetail(idx){
   const filtered=activeType==='Other'
-    ?allPets.filter(p=>!['Dog','Cat','Bird'].includes(p.animal_type))
+    ?allPets.filter(p=>!['Dog','Cat','Bird','Rabbit'].includes(p.animal_type))
     :activeType?allPets.filter(p=>p.animal_type===activeType):allPets;
   const p=filtered[idx];if(!p)return;
   document.getElementById('modal-name').textContent=p.name||'Unknown';
-  const breed=(p.breed||'Unknown');
-  const age=parseAge(p.age_upon_intake);
-  const gender=parseGender(p.sex_upon_intake);
-  const spayed=(p.sex_upon_intake||'').toLowerCase().includes('neutered')||(p.sex_upon_intake||'').toLowerCase().includes('spayed');
+  const gender=parseGender(p.sex);
   document.getElementById('modal-body').innerHTML=`
     <div class="detail-row">
-      <div class="detail-pill"><div class="label">Age</div><div class="value">${age}</div></div>
+      <div class="detail-pill"><div class="label">Age</div><div class="value">${p.age}</div></div>
       <div class="detail-pill"><div class="label">Gender</div><div class="value">${gender}</div></div>
-      <div class="detail-pill"><div class="label">Type</div><div class="value">${esc(p.animal_type||'?')}</div></div>
+      <div class="detail-pill"><div class="label">Type</div><div class="value">${esc(p.raw_type||p.animal_type)}</div></div>
     </div>
-    <div class="detail-section"><h3>Breed</h3><p>${esc(breed)}</p></div>
-    <div class="detail-section"><h3>Color</h3><p>${esc(p.color||'Unknown')}</p></div>
-    ${p.age_upon_intake?`<div class="detail-section"><h3>Age at intake</h3><p>${esc(p.age_upon_intake)}</p></div>`:''}
-    ${p.found_location?`<div class="detail-section"><h3>Found near</h3><p>${esc(p.found_location)}</p></div>`:''}
+    <div class="detail-section"><h3>Breed</h3><p>${esc(p.breed)}</p></div>
+    <div class="detail-section"><h3>Color</h3><p>${esc(p.color)}</p></div>
+    ${p.dob?`<div class="detail-section"><h3>Date of birth</h3><p>${new Date(p.dob).toLocaleDateString()}</p></div>`:''}
+    ${p.found?`<div class="detail-section"><h3>Found near</h3><p>${esc(p.found)}</p></div>`:''}
     <div class="detail-section"><h3>Details</h3>
       <div class="detail-tags">
-        ${spayed?'<span class="detail-tag">Spayed/Neutered</span>':''}
-        ${p.intake_type?`<span class="detail-tag">${esc(p.intake_type)}</span>`:''}
-        ${p.intake_condition?`<span class="detail-tag">${esc(p.intake_condition)}</span>`:''}
+        ${p.spayed?'<span class="detail-tag">Spayed/Neutered</span>':''}
+        ${p.source?`<span class="detail-tag">${esc(p.source)}</span>`:''}
+        ${p.condition?`<span class="detail-tag">${esc(p.condition)}</span>`:''}
       </div>
     </div>
     <div class="detail-section"><h3>Contact</h3>
